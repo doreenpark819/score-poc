@@ -334,6 +334,31 @@
   }
   @media (max-width: 600px) { .guide { grid-template-columns: 1fr 1fr; } .hero { padding: 20px 16px; } .hero-title { font-size: 20px !important; } }
   @media (prefers-reduced-motion: reduce) { .fstep, .try-chart svg.anim .bar { animation: none; } .gmark { transition: none; } }
+  /* 모델 A vs B 사례 */
+  .ab-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 12px; }
+  .ab-case, .ab-pair { border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; }
+  .ab-title { font-weight: 700; font-size: 14.5px; }
+  .ab-who { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .ab-vs { display: grid; grid-template-columns: minmax(0, 1fr) 28px minmax(0, 1fr); align-items: stretch; margin-top: 10px; }
+  .ab-side { border: 1px solid var(--line); border-top: 3px solid var(--gray-bar); border-radius: 6px; padding: 10px 12px; text-align: center; }
+  .ab-side.b { border-top-color: var(--accent); }
+  .ab-tag { font-size: 11.5px; color: var(--text-2); font-weight: 600; }
+  .ab-score { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; margin-top: 2px; }
+  .ab-score small { font-size: 13px; color: var(--muted); margin-left: 2px; }
+  .ab-side.b .ab-score { color: var(--accent-strong); }
+  .ab-rel { font-size: 11.5px; color: var(--muted); margin-bottom: 6px; font-variant-numeric: tabular-nums; }
+  .ab-arrow { position: relative; }
+  .ab-arrow::after { content: ''; position: absolute; left: 50%; top: 50%; width: 9px; height: 9px; border-top: 2px solid #A3A9AF;
+    border-right: 2px solid #A3A9AF; transform: translate(-70%, -50%) rotate(45deg); }
+  .ab-arrow.eq::after { content: 'vs'; border: 0; transform: translate(-50%, -50%); width: auto; height: auto; font-size: 11px; color: var(--muted); }
+  .ab-why { font-size: 13px; color: var(--text-2); line-height: 1.7; margin: 10px 0 8px; }
+  .ab-open { padding: 5px 12px; font-size: 12.5px; }
+  .ab-h3 { font-size: 13.5px; margin: 18px 0 8px; }
+  .ab-matrix td.diag { background: var(--gray-soft); }
+  .ab-matrix td.up { background: rgba(180,35,42,.10); }
+  .ab-matrix td.down { background: var(--accent-soft); }
+  @media (max-width: 760px) { .ab-grid { grid-template-columns: 1fr; } }
+  @media print { .ab-open { display: none !important; } .ab-case, .ab-pair { break-inside: avoid; } }
   /* 종합 해석 */
   .headline { border-left: 4px solid var(--accent); }
   .headline .h-label { font-size: 12px; font-weight: 700; color: var(--accent-strong); letter-spacing: .04em; }
@@ -756,6 +781,10 @@
       <div class="kpis" id="uwKpis"></div>
       <p class="note" id="uwRuleNote"></p>
     </div>
+    <div class="card" id="abCard" style="display:none">
+      <h2>모델 A vs B: 점수가 크게 달라진 사례 <span class="sub">연체 이력을 반영하면(B) 같은 고객의 점수와 권고가 어떻게 바뀌는지 실제 청약으로 비교</span></h2>
+      <div id="abCases"></div>
+    </div>
     <div class="two apps">
       <div class="card">
         <h2>청약 목록</h2>
@@ -792,15 +821,15 @@
       <div class="card"><h2>한계점·유의사항</h2><ul class="sum-list" id="sumLimits"></ul></div>
       <div class="card"><h2>다음 단계 제안</h2><ol class="sum-list" id="sumNext"></ol></div>
     </div>
-    <div class="card" id="prdCheckCard">
-      <div class="card-head"><h2>기획서(PRD) 정답값 검증 <span class="sub">PRD 6장 기대값과 이 화면의 계산값 비교</span></h2><span id="prdCheckSum"></span></div>
+    <details class="card calc-details" id="prdCheckCard">
+      <summary><h2>기획서(PRD) 정답값 검증 <span class="sub">PRD 6장 기대값과 이 화면의 계산값 비교 · 눌러서 펼치기</span></h2> <span id="prdCheckSum"></span></summary>
       <div class="tbl"><table>
         <thead><tr><th>항목</th><th class="num">PRD 기대값</th><th class="num">계산값</th><th class="num">최대 차이</th><th>판정</th></tr></thead>
         <tbody id="prdCheckBody"></tbody>
       </table></div>
       <p class="note">허용오차 ±0.01, 건수는 정확히 일치해야 통과합니다(저장소의 verify.js 자동 검증과 같은 기준, 60개 세부 항목 통과).
         PRD 기대값은 앱과 별개로 계산한 독립 정답값(tools/expected_v4.json)에서 왔습니다. 가상 데이터 v4 · 원손해 · 단조 보정 미적용일 때만 비교합니다.</p>
-    </div>
+    </details>
     <p class="note">이 해석은 화면의 수치를 정해진 규칙으로 문장화한 것입니다(AI 미사용, 외부 전송 없음). 용어 풀이는 오른쪽 아래 용어집을 참고하세요. 최종 판단은 심사역과 담당 부서가 합니다.</p>
   </section>
 </main>
@@ -2036,6 +2065,55 @@ function renderPrdCheck() {
     <td class="num">${r.diff}</td><td>${r.pass == null ? '<span class="badge muted">계산 중</span>' : r.pass ? '<span class="badge ok">일치</span>' : '<span class="badge bad">불일치</span>'}</td></tr>`).join('');
 }
 
+// ─ 모델 A vs B 사례: 연체정보 반영으로 점수·권고가 크게 달라진 실제 청약을 좌우로 비교 (표시 전용) ─
+// A 권고는 계산 블록의 uwRule(relA)를 그대로 써서 B와 같은 규칙으로 판정
+function renderABCases(assessed) {
+  const rank = l => CONFIG.UW_RULES.findIndex(r => r.label === l);
+  const list = assessed.filter(a => a.relA != null && a.relB != null).map(a => ({ ...a, statusA: uwRule(a.relA).label }));
+  if (!list.length) { $('abCard').style.display = 'none'; return; }
+  $('abCard').style.display = '';
+  const L = CONFIG.DELINQ.LABELS;
+  const stricter = list.filter(a => rank(a.status) > rank(a.statusA)).sort((x, y) => (x.scoreB - x.scoreA) - (y.scoreB - y.scoreA));
+  const looser = list.filter(a => rank(a.status) < rank(a.statusA)).sort((x, y) => (y.scoreB - y.scoreA) - (x.scoreB - x.scoreA));
+  // 같은 신용 분위에서 연체 이력만 다른 두 사람 (정상 vs 가장 나쁜 등급, 권고가 갈리는 분위 우선)
+  let pair = null;
+  for (let d = 10; d >= 1 && !pair; d--) {
+    const g0 = list.find(a => a.decile === d && a.grade === 0), g2 = list.find(a => a.decile === d && a.grade === 2) || list.find(a => a.decile === d && a.grade === 1);
+    if (g0 && g2 && g0.status !== g2.status) pair = [g0, g2];
+  }
+  const who = a => `${esc(a.app_no)} · ${a.age ?? '-'}세 ${a.gender === 'M' ? '남' : a.gender === 'F' ? '여' : ''} · 신용 ${a.decile}분위 · 연체 이력 '${esc(L[a.grade])}'`;
+  const side = (tag, rel, sc, st) => `<div class="ab-side ${tag === 'B' ? 'b' : 'a'}"><div class="ab-tag">모델 ${tag}${tag === 'A' ? ' · 연체 미반영' : ' · 연체 반영'}</div>
+    <div class="ab-score">${sc}<small>점</small></div><div class="ab-rel">상대도 ${fmtRel(rel)}</div>${uwBadge(st)}</div>`;
+  const caseCard = (title, a, why) => !a ? '' : `<div class="ab-case"><div class="ab-title">${title}</div><div class="ab-who">${who(a)}</div>
+    <div class="ab-vs">${side('A', a.relA, a.scoreA, a.statusA)}<div class="ab-arrow" aria-hidden="true"></div>${side('B', a.relB, a.scoreB, a.status)}</div>
+    <p class="ab-why">${why}</p><button type="button" class="btn ghost ab-open" data-app="${esc(a.app_no)}">이 청약 상세 보기</button></div>`;
+  const s = stricter[0], l = looser[0];
+  const cards = [
+    caseCard('연체 이력 때문에 권고가 엄격해진 사례', s, s && `신용 분위만 보면(A) 상대도 ${fmtRel(s.relA)}로 '${esc(s.statusA)}'입니다. 그런데 '${esc(L[s.grade])}' 이력의 보정 상대도 ${fmtRel(s.relDelinq)}을 곱하면(B) ${fmtRel(s.relB)}로 올라,
+      점수가 ${s.scoreA}점 → ${s.scoreB}점으로 내려가고 권고가 '${esc(s.status)}'로 바뀝니다.`),
+    caseCard('연체 이력이 없어 권고가 완화된 사례', l, l && `신용 분위만 보면(A) 상대도 ${fmtRel(l.relA)}로 '${esc(l.statusA)}'입니다. 연체 이력이 없는 고객은 같은 분위 평균보다 손해가 조금 적어(보정 상대도 ${fmtRel(l.relDelinq)})
+      B에서는 ${fmtRel(l.relB)}로 낮아지고, 점수가 ${l.scoreA}점 → ${l.scoreB}점, 권고가 '${esc(l.status)}'로 바뀝니다.`),
+  ].join('');
+  const pairHtml = !pair ? '' : `<div class="ab-pair"><div class="ab-title">같은 신용 ${pair[0].decile}분위, 연체 이력만 다른 두 고객</div><div class="ab-who">모델 B 기준 비교 · 모델 A에서는 두 사람의 점수가 같음</div>
+    <div class="ab-vs">${[0, 1].map(i => { const a = pair[i]; return `<div class="ab-side ${i ? 'b' : 'a'}"><div class="ab-tag">${esc(a.app_no)} · 연체 이력 '${esc(L[a.grade])}'</div>
+      <div class="ab-score">${a.scoreB}<small>점</small></div><div class="ab-rel">상대도 ${fmtRel(a.relDecile)} × ${fmtRel(a.relDelinq)} = ${fmtRel(a.relB)}</div>${uwBadge(a.status)}</div>`; }).join('<div class="ab-arrow eq" aria-hidden="true"></div>')}</div>
+    <p class="ab-why">모델 A에서는 두 사람 모두 신용 ${pair[0].decile}분위라 점수(${pair[0].scoreA}점)와 권고('${esc(pair[0].statusA)}')가 같습니다. 연체 이력을 반영한 모델 B에서만 두 사람이 구분됩니다.</p></div>`;
+  // A → B 권고 이동 요약
+  const labels = CONFIG.UW_RULES.map(r => r.label);
+  const m = labels.map(a => labels.map(b => list.filter(x => x.statusA === a && x.status === b).length));
+  const same = labels.reduce((t, _, i) => t + m[i][i], 0);
+  const matrix = `<div class="tbl"><table class="ab-matrix"><thead><tr><th>A 권고 \\ B 권고</th>${labels.map(l => `<th class="num">${esc(l)}</th>`).join('')}<th class="num">합계</th></tr></thead><tbody>
+    ${labels.map((a, i) => `<tr><td>${uwBadge(a)}</td>${m[i].map((n, j) => `<td class="num${i === j ? ' diag' : n ? (j > i ? ' up' : ' down') : ''}">${n ? fmtInt(n) : '·'}</td>`).join('')}<td class="num">${fmtInt(m[i].reduce((t, n) => t + n, 0))}</td></tr>`).join('')}
+    </tbody></table></div>
+    <p class="note">청약 ${fmtInt(list.length)}건 중 <b>${fmtInt(same)}건</b>은 A와 B의 권고가 같고, <b>${fmtInt(stricter.length)}건</b>은 연체 이력 때문에 더 엄격해졌으며(오른쪽 위),
+      ${looser.length ? `<b>${fmtInt(looser.length)}건</b>은 연체 이력이 없어 완화됐습니다(왼쪽 아래).` : '완화된 건은 없습니다(정상 등급의 보정 상대도가 1에 가까워 권고 구간을 넘지 않음).'} 회색 대각선 칸은 권고가 바뀌지 않은 건입니다.</p>`;
+  $('abCases').innerHTML = `<div class="ab-grid">${cards}${pairHtml}</div><h3 class="ab-h3">A → B 권고 변화 요약</h3>${matrix}`;
+  $('abCases').querySelectorAll('.ab-open').forEach(b => b.addEventListener('click', () => {
+    $('appFilter').value = ''; $('appSearch').value = b.dataset.app; renderAppList(); showApp(b.dataset.app);
+    $('appDetail').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }));
+}
+
 // 신뢰구간·교차 검증 분리도는 몇 초 걸리므로 기본 결과를 먼저 그린 뒤 채운다 (설정이 바뀌면 이전 계산 결과는 버림)
 let uncertaintyRun = 0;
 async function runUncertainty(ds, dec) {
@@ -2232,6 +2310,7 @@ function initApps(ds, dec, dq) {
   $('exportBtn').onclick = () => downloadCsv(exportCsv(assessed), `uw_result_${new Date().toISOString().slice(0, 10)}.csv`);
   $('appDetail').innerHTML = '<p class="muted">목록에서 청약을 클릭하면 상세 내역이 표시됩니다.</p>';
   renderAppList();
+  renderABCases(assessed);
 }
 
 function filteredApps() {
