@@ -74,7 +74,13 @@
   .kpi.sub .value { font-size: 16px; color: var(--muted); }
 
   /* 입력 요소 */
-  .drop { border: 1px dashed #B4BAC0; border-radius: 6px; padding: 28px; text-align: center; color: var(--muted); background: var(--head); }
+  .drop { border: 1px dashed #B4BAC0; border-radius: 6px; padding: 18px 20px; color: var(--muted); background: var(--head); }
+  .drop-main { display: flex; align-items: center; gap: 10px 16px; flex-wrap: wrap; }
+  .drop-main .drop-hint { color: var(--text-2); }
+  .drop .note { margin-top: 8px; }
+  .sr-file { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
+  .sr-file:focus-visible + label { outline: 2px solid var(--accent-line); outline-offset: 2px; }
+  label.btn { display: inline-block; color: #fff; }
   .drop.over { border-color: var(--accent); background: var(--accent-soft); }
   .btn { background: var(--accent); color: #fff; border: 1px solid var(--accent); border-radius: 4px; padding: 9px 18px;
     font: inherit; font-weight: 700; cursor: pointer; }
@@ -96,7 +102,8 @@
   thead th { background: var(--head); font-weight: 600; color: var(--text-2); font-size: 12px;
     border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
   td.num, th.num { text-align: right; }
-  thead th { white-space: normal; vertical-align: bottom; }
+  thead th { vertical-align: bottom; }
+  .badge { white-space: nowrap; }
   #dqBody td:nth-child(2) { white-space: normal; min-width: 160px; }
   tbody tr:last-child td { border-bottom-color: var(--line); }
   tr.total td { border-top: 1px solid var(--line); font-weight: 700; background: var(--head); }
@@ -234,8 +241,14 @@
   #appDetail .badge { white-space: nowrap; }
   #appDetail table { font-size: 13px; }
   table.clickable th, table.clickable td { padding: 8px 7px; }
-  #fileStatus td:nth-child(1), #fileStatus td:nth-child(3), #fileStatus td:last-child, #matchStatus td:first-child { white-space: normal; }
-  #fileStatus td:nth-child(1), #fileStatus td:nth-child(3) { word-break: break-all; }
+  #fileStatus td { vertical-align: middle; }
+  #matchStatus td { padding-top: 5px; padding-bottom: 5px; }
+  #fileStatus td { padding-top: 10px; padding-bottom: 10px; }
+  #fileStatus td:last-child { white-space: normal; line-height: 1.9; }
+  @media (max-width: 1280px) {
+    thead th { white-space: normal; }
+    #fileStatus td:nth-child(1), #fileStatus td:nth-child(3), #matchStatus td:first-child { white-space: normal; overflow-wrap: anywhere; }
+  }
   @media (max-width: 1100px) { th, td { padding: 7px 6px; } }
   @media (max-width: 1280px) {
     #appDetail th, #appDetail td, table.clickable th, table.clickable td { padding: 7px 5px; }
@@ -397,17 +410,19 @@
     <div class="card">
       <h2>CSV 파일 선택</h2>
       <div id="drop" class="drop">
-        <p style="margin-top:0">CSV 파일을 여기로 끌어다 놓거나</p>
-        <input type="file" id="fileInput" accept=".csv,text/csv" multiple>
-        <p class="muted" style="margin-bottom:0">파일 이름이 아니라 헤더 컬럼으로 종류를 자동 인식합니다.
-          credit_delinq.csv가 없으면 버전 A만 계산합니다.</p>
+        <div class="drop-main">
+          <input type="file" id="fileInput" class="sr-file" accept=".csv,text/csv" multiple>
+          <label for="fileInput" class="btn">CSV 파일 선택</label>
+          <span class="drop-hint">또는 이 영역에 파일을 끌어다 놓으세요 · 7개 파일을 한 번에 선택할 수 있습니다</span>
+        </div>
+        <p class="note">파일 이름이 아니라 헤더 컬럼으로 종류를 자동 인식합니다. credit_delinq.csv가 없으면 모델 A(연체정보 미포함)만 계산합니다.</p>
       </div>
     </div>
     <div class="two">
       <div class="card">
         <h2>파일별 인식 여부</h2>
         <div class="tbl"><table>
-          <thead><tr><th>구분</th><th>필수 여부</th><th>인식된 파일</th><th class="num">행 수</th><th>상태</th></tr></thead>
+          <thead><tr><th>구분</th><th>필수</th><th>인식된 파일</th><th class="num">행 수</th><th>상태</th></tr></thead>
           <tbody id="fileStatus"></tbody>
         </table></div>
       </div>
