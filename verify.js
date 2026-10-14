@@ -93,6 +93,50 @@ const STEPS = {
     const csvSum = back.cols.recommended_sum_insured.reduce((s, v) => s + (v || 0), 0);
     check(4, 'CSV 권고 가입금액 합계 (재계산과 일치)', recSum, csvSum, recSum, { exact: true, fmt: v => v.toLocaleString('en-US') + '원' });
   },
+  // 부가: 10분위 단조 보정(PAVA) 옵션. PRD 정답값 없음 → 별도 구현 대조와 성질 검사
+  5() {
+    const raw = calc.decileTable(ds.policies, { monotone: false });
+    const mono = calc.decileTable(ds.policies, { monotone: true });
+    // 별도 구현: 분위 손해율이 감소하는 지점이 없어질 때까지 인접 묶음 병합 (반복 스캔 방식)
+    let blocks = raw.rows.map(r => ({ ds: [r.decile], p: r.premium, l: r.loss }));
+    for (let changed = true; changed;) {
+      changed = false;
+      for (let i = 0; i + 1 < blocks.length; i++) {
+        if (blocks[i].l / blocks[i].p > blocks[i + 1].l / blocks[i + 1].p) {
+          blocks.splice(i, 2, { ds: [...blocks[i].ds, ...blocks[i + 1].ds], p: blocks[i].p + blocks[i + 1].p, l: blocks[i].l + blocks[i + 1].l });
+          changed = true; break;
+        }
+      }
+    }
+    const indepRel = {};
+    for (const b of blocks) for (const d of b.ds) indepRel[d] = (b.l / b.p) / raw.overall;
+    let maxDiff = 0;
+    for (const r of mono.rows) maxDiff = Math.max(maxDiff, Math.abs(r.rel - indepRel[r.decile]));
+    check('부가', '단조 보정: 별도 구현과 최대 차이', 0, maxDiff, 0, { fmt: v => v.toExponential(1) });
+    const violations = mono.rows.slice(1).filter((r, i) => r.rel < mono.rows[i].rel - 1e-12).length;
+    check('부가', '단조 보정: 역전 개수', 0, violations, 0, { exact: true, fmt: v => v + '개' });
+    const expLoss = mono.rows.reduce((s, r) => s + r.premium * r.rel * mono.overall, 0);
+    const actLoss = mono.rows.reduce((s, r) => s + r.loss, 0);
+    check('부가', '단조 보정: 총손해 보존 (기대÷실제)', 1, expLoss / actLoss, 1, { fmt: f4 });
+  },
+};
+
+const REFERENCE_MONO = () => {
+  const out = {};
+  for (const monotone of [false, true]) {
+    const dec = calc.decileTable(ds.policies, { monotone }), dq = calc.delinqTable(ds.policies, dec), fn = calc.makeRelFns(dec, dq);
+    out[monotone] = { dec, dq, sepA: calc.separation(ds.policies, fn.A).ratio, sepB: calc.separation(ds.policies, fn.B).ratio,
+      uw: calc.uwSummary(calc.assessApps(ds, dec, dq)) };
+  }
+  const [a, b] = [out[false], out[true]];
+  console.log('\n[참고] 단조 보정 적용 시 영향 (PRD 정답값 없음)');
+  console.log('| 항목 | 보정 없음 (PRD) | 단조 보정 |');
+  console.log('|---|---|---|');
+  console.log(`| 10분위 상대도 | ${a.dec.rows.map(r => r.rel.toFixed(2)).join(', ')} | ${b.dec.rows.map(r => r.rel.toFixed(2)).join(', ')} |`);
+  console.log(`| 병합된 분위 | - | ${[...new Set(b.dec.rows.filter(r => r.block.includes('~')).map(r => r.block))].join(', ') || '없음'} |`);
+  console.log(`| 연체 보정 상대도 | ${a.dq.map(r => r.adjRel.toFixed(2)).join(' / ')} | ${b.dq.map(r => r.adjRel.toFixed(2)).join(' / ')} |`);
+  console.log(`| 분리도 A / B | ${a.sepA.toFixed(2)} / ${a.sepB.toFixed(2)} | ${b.sepA.toFixed(2)} / ${b.sepB.toFixed(2)} |`);
+  console.log(`| 청약 권고 표준/한도/부담보/심사역 | ${[...a.uw.values()].join(' / ')} | ${[...b.uw.values()].join(' / ')} |`);
 };
 
 // 정답값 없는 참고 출력
@@ -129,4 +173,5 @@ for (const r of rows) console.log(`| ${r.step} | ${r.item} | ${r.expected} | ${r
 const failed = rows.filter(r => !r.pass).length;
 console.log(`\n${rows.length - failed}/${rows.length} 통과 (허용오차 ±${TOL}, 건수는 정확히 일치)`);
 for (let s = 1; s <= upTo; s++) if (REFERENCE[s]) REFERENCE[s]();
+if (upTo >= 5) REFERENCE_MONO();
 process.exit(failed ? 1 : 0);

@@ -56,6 +56,8 @@
   .chart .grid line { stroke: var(--line); }
   .chart .ref { stroke: var(--text); stroke-dasharray: 4 3; stroke-width: 1; }
   .chart .bar { fill: var(--accent); }
+  .chart .mark { stroke: var(--text); stroke-width: 2; pointer-events: none; }
+  .mono-off .mono-col { display: none; }
   .chart .hit { fill: transparent; cursor: default; }
   .chart .bar, .chart .ref, .chart text { pointer-events: none; }
   .chart .hit:hover + .bar { fill: #183f94; }
@@ -70,6 +72,7 @@
   .two > * { min-width: 0; }
   .tbl { overflow-x: auto; }
   th, td { white-space: nowrap; }
+  .two.decile { grid-template-columns: 1fr 1.25fr; }
   .two.apps { grid-template-columns: 1.45fr 1fr; align-items: start; }
   .two.apps > .card { margin-bottom: 16px; }
   table.clickable tbody tr { cursor: pointer; }
@@ -77,7 +80,7 @@
   table.clickable tbody tr.sel { background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent); }
   .formula { font-variant-numeric: tabular-nums; background: #fafbfc; border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; margin: 8px 0 12px; }
   .pager button { min-width: 32px; }
-  @media (max-width: 900px) { .two { grid-template-columns: 1fr; } .two.apps { grid-template-columns: 1fr; } }
+  @media (max-width: 900px) { .two, .two.apps, .two.decile { grid-template-columns: 1fr; } }
   @media (max-width: 600px) { main { padding: 16px; } header, nav { padding-left: 16px; padding-right: 16px; }
     .card { padding: 16px; } }
 </style>
@@ -132,12 +135,16 @@
       <div class="kpis" id="anaKpis"></div>
     </div>
     <div class="card">
-      <h2>신용 10분위별 상대도 (1 = 우량 ~ 10 = 불량)</h2>
-      <div class="two">
+      <div class="row" style="justify-content:space-between;margin-bottom:12px">
+        <h2 style="margin:0">신용 10분위별 상대도 (1 = 우량 ~ 10 = 불량)</h2>
+        <label title="분위가 나빠지는데 상대도가 낮아지는 역전을 인접 분위 병합(PAVA)으로 없앱니다. 이후 연체 보정·분리도·청약 권고 모두 보정값을 씁니다.">
+          <input type="checkbox" id="monoChk"> 단조 보정 적용 (PRD 기준값은 미적용)</label>
+      </div>
+      <div class="two decile">
         <div class="chart" id="decileChart"></div>
         <div class="tbl"><table>
           <thead><tr><th>분위</th><th class="num">계약 수</th><th class="num">위험보험료</th><th class="num">실제손해</th>
-            <th class="num">손해율</th><th class="num">상대도</th></tr></thead>
+            <th class="num">손해율</th><th class="num">상대도</th><th class="num mono-col">보정 상대도</th><th class="mono-col">병합</th></tr></thead>
           <tbody id="decileBody"></tbody>
         </table></div>
       </div>
@@ -241,6 +248,9 @@ const CONFIG = {
   // ⑥ 분리도 등분 수
   SEPARATION_BUCKETS: 10,
   DECILES: 10,
+  // 10분위 상대도 단조 보정(PAVA): 분위가 나빠질수록 상대도가 줄지 않도록 역전된 인접 분위를 병합
+  // ※ PRD 6장 정답값은 보정 없음(false) 기준. 화면 체크박스로 변경 가능
+  MONOTONE_DECILE: false,
   // 세그먼트 × 연체등급 분석
   SEGMENT: {
     AGE_BANDS: [
@@ -481,17 +491,39 @@ function lossRatio(policies) {
   return p > 0 ? l / p : null;
 }
 // ② 10분위 상대도 = 분위 손해율 ÷ 전체 손해율
-function decileTable(policies) {
+// opts.monotone: true면 PAVA 단조 보정한 상대도를 rel에 넣음 (원래 값은 rawRel). 이후 계산은 모두 rel 사용
+function decileTable(policies, { monotone = CONFIG.MONOTONE_DECILE } = {}) {
   const overall = lossRatio(policies);
   const prem = new Array(CONFIG.DECILES + 1).fill(0), loss = prem.slice(), n = prem.slice();
   for (const p of policies) { prem[p.decile] += p.premium; loss[p.decile] += p.loss; n[p.decile]++; }
   const rows = [];
   for (let d = 1; d <= CONFIG.DECILES; d++) {
     const lr = prem[d] > 0 ? loss[d] / prem[d] : null;
-    rows.push({ decile: d, n: n[d], premium: prem[d], loss: loss[d], lr,
-      rel: lr != null && overall ? lr / overall : null });
+    const rel = lr != null && overall ? lr / overall : null;
+    rows.push({ decile: d, n: n[d], premium: prem[d], loss: loss[d], lr, rawRel: rel, rel, block: String(d) });
   }
-  return { overall, rows };
+  if (monotone) {
+    for (const b of monotoneBlocks(rows.filter(r => r.premium > 0))) {
+      const label = b.rows.length > 1 ? `${b.rows[0].decile}~${b.rows[b.rows.length - 1].decile}` : String(b.rows[0].decile);
+      for (const r of b.rows) { r.rel = (b.loss / b.premium) / overall; r.block = label; }
+    }
+  }
+  return { overall, rows, monotone };
+}
+
+// PAVA(Pool Adjacent Violators): 손해율이 앞 묶음보다 낮아지면 합쳐서 묶음 손해율 = Σ실제손해 ÷ Σ위험보험료
+// 위험보험료 가중이므로 전체 Σ(위험보험료 × 묶음 손해율) = Σ실제손해가 보존됨
+function monotoneBlocks(rows) {
+  const blocks = [];
+  for (const r of rows) {
+    blocks.push({ rows: [r], premium: r.premium, loss: r.loss });
+    while (blocks.length > 1) {
+      const b = blocks[blocks.length - 1], a = blocks[blocks.length - 2];
+      if (a.loss / a.premium <= b.loss / b.premium) break;
+      blocks.splice(-2, 2, { rows: [...a.rows, ...b.rows], premium: a.premium + b.premium, loss: a.loss + b.loss });
+    }
+  }
+  return blocks;
 }
 // ① 연체등급: 2 채무불이행 / 1 연체 / 0 정상 (연체정보 없으면 null)
 function delinqGrade(d) {
@@ -771,13 +803,13 @@ function kpiHtml(items) {
 
 function runAnalysis() {
   const ds = state.dataset;
-  const dec = decileTable(ds.policies);
+  const dec = decileTable(ds.policies, { monotone: state.monotone });
   state.decile = dec;
   const kpis = kpiHtml([
     ['분석 계약 수', fmtInt(ds.counts.analyzed) + '건'],
     ['담보 행 수', fmtInt(ds.cov.length) + '건'],
     ['전체 손해율', fmtPct(dec.overall)],
-    ['계산 버전', ds.hasDelinq ? 'A + B (연체 포함)' : 'A만 (연체정보 없음)'],
+    ['계산 버전', (ds.hasDelinq ? 'A + B (연체 포함)' : 'A만 (연체정보 없음)') + (dec.monotone ? ' · 단조 보정' : '')],
   ]);
   $('summaryKpis').innerHTML = kpis;
   $('anaKpis').innerHTML = kpis;
@@ -789,7 +821,12 @@ function runAnalysis() {
   $('runMsg').textContent = '분석 완료 · ② 분석·비교 탭에서 결과를 확인하세요';
 }
 
+state.monotone = CONFIG.MONOTONE_DECILE;
+$('monoChk').checked = state.monotone;
+$('monoChk').addEventListener('change', e => { state.monotone = e.target.checked; runAnalysis(); });
+
 const fmtRel = x => x == null ? '-' : x.toFixed(2);
+const fmtEok = x => x == null ? '-' : (x / 1e8).toLocaleString('ko-KR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '억';
 const fmtWon = x => {
   if (x == null || Number.isNaN(x)) return '-';
   if (x >= 1e8) {
@@ -960,21 +997,24 @@ function downloadCsv(text, name) {
 }
 
 function renderDecile(dec) {
+  $('decileBody').closest('table').classList.toggle('mono-off', !dec.monotone);
   $('decileBody').innerHTML = dec.rows.map(r => `<tr><td>${r.decile}분위</td>
-    <td class="num">${fmtInt(r.n)}</td><td class="num">${fmtInt(Math.round(r.premium))}</td>
-    <td class="num">${fmtInt(Math.round(r.loss))}</td><td class="num">${fmtPct(r.lr)}</td>
-    <td class="num"><b>${r.rel == null ? '-' : r.rel.toFixed(2)}</b></td></tr>`).join('');
+    <td class="num">${fmtInt(r.n)}</td><td class="num" title="${fmtInt(Math.round(r.premium))}원">${fmtEok(r.premium)}</td>
+    <td class="num" title="${fmtInt(Math.round(r.loss))}원">${fmtEok(r.loss)}</td><td class="num">${fmtPct(r.lr)}</td>
+    <td class="num">${dec.monotone ? fmtRel(r.rawRel) : `<b>${fmtRel(r.rel)}</b>`}</td>
+    <td class="num mono-col"><b>${fmtRel(r.rel)}</b></td>
+    <td class="mono-col">${r.block.includes('~') ? `<span class="badge info">${r.block}분위</span>` : ''}</td></tr>`).join('');
   barChart($('decileChart'), dec.rows.map(r => ({
-    label: String(r.decile), value: r.rel,
-    tip: `${r.decile}분위 · 상대도 ${r.rel == null ? '-' : r.rel.toFixed(2)} · 손해율 ${fmtPct(r.lr)} · ${fmtInt(r.n)}건`,
-  })), { ref: 1.0, xTitle: '신용 10분위' });
+    label: String(r.decile), value: r.rel, mark: dec.monotone && Math.abs(r.rel - r.rawRel) > 1e-9 ? r.rawRel : null,
+    tip: `${r.decile}분위 · 상대도 ${fmtRel(r.rel)}${dec.monotone ? ` (보정 전 ${fmtRel(r.rawRel)})` : ''} · 손해율 ${fmtPct(r.lr)} · ${fmtInt(r.n)}건`,
+  })), { ref: 1.0, xTitle: dec.monotone ? '신용 10분위 (막대: 보정 상대도 · 검은 눈금: 보정 전)' : '신용 10분위' });
 }
 
 // 의존성 없는 세로 막대차트 (SVG). 0 기준, ref 값에 점선
 function barChart(el, data, { ref = null, xTitle = '' } = {}) {
   const W = 480, H = 280, m = { t: 12, r: 8, b: 40, l: 36 };
   const iw = W - m.l - m.r, ih = H - m.t - m.b;
-  const maxV = Math.max(ref ?? 0, ...data.map(d => d.value ?? 0));
+  const maxV = Math.max(ref ?? 0, ...data.map(d => Math.max(d.value ?? 0, d.mark ?? 0)));
   const step = maxV > 2 ? 0.5 : 0.25;
   const top = Math.ceil(maxV / step) * step || 1;
   const y = v => m.t + ih - (v / top) * ih;
@@ -992,7 +1032,8 @@ function barChart(el, data, { ref = null, xTitle = '' } = {}) {
     // 위쪽 모서리만 둥글게 (바닥은 기준선에 붙임)
     const path = `M${x},${y(0)} V${y(v) + r} Q${x},${y(v)} ${x + r},${y(v)} H${x + w - r} Q${x + w},${y(v)} ${x + w},${y(v) + r} V${y(0)} Z`;
     bars += `<rect class="hit" data-i="${i}" x="${m.l + i * bw}" y="${m.t}" width="${bw}" height="${ih}"></rect>
-      <path class="bar" d="${path}"></path>
+      <path class="bar" d="${path}"></path>${d.mark == null ? '' :
+        `<line class="mark" x1="${x - 3}" x2="${x + w + 3}" y1="${y(d.mark)}" y2="${y(d.mark)}"></line>`}
       <text class="axis" x="${x + w / 2}" y="${H - m.b + 16}" text-anchor="middle">${esc(d.label)}</text>`;
   });
   const refLine = ref == null ? '' :
