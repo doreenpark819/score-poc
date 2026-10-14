@@ -157,6 +157,9 @@ const CONFIG = {
     { max: 1.6,      label: '부담보+한도축소', limitPct: 50 },
     { max: Infinity, label: '심사역검토',     limitPct: null },
   ],
+  // '부담보+한도축소' 권고 시 부담보(인수 제외)할 담보. 연체 영향이 큰 입원·수술 담보 (CV06~CV09)
+  // 부담보 담보는 권고 가입금액 0, 나머지 담보는 limitPct 적용
+  EXCLUSION_COVERAGES: ['질병수술', '재해수술', '질병입원', '재해입원'],
   // ⑥ 분리도 등분 수
   SEPARATION_BUCKETS: 10,
   DECILES: 10,
