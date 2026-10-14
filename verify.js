@@ -13,7 +13,7 @@ if (!m) { console.error('index.html에서 @calc-begin ~ @calc-end 블록을 찾�
 
 const ctx = vm.createContext({});
 // const 선언은 컨텍스트 전역 프로퍼티가 되지 않으므로 필요한 이름을 명시적으로 꺼낸다
-vm.runInContext(m[1] + '\n;globalThis.__calc = { CONFIG, FILE_SPECS, parseFile, buildDataset, lossRatio, decileTable, delinqTable, makeRelFns, separation, segmentTable, assessApps, uwSummary, exportCsv, parseCSV };', ctx);
+vm.runInContext(m[1] + '\n;globalThis.__calc = { CONFIG, FILE_SPECS, parseFile, buildDataset, lossRatio, decileTable, delinqTable, makeRelFns, separation, segmentTable, assessApps, uwSummary, exportCsv, parseCSV, applyLossBasis, bootstrapCI, separationCV };', ctx);
 const calc = ctx.__calc;
 const indep = JSON.parse(fs.readFileSync(path.join(dir, 'tools', 'expected_v4.json'), 'utf8'));
 
@@ -118,6 +118,49 @@ const STEPS = {
     const expLoss = mono.rows.reduce((s, r) => s + r.premium * r.rel * mono.overall, 0);
     const actLoss = mono.rows.reduce((s, r) => s + r.loss, 0);
     check('부가', '단조 보정: 총손해 보존 (기대÷실제)', 1, expLoss / actLoss, 1, { fmt: f4 });
+  },
+  // 부가: 실데이터 대비 검증·보정 기능 (손해 기준, 붓스트랩 구간, 교차 검증 분리도)
+  6() {
+    const raw = calc.lossRatio(ds.policies);
+    // 손해 기준: 전체 손해 합계 보존
+    for (const b of ['capped', 'frequency']) {
+      const d = calc.applyLossBasis(ds, b);
+      check('부가', `손해 기준 ${b}: 전체 손해율 보존`, raw, calc.lossRatio(d.policies), raw, { fmt: f4 });
+    }
+    // 대형사고 상한: 앱과 별개로 분위수·배분 재계산
+    {
+      const d = calc.applyLossBasis(ds, 'capped'), c = ds.cov, n = c.length;
+      const pos = []; for (let k = 0; k < n; k++) if (c.claims[k] > 0) pos.push(c.loss[k]);
+      pos.sort((a, b) => a - b);
+      const T = pos[Math.floor(calc.CONFIG.CAP.QUANTILE * (pos.length - 1))];
+      let tot = 0, cap = 0; for (let k = 0; k < n; k++) { tot += c.loss[k]; cap += Math.min(c.loss[k], T); }
+      let maxDiff = 0; for (let k = 0; k < n; k++) maxDiff = Math.max(maxDiff, Math.abs(d.cov.loss[k] - Math.min(c.loss[k], T) * tot / cap));
+      check('부가', '대형사고 상한: 상한 금액 (별도 계산)', T, d.basisInfo.threshold, T, { exact: true, fmt: v => v.toLocaleString('en-US') + '원' });
+      check('부가', '대형사고 상한: 행별 손해 최대 차이', 0, maxDiff, 0, { fmt: v => v.toExponential(1) });
+    }
+    // 빈도 기준: 담보별 평균 1건당 손해 × 건수 (별도 계산)
+    {
+      const d = calc.applyLossBasis(ds, 'frequency'), c = ds.cov, n = c.length, L = {}, C = {};
+      for (let k = 0; k < n; k++) { const nm = c.names[c.coverage[k]]; L[nm] = (L[nm] || 0) + c.loss[k]; C[nm] = (C[nm] || 0) + c.claims[k]; }
+      let maxDiff = 0; for (let k = 0; k < n; k++) { const nm = c.names[c.coverage[k]]; maxDiff = Math.max(maxDiff, Math.abs(d.cov.loss[k] - c.claims[k] * L[nm] / C[nm])); }
+      check('부가', '빈도 기준: 행별 손해 최대 차이', 0, maxDiff, 0, { fmt: v => v.toExponential(1) });
+    }
+    // 붓스트랩 구간: 재현성, 추정값 포함
+    {
+      const dec = calc.decileTable(ds.policies), dq = calc.delinqTable(ds.policies, dec);
+      const a = calc.bootstrapCI(ds.policies, { B: 50 }), b = calc.bootstrapCI(ds.policies, { B: 50 });
+      const same = a.decRel.every((x, i) => x.lo === b.decRel[i].lo && x.hi === b.decRel[i].hi) ? 1 : 0;
+      check('부가', '붓스트랩 구간: 같은 시드 재현', 1, same, 1, { exact: true, fmt: v => v ? '같음' : '다름' });
+      const inside = dec.rows.filter((r, i) => a.decRel[i].lo <= r.rel && r.rel <= a.decRel[i].hi).length
+        + dq.filter((r, g) => a.adjRel[g].lo <= r.adjRel && r.adjRel <= a.adjRel[g].hi).length;
+      check('부가', '붓스트랩 구간: 추정값 포함 (13개 중)', 13, inside, 13, { exact: true, fmt: v => v + '개' });
+    }
+    // 교차 검증 분리도: 결정적 결과 (PRD 6장 참고값, 원손해·CONFIG.CV 기준)
+    {
+      const cv = calc.separationCV(ds.policies);
+      check('부가', '교차 검증 분리도 A', 2.91, cv.A, 2.91, { fmt: f4 });
+      check('부가', '교차 검증 분리도 B', 2.96, cv.B, 2.96, { fmt: f4 });
+    }
   },
 };
 
