@@ -96,6 +96,8 @@
   thead th { background: var(--head); font-weight: 600; color: var(--text-2); font-size: 12px;
     border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
   td.num, th.num { text-align: right; }
+  thead th { white-space: normal; vertical-align: bottom; }
+  #dqBody td:nth-child(2) { white-space: normal; min-width: 160px; }
   tbody tr:last-child td { border-bottom-color: var(--line); }
   tr.total td { border-top: 1px solid var(--line); font-weight: 700; background: var(--head); }
   .heat-legend { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--muted); }
@@ -220,11 +222,16 @@
   .two { display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px; }
   .two > * { min-width: 0; }
   .two.decile { grid-template-columns: 1fr 1.2fr; align-items: start; }
-  .two.apps { grid-template-columns: 1.45fr 1fr; align-items: start; }
+  .two.apps { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); align-items: start; }
+  /* 청약 상세: 좁은 오른쪽 열에서도 비고 배지가 잘리지 않도록 머리글·담보·비고 칸은 줄바꿈 허용 */
+  #appDetail th, #appDetail td { padding: 8px 7px; }
+  #appDetail th, #appDetail td:first-child, #appDetail td:last-child { white-space: normal; }
+  #appDetail .badge { white-space: nowrap; }
   .two.apps > .card { margin-bottom: 16px; }
 
   @media (max-width: 1000px) { .kpi-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-  @media (max-width: 900px) { .two, .two.apps, .two.decile { grid-template-columns: 1fr; } }
+  @media (max-width: 1180px) { .two, .two.apps { grid-template-columns: 1fr; } }
+  @media (max-width: 900px) { .two.decile { grid-template-columns: 1fr; } }
   @media (max-width: 760px) {
     .cmp-banner { grid-template-columns: 1fr 1fr; }
     .cmp-delta { grid-column: 1 / -1; order: 3; min-width: 0; }
