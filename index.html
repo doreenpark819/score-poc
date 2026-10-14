@@ -43,6 +43,9 @@
   .badge.bad { background: var(--bad-soft); color: var(--bad); }
   .badge.info { background: var(--accent-soft); color: var(--accent); }
   .badge.muted { background: #eef0f3; color: var(--muted); }
+  #reviewBody td { white-space: normal; vertical-align: top; }
+  #reviewBody td:first-child .badge { white-space: nowrap; }
+  #reviewBody td.ex { font-size: 12px; color: var(--muted); max-width: 320px; }
   .kpis { display: flex; gap: 16px; flex-wrap: wrap; }
   .kpi { flex: 1 1 180px; border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; }
   .kpi .label { color: var(--muted); font-size: 12px; }
@@ -145,7 +148,8 @@
       <div class="card intro">
         <h2>화면 구성</h2>
         <ol>
-          <li><b>① 업로드</b>: CSV 7개를 올리면 헤더로 종류를 자동 인식하고 매칭 건수를 보여줍니다.</li>
+          <li><b>① 업로드</b>: CSV 7개를 올리면 헤더로 종류를 자동 인식하고, <b>자동 검토·전처리</b>(EUC-KR·탭 구분자·한글 컬럼명·숫자/성별 표기 정리,
+            중복·빈 키·범위 밖 값·매칭 누락 점검, 규모 진단)를 한 뒤 매칭 건수를 보여줍니다.</li>
           <li><b>② 분석·비교</b>: 전체 손해율, 신용 10분위 상대도, 연체등급별 상대도, 분리도 A/B,
             담보·가입금액대·연령대·성별별 연체 수준 손해율을 봅니다.</li>
           <li><b>③ 청약 조회</b>: 청약별 스코어, 권고 인수조건, 담보별 권고 가입금액을 보고 CSV로 내보냅니다.</li>
@@ -219,6 +223,20 @@
         <tbody id="fileStatus"></tbody>
       </table></div>
     </div>
+    <div class="card" id="reviewCard" style="display:none">
+      <div class="row" style="justify-content:space-between">
+        <h2 style="margin:0">데이터 자동 검토·전처리</h2>
+        <button class="btn ghost" id="reviewExport" type="button">검토 리포트 CSV 받기</button>
+      </div>
+      <div class="row msg" id="reviewSummary"></div>
+      <div class="tbl" style="margin-top:12px"><table>
+        <thead><tr><th>구분</th><th>파일</th><th>내용</th><th class="num">건수</th><th>예시</th><th>조치</th></tr></thead>
+        <tbody id="reviewBody"></tbody>
+      </table></div>
+      <p class="note">올린 CSV를 이 브라우저 안에서 규칙에 따라 점검합니다(외부 전송 없음).
+        <b>자동 수정</b>(인코딩·구분자·한글 컬럼명·숫자 표기·성별 표기 등)은 정리한 값으로, <b>오류</b> 행은 분석에서 빼고, <b>경고</b>는 값을 유지한 채 확인을 권합니다.
+        원본 파일은 바뀌지 않습니다. 컬럼명 별칭과 기준은 CONFIG.COLUMN_ALIASES·CONFIG.REVIEW에서 바꿀 수 있습니다.</p>
+    </div>
     <div class="card">
       <h2>매칭 건수</h2>
       <div class="tbl"><table>
@@ -246,7 +264,7 @@
         <label title="증권×담보 행의 손해를 무엇으로 볼지 정합니다. 세 기준 모두 전체 손해 합계는 같습니다.">손해 기준
           <select id="basisSel">
             <option value="raw">원손해 (보험금 + 준비금변동)</option>
-            <option value="capped">대형사고 상한 (상위 1% 금액에서 자르고 초과분 배분)</option>
+            <option value="capped">대형사고 상한 (상위 5% 금액에서 자르고 초과분 배분)</option>
             <option value="frequency">빈도 기준 (사고 건수 × 담보별 평균 지급액)</option>
           </select></label>
         <label title="분위가 나빠지는데 상대도가 낮아지는 역전을 인접 분위 병합(PAVA)으로 없앱니다. 이후 연체 보정·분리도·청약 권고 모두 보정값을 씁니다.">
@@ -399,9 +417,33 @@ const CONFIG = {
   MONOTONE_DECILE: false,
   // 손해 기준: 'raw' 원손해(PRD 기준) | 'capped' 대형사고 상한 | 'frequency' 빈도 기준. 화면에서 변경 가능
   LOSS_BASIS: 'raw',
-  CAP: { QUANTILE: 0.99 },                         // 대형사고 상한: 사고 행 손해의 99% 분위수에서 자름
+  CAP: { QUANTILE: 0.95 },                         // 대형사고 상한: 사고 행 손해의 95% 분위수에서 자름 (통계 검증에서 오차 최소, VALIDATION.md 4장)
   CI: { BOOT: 200, LEVEL: 0.95, SEED: 20261014 },  // 붓스트랩 신뢰구간
   CV: { REPEATS: 5, SEED: 20261014 },              // 교차 검증 분리도 (반분 × 양방향, 반복 수)
+  // 데이터 자동 검토: 컬럼명 별칭(공백·밑줄·대소문자 무시). 사내 컬럼명이 다르면 여기에 추가
+  COLUMN_ALIASES: {
+    policy_no: ['증권번호', '계약번호', '증권no', 'policy_number', 'plcy_no'],
+    customer_id: ['고객번호', '고객id', '고객아이디', '계약자번호', 'cust_id', 'customer_no'],
+    app_no: ['청약번호', '청약no', 'application_no', 'appl_no'],
+    age: ['연령', '나이', '가입연령', '계약연령', '보험나이'],
+    gender: ['성별', 'sex'],
+    coverage_code: ['담보코드', '담보cd', 'cvr_cd', 'coverage_cd'],
+    coverage_name: ['담보명', 'cvr_nm', 'coverage_nm'],
+    sum_insured: ['가입금액', '보험가입금액', 'insured_amount'],
+    risk_premium: ['위험보험료', '경과위험보험료', 'risk_prem'],
+    claim_paid: ['지급보험금', '보험금', '지급액', 'paid_amount'],
+    reserve_change: ['준비금변동', '지급준비금변동', '준비금증감', 'reserve_chg'],
+    claim_cnt: ['사고건수', '청구건수', '지급건수', 'claim_count'],
+    exposure_months: ['경과월수', '경과기간'],
+    credit_decile: ['신용분위', '신용10분위', '신용등급10분위', 'decile'],
+    default_kcis_cnt: ['신정원채무불이행건수', '채무불이행신정원'],
+    default_cb_cnt: ['cb채무불이행건수', '채무불이행cb'],
+    default_loanbiz_cnt: ['대부업채무불이행건수', '채무불이행대부업'],
+    cb_delinq_cnt: ['cb연체건수', '단기연체건수'],
+    soho_delinq_cnt: ['개인사업자연체건수', 'soho연체건수'],
+  },
+  // 규모 진단 기준: 칸별 사고 1,082건 = 고전적 완전 신뢰도 기준(90% 확률로 ±5% 이내)
+  REVIEW: { MIN_MATCH_RATE: 0.95, MIN_GRADE_CLAIMS: 1082, MIN_DECILE_CLAIMS: 1082, AGE_RANGE: [0, 120] },
   // 세그먼트 × 연체등급 분석
   SEGMENT: {
     AGE_BANDS: [
@@ -438,33 +480,71 @@ const FILE_SPECS = [
 
 function stripBom(text) { return text.charCodeAt(0) === 0xFEFF ? text.slice(1) : text; }
 
-// 따옴표가 있는 줄만 RFC4180 규칙으로 처리 (따옴표 안 쉼표, "" 이스케이프)
-function splitLine(line) {
-  if (line.indexOf('"') < 0) return line.split(',');
+// 바이트 → 텍스트. UTF-8로 읽히지 않으면 EUC-KR(CP949)로 다시 읽는다 (사내 시스템 CSV는 EUC-KR인 경우가 많음)
+function decodeBytes(buf) {
+  const bytes = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
+  try { return { text: stripBom(new TextDecoder('utf-8', { fatal: true }).decode(bytes)), encoding: 'UTF-8' }; }
+  catch { return { text: stripBom(new TextDecoder('euc-kr').decode(bytes)), encoding: 'EUC-KR' }; }
+}
+
+// 첫 줄에서 가장 많이 나온 구분자 (따옴표 밖 기준): 쉼표, 탭, 세미콜론, 파이프
+function detectDelimiter(text) {
+  let end = text.indexOf('\n'); if (end < 0) end = text.length;
+  const line = text.slice(0, end), cnt = { ',': 0, '\t': 0, ';': 0, '|': 0 };
+  let q = false;
+  for (const ch of line) { if (ch === '"') q = !q; else if (!q && ch in cnt) cnt[ch]++; }
+  const [best, n] = Object.entries(cnt).sort((a, b) => b[1] - a[1])[0];
+  return n > 0 ? best : ',';
+}
+
+// 컬럼명 표준화: 공백·밑줄·괄호를 무시하고 CONFIG.COLUMN_ALIASES의 별칭(한글 등)을 표준 이름으로
+const normKey = h => String(h).toLowerCase().replace(/^\uFEFF/, '').replace(/[\s_\-()\[\]."']/g, '');
+let ALIAS_INDEX = null;
+function canonicalColumn(h) {
+  if (!ALIAS_INDEX) {
+    ALIAS_INDEX = new Map();
+    for (const [canon, aliases] of Object.entries(CONFIG.COLUMN_ALIASES)) for (const a of [canon, ...aliases]) ALIAS_INDEX.set(normKey(a), canon);
+  }
+  return ALIAS_INDEX.get(normKey(h)) || String(h).trim();
+}
+
+// 따옴표가 있는 줄만 RFC4180 규칙으로 처리 (따옴표 안 구분자, "" 이스케이프)
+function splitLine(line, delim = ',') {
+  if (line.indexOf('"') < 0) return line.split(delim);
   const out = []; let f = '', q = false;
   for (let i = 0; i < line.length; i++) {
     const ch = line[i];
     if (q) { if (ch === '"') { if (line[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += ch; }
     else if (ch === '"') q = true;
-    else if (ch === ',') { out.push(f); f = ''; }
+    else if (ch === delim) { out.push(f); f = ''; }
     else f += ch;
   }
   out.push(f);
   return out;
 }
 
-function readHeader(text) {
+function readHeader(text, delim = detectDelimiter(stripBom(text))) {
   text = stripBom(text);
   let end = text.indexOf('\n'); if (end < 0) end = text.length;
-  return splitLine(text.slice(0, end).replace(/\r$/, '')).map(h => h.trim());
+  return splitLine(text.slice(0, end).replace(/\r$/, ''), delim).map(h => h.trim());
+}
+
+// 숫자 읽기: 엄격하게 먼저, 안 되면 천 단위 쉼표·공백·'원'·'₩'·'%'를 지우고 다시 (고친 건수는 따로 셈)
+function toNumLoose(s) {
+  const t = String(s).replace(/[,\s원₩%]/g, '');
+  if (t === '' || !/^[-+]?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?$/i.test(t)) return null;
+  return Number(t);
 }
 
 // 열(column) 단위 파싱. keep에 든 컬럼만 보관하고, num 컬럼은 숫자(빈 값·오류는 null)로,
 // 나머지는 같은 문자열을 공유(intern)해 메모리를 줄인다. 따옴표 안 줄바꿈은 지원하지 않음(입력 CSV에 없음)
-function parseCSV(text, { keep = null, num = [] } = {}) {
+function parseCSV(text, { keep = null, num = [], delim = null, rename = null } = {}) {
   text = stripBom(text);
-  const header = readHeader(text);
+  delim = delim || detectDelimiter(text);
+  const rawHeader = readHeader(text, delim);
+  const header = rename ? rawHeader.map(rename) : rawHeader;
   const cols = {}, tIdx = [], tArr = [], tNum = []; // 보관할 열 번호·저장 배열·숫자 여부
+  const numFixed = {}, numInvalid = {};           // 숫자 열: 자동 수정 / 숫자 아님 (건수, 예시)
   header.forEach((h, i) => {
     if (keep && !keep.includes(h)) return;
     cols[h] = [];
@@ -480,16 +560,25 @@ function parseCSV(text, { keep = null, num = [] } = {}) {
     let line = text.slice(pos, end); pos = end + 1;
     if (line.charCodeAt(line.length - 1) === 13) line = line.slice(0, -1);
     if (line.length === 0 || (line.charCodeAt(0) <= 32 && line.trim() === '')) continue;
-    const v = splitLine(line);
+    const v = splitLine(line, delim);
     for (let t = 0; t < nT; t++) {
       let s = v[tIdx[t]];
       if (s === undefined) s = '';
       else if (s.length && (s.charCodeAt(0) <= 32 || s.charCodeAt(s.length - 1) <= 32)) s = s.trim();
-      tArr[t].push(tNum[t] ? toNum(s) : intern(s));
+      if (!tNum[t]) { tArr[t].push(intern(s)); continue; }
+      let n = toNum(s);
+      if (n === null && s !== '') {
+        const h = header[tIdx[t]];
+        n = toNumLoose(s);
+        const bag = n === null ? numInvalid : numFixed;
+        const e = bag[h] || (bag[h] = { count: 0, examples: [] });
+        e.count++; if (e.examples.length < 3) e.examples.push(`${length + 2}행: "${s}"`);
+      }
+      tArr[t].push(n);
     }
     length++;
   }
-  return { header, length, cols };
+  return { header, rawHeader, delim, length, cols, numFixed, numInvalid };
 }
 
 // 헤더로 파일 종류 판별: 필수 컬럼을 모두 가진 spec 중 컬럼 수가 가장 많은(가장 구체적인) 것
@@ -500,13 +589,17 @@ function detectFileType(header) {
   return hits.length ? hits[0].key : null;
 }
 
-// 판별 + 필요한 컬럼만 파싱
-function parseFile(text) {
-  const header = readHeader(text);
+// 판별 + 필요한 컬럼만 파싱 (구분자 자동 판별, 컬럼명 표준화)
+function parseFile(text, { encoding = null } = {}) {
+  text = stripBom(text);
+  const delim = detectDelimiter(text);
+  const rawHeader = readHeader(text, delim);
+  const header = rawHeader.map(canonicalColumn);
   const key = detectFileType(header);
-  if (!key) return { key: null, header };
+  if (!key) return { key: null, header, rawHeader, delim, encoding };
   const spec = FILE_SPECS.find(s => s.key === key);
-  return { key, header, ...parseCSV(text, { keep: [...spec.cols, ...spec.extra], num: spec.num }) };
+  const renamed = rawHeader.map((h, i) => [h, header[i]]).filter(([a, b]) => a !== b && [...spec.cols, ...spec.extra].includes(b));
+  return { key, encoding, renamed, ...parseCSV(text, { keep: [...spec.cols, ...spec.extra], num: spec.num, delim, rename: canonicalColumn }) };
 }
 
 function toNum(v) {
@@ -962,6 +1055,154 @@ function separationCV(policies, { repeats = CONFIG.CV.REPEATS, seed = CONFIG.CV.
   const mean = k => runs.reduce((s, x) => s + x[k], 0) / runs.length;
   return { A: mean('A'), B: hasGrade ? mean('B') : null, BgtA: hasGrade ? runs.filter(x => x.B > x.A).length / runs.length : null, runs, repeats };
 }
+// ─ 데이터 자동 검토·전처리 ─────────────────────────────────────────
+// 원본(parseFile 결과)은 그대로 두고 정제본을 새로 만든다. issues: 화면·리포트에 보일 검토 결과
+//  level: error(행 제외·값 무효) | warn(확인 필요, 값은 유지) | fix(자동 수정) | info(참고)
+const FILE_LABEL = Object.fromEntries(FILE_SPECS.map(s => [s.key, s.name]));
+function reviewDataset(raw) {
+  const issues = [], out = {};
+  const add = (file, level, message, count = null, examples = [], action = '') =>
+    issues.push({ file: file ? FILE_LABEL[file] || file : '전체', level, message, count, examples: examples.slice(0, 3), action });
+  const copy = t => ({ ...t, cols: { ...t.cols } });
+  const filterRows = (t, keep) => {
+    const idx = []; for (let i = 0; i < t.length; i++) if (keep(i)) idx.push(i);
+    const cols = {}; for (const c in t.cols) cols[c] = idx.map(i => t.cols[c][i]);
+    return { ...t, cols, length: idx.length };
+  };
+  const ex = (t, rows, col) => rows.slice(0, 3).map(i => `${i + 2}행${col ? `: ${col}="${t.cols[col][i]}"` : ''}`);
+
+  // 1) 읽기 단계 결과 (인코딩, 구분자, 컬럼명 매핑, 숫자 정리)
+  for (const [key, t] of Object.entries(raw)) {
+    if (t.encoding === 'EUC-KR') add(key, 'fix', 'UTF-8이 아니어서 EUC-KR(CP949)로 읽었습니다', null, [], '자동 판별');
+    if (t.delim && t.delim !== ',') add(key, 'info', `구분자가 쉼표가 아니라 '${t.delim === '\t' ? '탭' : t.delim}'입니다`, null, [], '자동 판별');
+    if (t.renamed?.length) add(key, 'fix', '컬럼명을 표준 이름으로 바꿨습니다', t.renamed.length, t.renamed.map(([a, b]) => `${a} → ${b}`), '자동 매핑');
+    for (const [c, e] of Object.entries(t.numFixed || {})) add(key, 'fix', `${c}: 천 단위 쉼표·'원' 등 숫자 표기를 정리했습니다`, e.count, e.examples, '숫자로 변환');
+    for (const [c, e] of Object.entries(t.numInvalid || {})) add(key, 'error', `${c}: 숫자가 아닌 값이 있습니다`, e.count, e.examples, '빈 값으로 처리');
+  }
+
+  // 2) 파일별 값 점검
+  const normGender = v => { const s = String(v).trim().toLowerCase(); return ['m', '남', '남자', '1', 'male'].includes(s) ? 'M' : ['f', '여', '여자', '2', 'female'].includes(s) ? 'F' : s === '' ? '' : null; };
+  const [aMin, aMax] = CONFIG.REVIEW.AGE_RANGE;
+  const person = key => {
+    let t = raw[key]; if (!t) return;
+    t = copy(t);
+    const id = key === 'contracts' ? 'policy_no' : 'app_no';
+    const emptyRows = []; for (let i = 0; i < t.length; i++) if (!t.cols[id][i] || !t.cols.customer_id[i]) emptyRows.push(i);
+    if (emptyRows.length) { add(key, 'error', `${id} 또는 customer_id가 비어 있는 행`, emptyRows.length, ex(t, emptyRows), '행 제외'); const bad = new Set(emptyRows); t = filterRows(t, i => !bad.has(i)); }
+    const seen = new Set(), dups = []; for (let i = 0; i < t.length; i++) { const k = t.cols[id][i]; if (seen.has(k)) dups.push(i); else seen.add(k); }
+    if (dups.length) { add(key, 'warn', `${id} 중복`, dups.length, ex(t, dups, id), '첫 행만 사용'); const bad = new Set(dups); t = filterRows(t, i => !bad.has(i)); }
+    if (t.cols.gender) {
+      let fixed = 0; const badRows = [];
+      t.cols.gender = t.cols.gender.map((v, i) => { const g = normGender(v); if (g === null) { badRows.push(i); return ''; } if (g !== v) fixed++; return g; });
+      if (fixed) add(key, 'fix', '성별 표기를 M/F로 통일했습니다 (남/여, 1/2 등)', fixed, [], '자동 변환');
+      if (badRows.length) add(key, 'warn', '알 수 없는 성별 값', badRows.length, ex(raw[key], badRows, 'gender'), '세그먼트 분석에서 제외');
+    }
+    if (t.cols.age) {
+      const badRows = []; t.cols.age = t.cols.age.map((v, i) => { if (v != null && (v < aMin || v > aMax)) { badRows.push(i); return null; } return v; });
+      if (badRows.length) add(key, 'warn', `연령이 ${aMin}~${aMax} 범위를 벗어남`, badRows.length, badRows.slice(0, 3).map(i => `${i + 2}행`), '연령 비움');
+    }
+    out[key] = t;
+  };
+  person('contracts'); person('apps');
+
+  for (const key of ['coverages', 'loss', 'appCoverages']) {
+    let t = raw[key]; if (!t) continue;
+    t = copy(t);
+    const id = key === 'appCoverages' ? 'app_no' : 'policy_no';
+    const emptyRows = []; for (let i = 0; i < t.length; i++) if (!t.cols[id][i] || !t.cols.coverage_code[i]) emptyRows.push(i);
+    if (emptyRows.length) { add(key, 'error', `${id} 또는 coverage_code가 비어 있는 행`, emptyRows.length, ex(t, emptyRows), '행 제외'); const bad = new Set(emptyRows); t = filterRows(t, i => !bad.has(i)); }
+    if (key === 'loss') {
+      const neg = [], zero = [], negPaid = []; let negCnt = 0;
+      for (let i = 0; i < t.length; i++) {
+        const p = t.cols.risk_premium[i];
+        if (p != null && p < 0) neg.push(i); else if (p === 0) zero.push(i);
+        if (t.cols.claim_paid[i] != null && t.cols.claim_paid[i] < 0) negPaid.push(i);
+      }
+      if (neg.length) { add(key, 'error', '위험보험료가 음수인 행', neg.length, ex(t, neg, 'risk_premium'), '행 제외'); const bad = new Set(neg); t = filterRows(t, i => !bad.has(i)); }
+      if (zero.length) add(key, 'warn', '위험보험료가 0인 행 (손해만 있고 보험료가 없음)', zero.length, ex(t, zero), '유지 (확인 필요)');
+      if (negPaid.length) add(key, 'info', '지급보험금이 음수인 행 (환입 등)', negPaid.length, ex(t, negPaid, 'claim_paid'), '유지');
+      if (t.cols.claim_cnt) {
+        t.cols.claim_cnt = t.cols.claim_cnt.map(v => { if (v != null && v < 0) { negCnt++; return 0; } return v; });
+        if (negCnt) add(key, 'fix', '사고 건수가 음수인 값', negCnt, [], '0으로 변경');
+      }
+      const seen = new Set(); let dup = 0; for (let i = 0; i < t.length; i++) { const k = t.cols.policy_no[i] + '|' + t.cols.coverage_code[i]; if (seen.has(k)) dup++; else seen.add(k); }
+      if (dup) add(key, 'info', '같은 증권·담보가 여러 행 (기간별 실적 등)', dup, [], '증권 단위로 합산');
+    }
+    if (t.cols.sum_insured) {
+      const bad = []; for (let i = 0; i < t.length; i++) { const v = t.cols.sum_insured[i]; if (v == null || v <= 0) bad.push(i); }
+      if (bad.length) add(key, 'warn', '가입금액이 없거나 0 이하', bad.length, ex(t, bad, 'sum_insured'), key === 'appCoverages' ? '권고 가입금액 계산 불가' : '가입금액대 분석에서 제외');
+    }
+    if (t.cols.coverage_name) {
+      const broken = []; for (let i = 0; i < t.length; i++) if (String(t.cols.coverage_name[i]).includes('�')) broken.push(i);
+      if (broken.length) add(key, 'error', '담보명 글자가 깨졌습니다 (인코딩 확인 필요)', broken.length, ex(t, broken, 'coverage_name'), '부담보 판정 불가');
+    }
+    out[key] = t;
+  }
+
+  if (raw.credit) {
+    let t = copy(raw.credit); const bad = [];
+    t.cols.credit_decile = t.cols.credit_decile.map((v, i) => { if (v == null) return null; if (!Number.isInteger(v) || v < 1 || v > CONFIG.DECILES) { bad.push(i); return null; } return v; });
+    if (bad.length) add('credit', 'error', `credit_decile이 1~${CONFIG.DECILES} 정수가 아님`, bad.length, ex(raw.credit, bad, 'credit_decile'), '해당 고객 분석 제외');
+    const seen = new Set(); let dup = 0; for (const c of t.cols.customer_id) { if (seen.has(c)) dup++; else seen.add(c); }
+    if (dup) add('credit', 'warn', 'customer_id 중복 (기준일이 여러 개일 수 있음)', dup, [], '마지막 행 사용');
+    out.credit = t;
+  }
+  if (raw.delinq) {
+    const t = copy(raw.delinq); let neg = 0, empty = 0;
+    for (const c of [...CONFIG.DELINQ.DEFAULT_COLS, ...CONFIG.DELINQ.DELINQ_COLS]) {
+      t.cols[c] = t.cols[c].map(v => { if (v == null) { empty++; return 0; } if (v < 0) { neg++; return 0; } return v; });
+    }
+    if (neg) add('delinq', 'fix', '연체·채무불이행 건수가 음수인 값', neg, [], '0으로 변경');
+    if (empty) add('delinq', 'info', '연체·채무불이행 건수가 비어 있는 값', empty, [], '0(없음)으로 처리');
+    out.delinq = t;
+  }
+
+  // 3) 파일 간 점검
+  const names = new Map();
+  for (const key of ['coverages', 'appCoverages']) {
+    const t = out[key]; if (!t) continue;
+    for (let i = 0; i < t.length; i++) { const c = t.cols.coverage_code[i]; let set = names.get(c); if (!set) names.set(c, set = new Set()); set.add(t.cols.coverage_name[i]); }
+  }
+  const conflict = [...names].filter(([, s]) => s.size > 1);
+  if (conflict.length) add(null, 'warn', '같은 담보코드에 담보명이 여러 개', conflict.length, conflict.map(([c, s]) => `${c}: ${[...s].join(' / ')}`), '담보명 기준으로 분석');
+  if (out.appCoverages) {
+    const present = new Set(out.appCoverages.cols.coverage_name), excl = CONFIG.EXCLUSION_COVERAGES;
+    const missing = excl.filter(n => !present.has(n));
+    if (missing.length === excl.length) add('appCoverages', 'warn', '부담보 대상 담보명이 청약 데이터에 하나도 없습니다', excl.length, excl, 'CONFIG.EXCLUSION_COVERAGES를 실제 담보명으로 수정 필요');
+    else if (missing.length) add('appCoverages', 'info', '부담보 대상 중 청약 데이터에 없는 담보명', missing.length, missing, '해당 담보는 부담보 미적용');
+  }
+  const pairs = [['contracts', 'loss', 'policy_no', '손해실적'], ['contracts', 'credit', 'customer_id', '신용정보'], ['contracts', 'delinq', 'customer_id', '연체정보'],
+    ['apps', 'credit', 'customer_id', '신용정보'], ['apps', 'appCoverages', 'app_no', '청약 담보']];
+  for (const [a, b, k, label] of pairs) {
+    if (!out[a] || !out[b]) continue;
+    const keys = new Set(out[b].cols[k]); let miss = 0; const exRows = [];
+    for (let i = 0; i < out[a].length; i++) if (!keys.has(out[a].cols[k][i])) { miss++; if (exRows.length < 3) exRows.push(`${k}=${out[a].cols[k][i]}`); }
+    const rate = out[a].length ? 1 - miss / out[a].length : 1;
+    if (miss) add(a, rate < CONFIG.REVIEW.MIN_MATCH_RATE ? 'warn' : 'info', `${label}와 매칭되지 않는 행 (매칭률 ${(rate * 100).toFixed(1)}%)`, miss, exRows, '분석에서 제외');
+  }
+  const order = { error: 0, warn: 1, fix: 2, info: 3 };
+  issues.sort((x, y) => order[x.level] - order[y.level]);
+  const summary = { error: 0, warn: 0, fix: 0, info: 0 }; for (const i of issues) summary[i.level]++;
+  return { files: { ...raw, ...out }, issues, summary };
+}
+
+// 데이터 규모 진단: 효과를 추정하기에 사고 건수가 충분한지 (통계 검증 VALIDATION.md 참고)
+function scaleDiagnostics(ds) {
+  const items = [], G = CONFIG.DELINQ.LABELS;
+  const byDec = new Array(CONFIG.DECILES).fill(0), byGrade = [0, 0, 0];
+  if (ds.hasClaimCnt) {
+    for (let k = 0; k < ds.cov.length; k++) { const p = ds.policies[ds.cov.pol[k]]; byDec[p.decile - 1] += ds.cov.claims[k]; if (p.grade != null) byGrade[p.grade] += ds.cov.claims[k]; }
+    const minD = Math.min(...byDec);
+    items.push({ level: minD < CONFIG.REVIEW.MIN_DECILE_CLAIMS ? 'warn' : 'info', message: `10분위별 사고 건수 최소 ${minD.toLocaleString()}건 (기준 ${CONFIG.REVIEW.MIN_DECILE_CLAIMS}건)`,
+      examples: byDec.map((c, i) => `${i + 1}분위 ${c.toLocaleString()}`), action: minD < CONFIG.REVIEW.MIN_DECILE_CLAIMS ? '부분 신뢰: 95% 구간으로 판단, 대형사고 상한·분위 합치기 검토' : '' });
+    if (ds.hasDelinq) {
+      const minG = Math.min(...byGrade);
+      items.push({ level: minG < CONFIG.REVIEW.MIN_GRADE_CLAIMS ? 'warn' : 'info', message: `연체등급별 사고 건수 최소 ${minG.toLocaleString()}건 (기준 ${CONFIG.REVIEW.MIN_GRADE_CLAIMS}건)`,
+        examples: byGrade.map((c, g) => `${G[g]} ${c.toLocaleString()}`), action: minG < CONFIG.REVIEW.MIN_GRADE_CLAIMS ? '부분 신뢰: 연체 효과는 95% 구간으로 판단, 등급 합치기 검토' : '' });
+    }
+  } else items.push({ level: 'warn', message: 'claim_cnt(사고 건수) 컬럼이 없어 규모 진단·빈도 기준을 쓸 수 없습니다', examples: [], action: '' });
+  return items.map(x => ({ file: '전체 (규모 진단)', count: null, ...x }));
+}
 /* ===================================================================== </calc> */
 // @calc-end
 
@@ -986,7 +1227,7 @@ function readFile(file) {
     const r = new FileReader();
     r.onload = () => resolve(r.result);
     r.onerror = () => reject(r.error);
-    r.readAsText(file, 'UTF-8');
+    r.readAsArrayBuffer(file);
   });
 }
 
@@ -996,7 +1237,8 @@ async function handleFiles(fileList) {
   for (const f of fileList) {
     $('runMsg').textContent = `읽는 중: ${f.name}`;
     await tick();
-    const parsed = parseFile(await readFile(f));
+    const decoded = decodeBytes(await readFile(f));
+    const parsed = parseFile(decoded.text, { encoding: decoded.encoding });
     if (!parsed.key) { unknown.push(f.name); continue; }
     state.files[parsed.key] = { fileName: f.name, ...parsed };
   }
@@ -1004,11 +1246,42 @@ async function handleFiles(fileList) {
   $('summaryCard').style.display = 'none';
   setTabsEnabled(false);
   renderFileStatus();
-  $('runMsg').textContent = '매칭 계산 중…';
+  $('runMsg').textContent = '자동 검토·매칭 계산 중…';
   await tick();
-  renderMatch();
+  refreshData();
   $('runMsg').textContent = unknown.length ? `인식하지 못한 파일: ${unknown.join(', ')}` : '';
 }
+
+// 원본(state.files) → 자동 검토·정제(state.cleanFiles) → 매칭(state.dataset) → 규모 진단
+function refreshData() {
+  if (!requiredReady()) { state.review = null; state.cleanFiles = null; $('reviewCard').style.display = 'none'; renderMatch(); return; }
+  state.review = reviewDataset(state.files);
+  state.cleanFiles = state.review.files;
+  renderMatch();
+  state.scale = state.dataset ? scaleDiagnostics(state.dataset) : [];
+  renderFileStatus();
+  renderReview();
+}
+
+const LEVEL_BADGE = { error: ['bad', '오류'], warn: ['warn', '경고'], fix: ['info', '자동 수정'], info: ['muted', '참고'] };
+function reviewRows() { return [...(state.review?.issues || []), ...(state.scale || [])]; }
+function renderReview() {
+  const rows = reviewRows(), sum = { error: 0, warn: 0, fix: 0, info: 0 };
+  for (const r of rows) sum[r.level]++;
+  $('reviewCard').style.display = '';
+  $('reviewSummary').innerHTML = Object.entries(sum).map(([k, n]) => `<span class="badge ${LEVEL_BADGE[k][0]}">${LEVEL_BADGE[k][1]} ${n}</span>`).join(' ')
+    + (sum.error + sum.warn === 0 ? ' <span class="muted">분석을 막는 문제가 없습니다.</span>' : '');
+  $('reviewBody').innerHTML = rows.length ? rows.map(r => `<tr><td><span class="badge ${LEVEL_BADGE[r.level][0]}">${LEVEL_BADGE[r.level][1]}</span></td>
+      <td>${esc(r.file)}</td><td>${esc(r.message)}</td><td class="num">${r.count == null ? '' : fmtInt(r.count)}</td>
+      <td class="ex">${r.examples.map(esc).join('<br>')}</td><td>${esc(r.action || '')}</td></tr>`).join('')
+    : '<tr><td colspan="6" class="muted">검토 결과 문제가 없습니다.</td></tr>';
+}
+$('reviewExport').addEventListener('click', () => {
+  const head = ['구분', '파일', '내용', '건수', '예시', '조치'];
+  const lines = [head, ...reviewRows().map(r => [LEVEL_BADGE[r.level][1], r.file, r.message, r.count ?? '', r.examples.join(' / '), r.action || ''])]
+    .map(r => r.map(csvCell).join(','));
+  downloadCsv('\uFEFF' + lines.join('\r\n') + '\r\n', `data_review_${new Date().toISOString().slice(0, 10)}.csv`);
+});
 
 function renderFileStatus() {
   $('fileStatus').innerHTML = FILE_SPECS.map(s => {
@@ -1019,6 +1292,11 @@ function renderFileStatus() {
       status = missingExtra.length
         ? `<span class="badge warn">인식 · 세그먼트 컬럼 없음(${esc(missingExtra.join(', '))})</span>`
         : '<span class="badge ok">인식</span>';
+      const mine = (state.review?.issues || []).filter(i => i.file === s.name);
+      const nErr = mine.filter(i => i.level === 'error').length, nWarn = mine.filter(i => i.level === 'warn').length, nFix = mine.filter(i => i.level === 'fix').length;
+      if (nErr) status += ` <span class="badge bad">오류 ${nErr}</span>`;
+      if (nWarn) status += ` <span class="badge warn">경고 ${nWarn}</span>`;
+      if (nFix) status += ` <span class="badge info">자동 수정 ${nFix}</span>`;
     } else if (s.required) {
       status = '<span class="badge bad">필요</span>';
     } else {
@@ -1043,7 +1321,7 @@ function renderMatch() {
     $('runBtn').disabled = true;
     return;
   }
-  state.dataset = buildDataset(state.files);
+  state.dataset = buildDataset(state.cleanFiles || state.files);
   const { counts: c, hasDelinq } = state.dataset;
   const pct = (n, d) => d ? fmtPct(n / d) : '-';
   const rows = [
@@ -1435,9 +1713,9 @@ async function loadDemo() {
       if (parsed.key) state.files[parsed.key] = { fileName: name + ' (데모)', ...parsed };
     }
     renderFileStatus();
-    $('runMsg').textContent = '매칭 계산 중…';
+    $('runMsg').textContent = '자동 검토·매칭 계산 중…';
     await tick();
-    renderMatch();
+    refreshData();
     if ($('runBtn').disabled) throw new Error('필수 파일이 모두 인식되지 않았습니다');
     runAnalysis();
     showTab('analysis');
