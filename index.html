@@ -129,6 +129,11 @@
   .formula { font-variant-numeric: tabular-nums; background: var(--head); border: 1px solid var(--line); border-left: 3px solid var(--accent);
     border-radius: 4px; padding: 10px 12px; margin: 8px 0 12px; line-height: 1.7; }
   .pager button { min-width: 34px; padding: 6px 10px; }
+  /* 청약 목록: 페이지 대신 고정 높이 스크롤, 머리글 고정 */
+  .app-scroll { max-height: min(640px, 72vh); overflow: auto; border-bottom: 1px solid var(--line); }
+  .app-scroll { border-top: 1px solid var(--line); }
+  .app-scroll thead th { position: sticky; top: 0; z-index: 1; border-top: 0; border-bottom: 0; box-shadow: inset 0 -1px 0 var(--line); }
+  .print-only { display: none; }
   .settings .row { gap: 20px; }
 
   /* 소개 */
@@ -270,6 +275,10 @@
     .card { border-color: #C9CED3; padding: 10px 12px; margin-bottom: 10px; break-inside: avoid; }
     .card:has(table tbody tr:nth-child(15)) { break-inside: auto; }
     .tbl { overflow: visible !important; }
+    .app-scroll { max-height: none !important; }
+    #appBody tr:nth-child(n+51) { display: none; }
+    .print-only { display: block; }
+    .app-scroll thead th { position: static; }
     table { font-size: 10px; }
     th, td { padding: 4px 6px; white-space: normal; }
     thead { display: table-header-group; }
@@ -558,12 +567,13 @@
           <label>청약번호 <input id="appSearch" type="search" placeholder="A2610…" size="12"></label>
           <span class="muted" id="appCount"></span>
         </div>
-        <div class="tbl"><table class="clickable">
+        <div class="tbl app-scroll" id="appScroll"><table class="clickable">
           <thead><tr><th>청약번호</th><th>연령·성별</th><th class="num">10분위</th><th>연체등급</th>
             <th class="num">스코어 A</th><th class="num">스코어 B</th><th>권고 (B)</th></tr></thead>
           <tbody id="appBody"></tbody>
         </table></div>
         <div class="row msg" id="appPager"></div>
+        <p class="note print-only">인쇄본에는 목록 상위 50건만 표시합니다. 전체는 결과 CSV 내보내기로 받으세요.</p>
       </div>
       <div class="card" id="appDetail"><p class="muted">목록에서 청약을 클릭하면 상세 내역이 표시됩니다.</p></div>
     </div>
@@ -1776,11 +1786,10 @@ function renderSegment(segs, dim, coverage, ds) {
 // ─ 청약 조회 ─
 const UW_BADGE = { '표준인수': 'ok', '한도축소': 'info', '부담보+한도축소': 'warn', '심사역검토': 'bad' };
 const uwBadge = label => `<span class="badge ${UW_BADGE[label] || 'muted'}">${esc(label)}</span>`;
-const PAGE = 50;
 
 function initApps(ds, dec, dq) {
   const assessed = assessApps(ds, dec, dq);
-  state.apps = { list: assessed, page: 0, selected: null };
+  state.apps = { list: assessed, selected: null };
   const sum = uwSummary(assessed), total = assessed.length;
   const basisB = assessed.some(a => a.basis === 'B');
   $('uwBasis').textContent = basisB ? '종합상대도 B(10분위 × 연체 보정) 기준' : '연체정보가 없어 종합상대도 A(10분위) 기준';
@@ -1797,8 +1806,8 @@ function initApps(ds, dec, dq) {
   }).join(' · ');
   $('appFilter').innerHTML = '<option value="">전체</option>' +
     [...sum.keys()].map(l => `<option>${esc(l)}</option>`).join('');
-  $('appFilter').onchange = () => { state.apps.page = 0; renderAppList(); };
-  $('appSearch').oninput = () => { state.apps.page = 0; renderAppList(); };
+  $('appFilter').onchange = renderAppList;
+  $('appSearch').oninput = renderAppList;
   $('exportBtn').onclick = () => downloadCsv(exportCsv(assessed), `uw_result_${new Date().toISOString().slice(0, 10)}.csv`);
   $('appDetail').innerHTML = '<p class="muted">목록에서 청약을 클릭하면 상세 내역이 표시됩니다.</p>';
   renderAppList();
@@ -1810,23 +1819,16 @@ function filteredApps() {
 }
 
 function renderAppList() {
-  const list = filteredApps(), pages = Math.max(1, Math.ceil(list.length / PAGE));
-  const st = state.apps; st.page = Math.min(st.page, pages - 1);
-  const rows = list.slice(st.page * PAGE, (st.page + 1) * PAGE);
+  const list = filteredApps(), st = state.apps;
   $('appCount').textContent = `${fmtInt(list.length)}건`;
   const L = CONFIG.DELINQ.LABELS;
-  $('appBody').innerHTML = rows.length ? rows.map(a => `<tr data-app="${esc(a.app_no)}" class="${st.selected === a.app_no ? 'sel' : ''}">
+  $('appBody').innerHTML = list.length ? list.map(a => `<tr data-app="${esc(a.app_no)}" class="${st.selected === a.app_no ? 'sel' : ''}">
       <td>${esc(a.app_no)}</td><td>${a.age ?? '-'}세 · ${a.gender === 'M' ? '남' : a.gender === 'F' ? '여' : '-'}</td>
       <td class="num">${a.decile ?? '-'}</td><td>${a.grade == null ? '-' : esc(L[a.grade])}</td>
       <td class="num">${a.scoreA ?? '-'}</td><td class="num"><b>${a.scoreB ?? '-'}</b></td><td>${uwBadge(a.status)}</td></tr>`).join('')
     : '<tr><td colspan="7" class="muted">조건에 맞는 청약이 없습니다.</td></tr>';
   $('appBody').querySelectorAll('tr[data-app]').forEach(tr => tr.addEventListener('click', () => showApp(tr.dataset.app)));
-  $('appPager').className = 'row msg pager';
-  $('appPager').innerHTML = pages > 1
-    ? `<button class="btn ghost" data-p="${st.page - 1}" ${st.page === 0 ? 'disabled' : ''}>‹</button>
-       <span class="muted">${st.page + 1} / ${pages}</span>
-       <button class="btn ghost" data-p="${st.page + 1}" ${st.page >= pages - 1 ? 'disabled' : ''}>›</button>` : '';
-  $('appPager').querySelectorAll('button').forEach(b => b.addEventListener('click', () => { st.page = Number(b.dataset.p); renderAppList(); }));
+  $('appScroll').scrollTop = 0;
 }
 
 function showApp(appNo) {
