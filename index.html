@@ -5,134 +5,294 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>심사 스코어 PoC</title>
 <style>
+  /* ── 디자인 토큰: 메인 딥 그린 1색 + 그레이, 고위험·오류만 레드 1색 ── */
   :root {
-    --bg: #f6f7f9; --panel: #ffffff; --text: #1f2933; --muted: #6b7280;
-    --line: #e3e6ea; --accent: #2457c5; --accent-soft: #e8eefb;
-    --ok: #1a7f4b; --ok-soft: #e6f4ec; --warn: #b45309; --warn-soft: #fdf3e2;
-    --bad: #b42318; --bad-soft: #fdecea;
+    --accent: #00857C; --accent-strong: #006B64; --accent-soft: #E8F3F2; --accent-line: #B7DAD7;
+    --risk: #B4232A; --risk-soft: #F8EBEC; --risk-line: #E6C2C4;
+    --bg: #F3F4F5; --panel: #FFFFFF; --text: #1E2328; --text-2: #48505A; --muted: #6E767E;
+    --line: #DADEE2; --line-soft: #EBEDF0; --head: #F6F7F8; --gray-soft: #EEF0F2; --gray-bar: #8E979F;
   }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--text);
-    font-family: "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; font-size: 14px; }
-  header { background: var(--panel); border-bottom: 1px solid var(--line); padding: 16px 24px; }
-  header h1 { margin: 0; font-size: 18px; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--text); line-height: 1.5; font-size: 14px;
+    font-family: "Malgun Gothic", "맑은 고딕", "Apple SD Gothic Neo", sans-serif; }
+  b, strong { font-weight: 700; }
+
+  /* 머리글 · 탭 */
+  header { background: var(--panel); border-top: 4px solid var(--accent); border-bottom: 1px solid var(--line); }
+  .head-in { max-width: 1240px; margin: 0 auto; padding: 18px 24px 14px; display: flex; justify-content: space-between;
+    align-items: flex-end; gap: 8px 24px; flex-wrap: wrap; }
+  header .eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .08em; color: var(--accent); }
+  header h1 { margin: 2px 0 0; font-size: 20px; letter-spacing: -.01em; }
   header p { margin: 4px 0 0; color: var(--muted); font-size: 12px; }
-  nav { display: flex; gap: 4px; padding: 0 24px; background: var(--panel); border-bottom: 1px solid var(--line); }
-  nav button { border: 0; background: none; padding: 12px 16px; font: inherit; color: var(--muted);
-    cursor: pointer; border-bottom: 2px solid transparent; }
-  nav button.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
-  nav button:disabled { cursor: not-allowed; opacity: .5; }
-  main { padding: 24px; max-width: 1200px; margin: 0 auto; }
+  header .meta { font-size: 12px; color: var(--muted); text-align: right; line-height: 1.6; }
+  nav { background: var(--panel); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 20; }
+  .nav-in { max-width: 1240px; margin: 0 auto; padding: 0 12px; display: flex; gap: 2px; overflow-x: auto; }
+  nav button { border: 0; background: none; padding: 13px 14px 11px; font: inherit; color: var(--muted); cursor: pointer;
+    border-bottom: 3px solid transparent; white-space: nowrap; display: inline-flex; align-items: center; gap: 8px; }
+  nav button .step { width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--line); font-size: 11px; font-weight: 700;
+    display: inline-flex; align-items: center; justify-content: center; color: var(--muted); }
+  nav button:hover:not(:disabled) { color: var(--text); }
+  nav button.active { color: var(--text); border-bottom-color: var(--accent); font-weight: 700; }
+  nav button.active .step { background: var(--accent); border-color: var(--accent); color: #fff; }
+  nav button:disabled { cursor: not-allowed; opacity: .45; }
+  nav .flow { color: #B4BAC0; align-self: center; font-size: 12px; }
+
+  main { padding: 24px; max-width: 1240px; margin: 0 auto; }
   section.tab { display: none; }
   section.tab.active { display: block; }
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 20px; margin-bottom: 16px; }
-  .card h2 { margin: 0 0 12px; font-size: 15px; }
-  .drop { border: 2px dashed var(--line); border-radius: 8px; padding: 28px; text-align: center; color: var(--muted); }
+  .sec-head { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; margin: 0 0 16px; padding-bottom: 10px;
+    border-bottom: 1px solid var(--line); }
+  .sec-head .no { font-size: 12px; font-weight: 700; color: var(--accent); letter-spacing: .06em; }
+  .sec-head h2 { margin: 0; font-size: 18px; letter-spacing: -.01em; }
+  .sec-head p { margin: 0; color: var(--muted); font-size: 12.5px; }
+
+  /* 카드 */
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 20px; margin-bottom: 16px; }
+  .card h2 { margin: 0 0 12px; font-size: 15px; font-weight: 700; }
+  .card h2 .sub, .h-sub { font-weight: 400; font-size: 12px; color: var(--muted); margin-left: 6px; }
+  .card-head { display: flex; justify-content: space-between; align-items: center; gap: 8px 12px; flex-wrap: wrap; margin-bottom: 12px; }
+  .card-head h2 { margin: 0; }
+
+  /* 상단 KPI 4개 */
+  .kpi-strip { display: none; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 20px; }
+  body.analyzed .kpi-strip { display: grid; }
+  .kcard { background: var(--panel); border: 1px solid var(--line); border-top: 3px solid var(--accent); border-radius: 6px;
+    padding: 14px 16px 12px; min-width: 0; }
+  .kcard.risk { border-top-color: var(--risk); }
+  .kcard .k-label { font-size: 12px; font-weight: 600; color: var(--text-2); }
+  .kcard .k-value { font-size: 28px; font-weight: 700; margin-top: 6px; letter-spacing: -.02em; font-variant-numeric: tabular-nums; line-height: 1.2; }
+  .kcard .k-value small { font-size: 14px; font-weight: 600; color: var(--muted); margin-left: 2px; letter-spacing: 0; }
+  .kcard.risk .k-value { color: var(--risk); }
+  .kcard .k-sub { font-size: 11.5px; color: var(--muted); margin-top: 4px; }
+
+  /* 보조 KPI */
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  .kpi { border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; background: var(--panel); min-width: 0; }
+  .kpi .label { color: var(--text-2); font-size: 12px; font-weight: 600; }
+  .kpi .value { font-size: 20px; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .kpi.sub .value { font-size: 16px; color: var(--muted); }
+
+  /* 입력 요소 */
+  .drop { border: 1px dashed #B4BAC0; border-radius: 6px; padding: 28px; text-align: center; color: var(--muted); background: var(--head); }
   .drop.over { border-color: var(--accent); background: var(--accent-soft); }
-  .btn { background: var(--accent); color: #fff; border: 0; border-radius: 6px; padding: 10px 18px;
-    font: inherit; font-weight: 600; cursor: pointer; }
-  .btn:disabled { background: #a9b4c6; cursor: not-allowed; }
-  .btn.ghost { background: var(--panel); color: var(--accent); border: 1px solid var(--accent); }
-  table { border-collapse: collapse; width: 100%; }
-  th, td { border-bottom: 1px solid var(--line); padding: 8px 10px; text-align: left; }
-  th { background: #fafbfc; font-weight: 600; color: var(--muted); font-size: 12px; }
-  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
-  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: 600; }
-  .badge.ok { background: var(--ok-soft); color: var(--ok); }
-  .badge.warn { background: var(--warn-soft); color: var(--warn); }
-  .badge.bad { background: var(--bad-soft); color: var(--bad); }
-  .badge.info { background: var(--accent-soft); color: var(--accent); }
-  .badge.muted { background: #eef0f3; color: var(--muted); }
+  .btn { background: var(--accent); color: #fff; border: 1px solid var(--accent); border-radius: 4px; padding: 9px 18px;
+    font: inherit; font-weight: 700; cursor: pointer; }
+  .btn:hover:not(:disabled) { background: var(--accent-strong); border-color: var(--accent-strong); }
+  .btn:disabled { background: #B9C0C6; border-color: #B9C0C6; cursor: not-allowed; }
+  .btn.ghost { background: var(--panel); color: var(--text); border-color: var(--line); font-weight: 600; }
+  .btn.ghost:hover:not(:disabled) { background: var(--panel); border-color: var(--accent); color: var(--accent-strong); }
+  .btn.ghost:disabled { color: #B9C0C6; background: var(--panel); }
+  select, input[type=search] { font: inherit; padding: 5px 8px; border: 1px solid var(--line); border-radius: 4px; background: var(--panel); color: var(--text); }
+  select:focus, input:focus, textarea:focus, button:focus-visible { outline: 2px solid var(--accent-line); outline-offset: 1px; }
+  label { display: inline-flex; gap: 6px; align-items: center; color: var(--text-2); }
+  .settings label { flex-wrap: wrap; max-width: 100%; } .settings select { max-width: 100%; }
+  input[type=checkbox] { accent-color: var(--accent); }
+
+  /* 표: 숫자 우측 정렬, 고정폭 숫자, 히트맵은 인라인 배경 */
+  .tbl { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  th, td { border-bottom: 1px solid var(--line-soft); padding: 8px 10px; text-align: left; white-space: nowrap; }
+  thead th { background: var(--head); font-weight: 600; color: var(--text-2); font-size: 12px;
+    border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  td.num, th.num { text-align: right; }
+  tbody tr:last-child td { border-bottom-color: var(--line); }
+  tr.total td { border-top: 1px solid var(--line); font-weight: 700; background: var(--head); }
+  .heat-legend { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--muted); }
+  .heat-legend i { display: inline-block; width: 14px; height: 10px; border: 1px solid var(--line); }
+  table.clickable tbody tr { cursor: pointer; }
+  table.clickable tbody tr:hover td { background: var(--head); }
+  table.clickable tbody tr.sel td { background: var(--accent-soft); }
+  table.clickable tbody tr.sel td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
   #reviewBody td { white-space: normal; vertical-align: top; }
   #reviewBody td:first-child .badge { white-space: nowrap; }
   #reviewBody td.ex { font-size: 12px; color: var(--muted); max-width: 320px; }
-  .kpis { display: flex; gap: 16px; flex-wrap: wrap; }
-  .kpi { flex: 1 1 180px; border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; }
-  .kpi .label { color: var(--muted); font-size: 12px; }
-  .kpi .value { font-size: 22px; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .mono-off .mono-col { display: none; }
+  .lowcred { color: #A3A9AF; }
+  td.lowcred { font-style: italic; }
+
+  /* 배지: 표준=그린, 중립=그레이, 고위험·오류=레드 */
+  .badge { display: inline-block; padding: 1px 8px; border-radius: 3px; font-size: 11.5px; font-weight: 600; line-height: 1.6;
+    border: 1px solid transparent; }
+  .badge.ok { background: var(--accent-soft); color: var(--accent-strong); border-color: var(--accent-line); }
+  .badge.info { background: var(--gray-soft); color: var(--text-2); border-color: var(--line); }
+  .badge.warn { background: var(--panel); color: var(--text); border-color: #A3A9AF; }
+  .badge.bad { background: var(--risk-soft); color: var(--risk); border-color: var(--risk-line); }
+  .badge.muted { background: transparent; color: var(--muted); border-color: var(--line); }
+
   .muted { color: var(--muted); }
   .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
   .msg { margin-top: 12px; }
-  .intro p { margin: 0; line-height: 1.7; }
-  .intro ol, .intro ul { margin: 0; padding-left: 20px; line-height: 1.8; }
-  .intro code { background: #eef0f3; padding: 1px 5px; border-radius: 4px; }
-  .notice { border-color: #f0d9b5; background: #fffaf2; }
-  .notice h2 { color: var(--warn); }
-  footer { max-width: 1200px; margin: 0 auto; padding: 8px 24px 28px; font-size: 11px; color: var(--muted); line-height: 1.6; }
+  .note { font-size: 12px; color: var(--muted); margin: 10px 0 0; line-height: 1.65; }
+  .formula { font-variant-numeric: tabular-nums; background: var(--head); border: 1px solid var(--line); border-left: 3px solid var(--accent);
+    border-radius: 4px; padding: 10px 12px; margin: 8px 0 12px; line-height: 1.7; }
+  .pager button { min-width: 34px; padding: 6px 10px; }
+  .settings .row { gap: 20px; }
+
+  /* 소개 */
+  .intro p { margin: 0; line-height: 1.75; }
+  .intro ol, .intro ul { margin: 0; padding-left: 20px; line-height: 1.85; }
+  .intro code { background: var(--gray-soft); padding: 1px 5px; border-radius: 3px; }
+  .notice { border-left: 3px solid var(--text-2); }
+  .notice h2 { color: var(--text); }
+  footer { max-width: 1240px; margin: 0 auto; padding: 8px 24px 28px; font-size: 11px; color: var(--muted); line-height: 1.6; }
+
+  /* 데모 · AI 도우미 */
   .demo-only { display: none; }
-  /* AI 도우미 */
-  #chatFab { position: fixed; right: 20px; bottom: 20px; z-index: 50; border-radius: 24px; padding: 12px 18px;
-    box-shadow: 0 4px 14px rgba(0,0,0,.18); }
+  .has-demo .demo-only { display: flex; }
+  .has-demo .card.demo-only { display: block; }
+  #chatFab { position: fixed; right: 20px; bottom: 20px; z-index: 50; border-radius: 4px; padding: 10px 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.16); }
   #chatPanel { position: fixed; right: 20px; bottom: 20px; z-index: 51; width: 400px; max-width: calc(100vw - 32px);
-    height: 560px; max-height: calc(100vh - 40px); background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
-    box-shadow: 0 8px 30px rgba(0,0,0,.2); display: none; flex-direction: column; overflow: hidden; }
+    height: 560px; max-height: calc(100vh - 40px); background: var(--panel); border: 1px solid var(--line); border-radius: 6px;
+    box-shadow: 0 6px 24px rgba(0,0,0,.16); display: none; flex-direction: column; overflow: hidden; }
   #chatPanel.open { display: flex; }
-  #chatPanel .head { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+  #chatPanel .head { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px;
+    border-bottom: 1px solid var(--line); border-top: 3px solid var(--accent); }
   #chatPanel .head b { font-size: 14px; }
   #chatPanel .head button { border: 0; background: none; font-size: 20px; cursor: pointer; color: var(--muted); line-height: 1; }
   #chatLog { flex: 1; overflow-y: auto; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
-  .msg-u, .msg-a { max-width: 88%; padding: 8px 11px; border-radius: 10px; white-space: pre-wrap; word-break: break-word; line-height: 1.55; }
+  .msg-u, .msg-a { max-width: 88%; padding: 8px 11px; border-radius: 6px; white-space: pre-wrap; word-break: break-word; line-height: 1.55; }
   .msg-u { align-self: flex-end; background: var(--accent); color: #fff; }
-  .msg-a { align-self: flex-start; background: #f1f3f6; }
-  .msg-a.err { background: var(--bad-soft); color: var(--bad); }
+  .msg-a { align-self: flex-start; background: var(--gray-soft); }
+  .msg-a.err { background: var(--risk-soft); color: var(--risk); }
   .chips { display: flex; flex-wrap: wrap; gap: 6px; }
-  .chips button { border: 1px solid var(--line); background: var(--panel); border-radius: 14px; padding: 5px 10px; font: inherit; font-size: 12px; cursor: pointer; color: var(--text); }
-  .chips button:hover { border-color: var(--accent); color: var(--accent); }
+  .chips button { border: 1px solid var(--line); background: var(--panel); border-radius: 4px; padding: 5px 10px; font: inherit;
+    font-size: 12px; cursor: pointer; color: var(--text); }
+  .chips button:hover { border-color: var(--accent); color: var(--accent-strong); }
   #chatForm { display: flex; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--line); }
-  #chatInput { flex: 1; resize: none; font: inherit; padding: 8px; border: 1px solid var(--line); border-radius: 6px; height: 40px; }
+  #chatInput { flex: 1; resize: none; font: inherit; padding: 8px; border: 1px solid var(--line); border-radius: 4px; height: 40px; }
   #chatPanel .foot { font-size: 11px; color: var(--muted); padding: 0 12px 10px; line-height: 1.5; }
-  .has-demo .demo-only { display: flex; }
-  .has-demo .card.demo-only { display: block; }
+
+  /* 차트 (SVG, 외부 라이브러리 없음) */
   .chart { position: relative; }
   .chart svg { display: block; width: 100%; height: auto; overflow: visible; }
-  .chart .axis text { fill: var(--muted); font-size: 11px; }
-  .chart .grid line { stroke: var(--line); }
-  .chart .ref { stroke: var(--text); stroke-dasharray: 4 3; stroke-width: 1; }
+  .chart text { font-family: inherit; }
+  .chart .grid line { stroke: var(--line-soft); }
+  .chart .grid text, .chart .xlab { fill: var(--muted); font-size: 11px; }
+  .chart .base { stroke: #A3A9AF; }
+  .chart .ttl { fill: var(--text-2); font-size: 11px; font-weight: 600; }
+  .chart .vlab { fill: var(--text); font-size: 11px; font-weight: 700; }
+  .chart .nlab { fill: var(--muted); font-size: 9.5px; }
+  .chart .ref { stroke: var(--text-2); stroke-dasharray: 4 3; stroke-width: 1; }
+  .chart .reflab { fill: var(--text-2); font-size: 10px; }
   .chart .bar { fill: var(--accent); }
-  .chart .mark { stroke: var(--text); stroke-width: 2; pointer-events: none; }
-  .chart .ci { stroke: var(--text); stroke-width: 1.2; opacity: .55; pointer-events: none; }
-  .settings .row { gap: 20px; }
-  .kpi.sub .value { font-size: 16px; color: var(--muted); }
-  .mono-off .mono-col { display: none; }
+  .chart.gray .bar { fill: var(--gray-bar); }
+  .chart .mark { stroke: var(--text); stroke-width: 2; }
+  .chart .ci { stroke: var(--text-2); stroke-width: 1.2; opacity: .7; }
   .chart .hit { fill: transparent; cursor: default; }
-  .chart .bar, .chart .ref, .chart text { pointer-events: none; }
-  .chart .hit:hover + .bar { fill: #183f94; }
+  .chart .bar, .chart .ref, .chart text, .chart .mark, .chart .ci { pointer-events: none; }
+  .chart .hit:hover + .bar { fill: var(--accent-strong); }
+  .chart.gray .hit:hover + .bar { fill: #6E767E; }
   .tip { position: absolute; pointer-events: none; background: var(--text); color: #fff; font-size: 12px;
-    padding: 6px 8px; border-radius: 4px; white-space: nowrap; transform: translate(-50%, -110%); display: none; }
-  .note { font-size: 12px; color: var(--muted); margin: 8px 0 0; line-height: 1.6; }
-  .lowcred { color: #a0a6ae; }
-  td.lowcred { font-style: italic; }
-  select { font: inherit; padding: 4px 6px; border: 1px solid var(--line); border-radius: 4px; background: var(--panel); color: var(--text); }
-  label { display: inline-flex; gap: 6px; align-items: center; }
+    padding: 6px 8px; border-radius: 3px; white-space: nowrap; transform: translate(-50%, -110%); display: none; z-index: 5; }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 11.5px; color: var(--muted); margin-top: 6px; }
+  .legend i { display: inline-block; width: 10px; height: 10px; margin-right: 5px; vertical-align: -1px; }
+
+  /* 연체 미포함(A) vs 포함(B) 비교 */
+  .cmp-banner { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 16px; align-items: stretch; }
+  .cmp-side { border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; border-top: 3px solid var(--gray-bar); min-width: 0; }
+  .cmp-side.b { border-top-color: var(--accent); }
+  .cmp-side .tag { font-size: 11px; font-weight: 700; letter-spacing: .06em; color: var(--muted); }
+  .cmp-side .name { font-size: 14px; font-weight: 700; margin-top: 2px; }
+  .cmp-side .lift { font-size: 32px; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; margin-top: 6px; line-height: 1.15; }
+  .cmp-side.b .lift { color: var(--accent-strong); }
+  .cmp-side .cap { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+  .cmp-delta { display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;
+    padding: 8px 18px; border: 1px solid var(--line); border-radius: 6px; background: var(--head); min-width: 150px; }
+  .cmp-delta .lbl { font-size: 11.5px; color: var(--text-2); font-weight: 600; }
+  .cmp-delta .val { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; margin: 2px 0; }
+  .cmp-delta .val.up { color: var(--accent-strong); }
+  .cmp-delta .val.down { color: var(--risk); }
+  .cmp-delta .cap { font-size: 11px; color: var(--muted); }
+  .liftbars { margin-top: 14px; }
+  .liftbar { display: grid; grid-template-columns: 150px minmax(0, 1fr) 52px; gap: 10px; align-items: center; font-size: 12px; margin: 6px 0; }
+  .liftbar .track { position: relative; height: 14px; background: var(--gray-soft); border-radius: 2px; }
+  .liftbar .fill { height: 100%; background: var(--gray-bar); border-radius: 2px; }
+  .liftbar.b .fill { background: var(--accent); }
+  .liftbar .ins { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--text-2); }
+  .liftbar .v { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .cmp-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 18px; }
+  .cmp-charts > div { min-width: 0; border: 1px solid var(--line-soft); border-radius: 6px; padding: 12px 12px 6px; }
+  .cmp-charts h3 { margin: 0 0 6px; font-size: 13px; }
+  .cmp-charts h3 .h-sub { margin-left: 4px; }
+
   .two { display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px; }
   .two > * { min-width: 0; }
-  .tbl { overflow-x: auto; }
-  th, td { white-space: nowrap; }
-  .two.decile { grid-template-columns: 1fr 1.25fr; }
+  .two.decile { grid-template-columns: 1fr 1.2fr; align-items: start; }
   .two.apps { grid-template-columns: 1.45fr 1fr; align-items: start; }
   .two.apps > .card { margin-bottom: 16px; }
-  table.clickable tbody tr { cursor: pointer; }
-  table.clickable tbody tr:hover { background: var(--accent-soft); }
-  table.clickable tbody tr.sel { background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent); }
-  .formula { font-variant-numeric: tabular-nums; background: #fafbfc; border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; margin: 8px 0 12px; }
-  .pager button { min-width: 32px; }
+
+  @media (max-width: 1000px) { .kpi-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   @media (max-width: 900px) { .two, .two.apps, .two.decile { grid-template-columns: 1fr; } }
-  @media (max-width: 600px) { main { padding: 16px; } header, nav { padding-left: 16px; padding-right: 16px; }
-    .card { padding: 16px; } }
+  @media (max-width: 760px) {
+    .cmp-banner { grid-template-columns: 1fr 1fr; }
+    .cmp-delta { grid-column: 1 / -1; order: 3; min-width: 0; }
+    .cmp-charts { grid-template-columns: 1fr; }
+    .liftbar { grid-template-columns: 96px minmax(0, 1fr) 44px; }
+  }
+  @media (max-width: 600px) {
+    main { padding: 16px; } .head-in { padding: 14px 16px 12px; } header .meta { text-align: left; }
+    .card { padding: 16px; } .kcard { padding: 12px; } .kcard .k-value { font-size: 22px; }
+    .cmp-side .lift { font-size: 26px; } .sec-head h2 { font-size: 16px; }
+  }
+
+  /* 인쇄·PDF: 탭 대신 전체 섹션을 순서대로, 조작 요소는 숨김 */
+  @media print {
+    @page { size: A4 portrait; margin: 12mm 10mm; }
+    html, body { background: #fff; }
+    body { font-size: 10.5px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    nav, #chatFab, #chatPanel, .btn, .demo-only, .has-demo .demo-only, .has-demo .card.demo-only, #drop, .tip,
+      .settings .row, #appPager, .no-print { display: none !important; }
+    header { border-top-width: 3px; } .head-in { padding: 0 0 8px; max-width: none; }
+    main { max-width: none; padding: 10px 0 0; }
+    section.tab { display: block !important; }
+    #tab-intro { display: none !important; }
+    body:not(.analyzed) #tab-analysis, body:not(.analyzed) #tab-strat, body:not(.analyzed) #tab-apps { display: none !important; }
+    #tab-analysis, #tab-strat, #tab-apps { break-before: page; }
+    .sec-head { margin-bottom: 10px; }
+    .card { border-color: #C9CED3; padding: 10px 12px; margin-bottom: 10px; break-inside: avoid; }
+    .card:has(table tbody tr:nth-child(15)) { break-inside: auto; }
+    .tbl { overflow: visible !important; }
+    table { font-size: 10px; }
+    th, td { padding: 4px 6px; white-space: normal; }
+    thead { display: table-header-group; }
+    tr, .kcard, .cmp-side, .cmp-delta, .chart { break-inside: avoid; }
+    .kpi-strip { grid-template-columns: repeat(4, 1fr) !important; gap: 8px; }
+    .kcard .k-value { font-size: 20px; }
+    .two, .two.decile, .two.apps { grid-template-columns: 1fr !important; }
+    .cmp-banner { grid-template-columns: 1fr auto 1fr !important; }
+    .cmp-delta { grid-column: auto !important; order: 0 !important; }
+    .cmp-charts { grid-template-columns: 1fr 1fr !important; }
+    .chart svg { max-height: 250px; }
+    .two.decile .chart svg { max-height: 230px; margin: 0 auto; max-width: 520px; }
+    footer { padding: 8px 0 0; }
+  }
 </style>
 </head>
 <body>
 <header>
-  <h1>신용정보 기반 심사 스코어 PoC</h1>
-  <p>초안(PoC) · 가상 데이터 기준 · 업로드한 파일은 서버로 전송되지 않고 이 브라우저 안에서만 계산됩니다</p>
+  <div class="head-in">
+    <div>
+      <div class="eyebrow">UNDERWRITING SCORE · PoC</div>
+      <h1>신용정보 기반 심사 스코어 분석</h1>
+      <p>초안(PoC) · 가상 데이터 기준 · 업로드한 파일은 서버로 전송되지 않고 이 브라우저 안에서만 계산됩니다</p>
+    </div>
+    <div class="meta">데이터 → 상관분석 → 층화검증 → 스코어 결과<br>권고는 참고용이며 최종 판단은 심사역</div>
+  </div>
 </header>
 <nav>
-  <button data-tab="intro" class="active">소개</button>
-  <button data-tab="upload">① 업로드</button>
-  <button data-tab="analysis" disabled>② 분석·비교</button>
-  <button data-tab="apps" disabled>③ 청약 조회</button>
+  <div class="nav-in">
+    <button data-tab="intro" class="active">개요</button>
+    <button data-tab="upload"><span class="step">1</span>데이터</button>
+    <button data-tab="analysis" disabled><span class="step">2</span>상관분석</button>
+    <button data-tab="strat" disabled><span class="step">3</span>층화검증</button>
+    <button data-tab="apps" disabled><span class="step">4</span>스코어 결과</button>
+  </div>
 </nav>
 <main>
+  <div class="kpi-strip" id="topKpis" aria-label="핵심 지표"></div>
+
   <section id="tab-intro" class="tab active">
     <div class="card intro">
       <h2>무엇을 하는 도구인가요</h2>
@@ -141,18 +301,19 @@
         연체정보를 넣지 않은 버전 A(신용 10분위만)와 넣은 버전 B(10분위 × 연체 보정)를 비교합니다.</p>
       <div class="row demo-only" style="margin-top:12px">
         <button class="btn demoBtn">데모 데이터로 바로 보기</button>
-        <span class="muted">가상 데이터 약 60MB(전송 약 10MB)를 이 사이트에서 불러와 분석합니다. 직접 올리려면 ① 업로드 탭을 쓰세요.</span>
+        <span class="muted">가상 데이터 약 60MB(전송 약 10MB)를 이 사이트에서 불러와 분석합니다. 직접 올리려면 1 데이터 탭을 쓰세요.</span>
       </div>
     </div>
     <div class="two">
       <div class="card intro">
         <h2>화면 구성</h2>
         <ol>
-          <li><b>① 업로드</b>: CSV 7개를 올리면 헤더로 종류를 자동 인식하고, <b>자동 검토·전처리</b>(EUC-KR·탭 구분자·한글 컬럼명·숫자/성별 표기 정리,
+          <li><b>1 데이터</b>: CSV 7개를 올리면 헤더로 종류를 자동 인식하고, <b>자동 검토·전처리</b>(EUC-KR·탭 구분자·한글 컬럼명·숫자/성별 표기 정리,
             중복·빈 키·범위 밖 값·매칭 누락 점검, 규모 진단)를 한 뒤 매칭 건수를 보여줍니다.</li>
-          <li><b>② 분석·비교</b>: 전체 손해율, 신용 10분위 상대도, 연체등급별 상대도, 분리도 A/B,
-            담보·가입금액대·연령대·성별별 연체 수준 손해율을 봅니다.</li>
-          <li><b>③ 청약 조회</b>: 청약별 스코어, 권고 인수조건, 담보별 권고 가입금액을 보고 CSV로 내보냅니다.</li>
+          <li><b>2 상관분석</b>: 신용 10분위·연체등급과 손해율의 관계(상대도, 95% 구간)를 봅니다.</li>
+          <li><b>3 층화검증</b>: 연체정보 미포함 모델(A)과 포함 모델(B)의 리프트(분리도)를 나란히 비교하고,
+            담보·가입금액대·연령대·성별로 나눠 연체 수준별 손해율이 일관되게 나타나는지 확인합니다.</li>
+          <li><b>4 스코어 결과</b>: 청약별 스코어, 권고 인수조건, 담보별 권고 가입금액을 보고 CSV로 내보냅니다.</li>
         </ol>
         <p class="note demo-only" style="display:block">오른쪽 아래 <b>AI 도우미</b>(무료 Nemotron)에게 화면의 결과와 계산 방식을 물어볼 수 있습니다.
           질문과 집계 요약만 외부 AI로 전송되며, 웹 데모에서만 동작합니다.</p>
@@ -201,6 +362,7 @@
   </section>
 
   <section id="tab-upload" class="tab">
+    <div class="sec-head"><span class="no">STEP 1</span><h2>데이터</h2><p>CSV 업로드 · 자동 검토·전처리 · 파일 간 매칭</p></div>
     <div class="card demo-only">
       <div class="row" style="justify-content:space-between">
         <span>파일 없이 시연하려면 같은 사이트에 있는 가상 데이터를 불러올 수 있습니다.</span>
@@ -210,25 +372,38 @@
     <div class="card">
       <h2>CSV 파일 선택</h2>
       <div id="drop" class="drop">
-        <p>CSV 파일을 여기로 끌어다 놓거나</p>
+        <p style="margin-top:0">CSV 파일을 여기로 끌어다 놓거나</p>
         <input type="file" id="fileInput" accept=".csv,text/csv" multiple>
         <p class="muted" style="margin-bottom:0">파일 이름이 아니라 헤더 컬럼으로 종류를 자동 인식합니다.
           credit_delinq.csv가 없으면 버전 A만 계산합니다.</p>
       </div>
     </div>
-    <div class="card">
-      <h2>파일별 인식 여부</h2>
-      <div class="tbl"><table>
-        <thead><tr><th>구분</th><th>필수 여부</th><th>인식된 파일</th><th class="num">행 수</th><th>상태</th></tr></thead>
-        <tbody id="fileStatus"></tbody>
-      </table></div>
+    <div class="two">
+      <div class="card">
+        <h2>파일별 인식 여부</h2>
+        <div class="tbl"><table>
+          <thead><tr><th>구분</th><th>필수 여부</th><th>인식된 파일</th><th class="num">행 수</th><th>상태</th></tr></thead>
+          <tbody id="fileStatus"></tbody>
+        </table></div>
+      </div>
+      <div class="card">
+        <h2>매칭 건수</h2>
+        <div class="tbl"><table>
+          <thead><tr><th>항목</th><th class="num">건수</th><th class="num">비율</th></tr></thead>
+          <tbody id="matchStatus"><tr><td colspan="3" class="muted">필수 파일을 올리면 표시됩니다.</td></tr></tbody>
+        </table></div>
+        <div class="row msg">
+          <button id="runBtn" class="btn" disabled>분석 실행</button>
+          <span id="runMsg" class="muted"></span>
+        </div>
+      </div>
     </div>
     <div class="card" id="reviewCard" style="display:none">
-      <div class="row" style="justify-content:space-between">
-        <h2 style="margin:0">데이터 자동 검토·전처리</h2>
+      <div class="card-head">
+        <h2>데이터 자동 검토·전처리</h2>
         <button class="btn ghost" id="reviewExport" type="button">검토 리포트 CSV 받기</button>
       </div>
-      <div class="row msg" id="reviewSummary"></div>
+      <div class="row" id="reviewSummary"></div>
       <div class="tbl" style="margin-top:12px"><table>
         <thead><tr><th>구분</th><th>파일</th><th>내용</th><th class="num">건수</th><th>예시</th><th>조치</th></tr></thead>
         <tbody id="reviewBody"></tbody>
@@ -237,17 +412,6 @@
         <b>자동 수정</b>(인코딩·구분자·한글 컬럼명·숫자 표기·성별 표기 등)은 정리한 값으로, <b>오류</b> 행은 분석에서 빼고, <b>경고</b>는 값을 유지한 채 확인을 권합니다.
         원본 파일은 바뀌지 않습니다. 컬럼명 별칭과 기준은 CONFIG.COLUMN_ALIASES·CONFIG.REVIEW에서 바꿀 수 있습니다.</p>
     </div>
-    <div class="card">
-      <h2>매칭 건수</h2>
-      <div class="tbl"><table>
-        <thead><tr><th>항목</th><th class="num">건수</th><th class="num">비율</th></tr></thead>
-        <tbody id="matchStatus"><tr><td colspan="3" class="muted">필수 파일을 올리면 표시됩니다.</td></tr></tbody>
-      </table></div>
-      <div class="row msg">
-        <button id="runBtn" class="btn" disabled>분석 실행</button>
-        <span id="runMsg" class="muted"></span>
-      </div>
-    </div>
     <div class="card" id="summaryCard" style="display:none">
       <h2>분석 결과 요약</h2>
       <div class="kpis" id="summaryKpis"></div>
@@ -255,11 +419,9 @@
   </section>
 
   <section id="tab-analysis" class="tab">
-    <div class="card">
-      <div class="kpis" id="anaKpis"></div>
-    </div>
+    <div class="sec-head"><span class="no">STEP 2</span><h2>상관분석</h2><p>신용 10분위·연체등급과 손해율의 관계</p></div>
     <div class="card settings">
-      <h2>분석 설정 <span class="muted" style="font-weight:400;font-size:12px">PRD 기준값은 원손해 · 단조 보정 미적용</span></h2>
+      <h2>분석 설정 <span class="sub">PRD 기준값은 원손해 · 단조 보정 미적용</span></h2>
       <div class="row">
         <label title="증권×담보 행의 손해를 무엇으로 볼지 정합니다. 세 기준 모두 전체 손해 합계는 같습니다.">손해 기준
           <select id="basisSel">
@@ -273,20 +435,25 @@
       <p class="note" id="basisNote"></p>
     </div>
     <div class="card">
-      <div class="row" style="justify-content:space-between;margin-bottom:12px">
-        <h2 style="margin:0">신용 10분위별 상대도 (1 = 우량 ~ 10 = 불량)</h2>
+      <div class="card-head">
+        <h2>신용 10분위별 상대도 <span class="sub">1 = 우량 ~ 10 = 불량</span></h2>
         <span class="muted" style="font-size:12px" id="ciStatus"></span>
       </div>
       <div class="two decile">
-        <div class="chart" id="decileChart"></div>
+        <div>
+          <div class="chart" id="decileChart"></div>
+          <div class="legend"><span><i style="background:var(--accent)"></i>상대도</span><span><i style="background:var(--text-2);height:2px;vertical-align:3px"></i>95% 구간</span>
+            <span>점선 = 전체 평균(1.00) · 막대 아래 = 계약 수</span></div>
+        </div>
         <div class="tbl"><table>
           <thead><tr><th>분위</th><th class="num">계약 수</th><th class="num">위험보험료</th><th class="num">실제손해</th>
             <th class="num">손해율</th><th class="num">상대도</th><th class="num mono-col">보정 상대도</th><th class="num">95% 구간</th><th class="mono-col">병합</th></tr></thead>
           <tbody id="decileBody"></tbody>
         </table></div>
       </div>
-      <p class="note">손해율 = (Σ보험금 + Σ준비금변동) ÷ Σ위험보험료 · 상대도 = 분위 손해율 ÷ 전체 손해율 · 점선은 상대도 1.0(전체 평균) ·
-        <b>95% 구간</b>(차트의 세로 막대)은 증권 붓스트랩 <span class="bootN"></span>회로 구한 범위입니다. 구간이 서로 겹치는 분위끼리의 차이는 우연일 수 있습니다.</p>
+      <p class="note">손해율 = (Σ보험금 + Σ준비금변동) ÷ Σ위험보험료 · 상대도 = 분위 손해율 ÷ 전체 손해율 · 금액 단위 억원 ·
+        <b>95% 구간</b>(차트의 세로 선)은 증권 붓스트랩 <span class="bootN"></span>회로 구한 범위입니다. 구간이 서로 겹치는 분위끼리의 차이는 우연일 수 있습니다.
+        <span class="heat-legend">손해율 칸 배경 <i style="background:rgba(180,35,42,.07)"></i><i style="background:rgba(180,35,42,.15)"></i><i style="background:rgba(180,35,42,.26)"></i> 전체 평균보다 높을수록 진함</span></p>
     </div>
     <div class="card" id="dqCard">
       <h2>연체등급별 상대도</h2>
@@ -299,18 +466,38 @@
         연체자는 신용 분위도 나쁜 경우가 많아, 보정 상대도는 신용평점에 이미 반영된 몫을 뺀 연체 고유 효과입니다.
         95% 구간이 1을 포함하면 그 등급의 연체 효과는 통계적으로 확인되지 않은 것입니다.</p>
     </div>
+  </section>
+
+  <section id="tab-strat" class="tab">
+    <div class="sec-head"><span class="no">STEP 3</span><h2>층화검증</h2><p>연체정보 미포함(A) vs 포함(B) 모델 비교 · 세그먼트별 일관성</p></div>
     <div class="card" id="sepCard">
-      <h2>분리도 비교 (버전 A: 신용 10분위만 · 버전 B: 10분위 × 연체 보정)</h2>
-      <div class="kpis" id="sepKpis"></div>
+      <h2>모델 비교: 연체정보 미포함(A) vs 포함(B)</h2>
+      <div class="cmp-banner">
+        <div class="cmp-side a">
+          <div class="tag">MODEL A</div><div class="name">연체정보 미포함 · 신용 10분위만</div>
+          <div class="lift" id="sepLiftA">-</div><div class="cap" id="sepCapA">리프트(분리도) · 교차 검증</div>
+        </div>
+        <div class="cmp-delta" id="sepKpis"></div>
+        <div class="cmp-side b">
+          <div class="tag">MODEL B</div><div class="name">연체정보 포함 · 10분위 × 연체 보정</div>
+          <div class="lift" id="sepLiftB">-</div><div class="cap" id="sepCapB">리프트(분리도) · 교차 검증</div>
+        </div>
+      </div>
+      <div class="liftbars" id="sepLiftBars"></div>
       <p class="note" id="sepCvNote"></p>
-      <div class="tbl" style="margin-top:12px"><table>
-        <thead><tr><th>종합상대도 구간 (10등분, 같은 데이터 기준)</th><th class="num">A 상대도 범위</th><th class="num">A 손해율</th>
-          <th class="num">B 상대도 범위</th><th class="num">B 손해율</th></tr></thead>
+      <div class="cmp-charts">
+        <div><h3>모델 A <span class="h-sub">종합상대도 10등분 구간별 손해율</span></h3><div class="chart gray" id="sepChartA"></div></div>
+        <div><h3>모델 B <span class="h-sub">종합상대도 10등분 구간별 손해율</span></h3><div class="chart" id="sepChartB"></div></div>
+      </div>
+      <div class="tbl" style="margin-top:16px"><table>
+        <thead><tr><th>종합상대도 구간 (10등분, 같은 데이터 기준)</th><th class="num">계약 수</th><th class="num">A 상대도 범위</th><th class="num">A 손해율</th>
+          <th class="num">B 상대도 범위</th><th class="num">B 손해율</th><th class="num">손해율 차이 (B − A)</th></tr></thead>
         <tbody id="sepBody"></tbody>
       </table></div>
-      <p class="note">분리도 = 계약을 종합상대도 순으로 10등분했을 때 (최악 10% 손해율 ÷ 최우량 10% 손해율). 클수록 우량·불량을 잘 가려냅니다.
+      <p class="note">리프트(분리도) = 계약을 종합상대도 순으로 10등분했을 때 (최악 10% 손해율 ÷ 최우량 10% 손해율). 클수록 우량·불량을 잘 가려냅니다.
         <b>교차 검증</b>: 증권을 무작위로 반씩 나눠 한쪽으로 상대도를 추정하고 다른 쪽에서 잽니다. 같은 데이터로 정렬·채점하면
-        우연히 손해가 높았던 칸이 '최악'으로 뽑혀 분리도가 부풀려지므로(가상 데이터 검증에서 약 8~10%), 교차 검증 값을 주 지표로 봅니다.</p>
+        우연히 손해가 높았던 칸이 '최악'으로 뽑혀 분리도가 부풀려지므로(가상 데이터 검증에서 약 8~10%), 교차 검증 값을 주 지표로 봅니다.
+        막대 위 숫자는 손해율, 아래 숫자는 계약 수, 점선은 전체 손해율입니다.</p>
     </div>
     <div class="card" id="segCard">
       <h2>세그먼트별 연체 수준에 따른 손해율</h2>
@@ -331,24 +518,26 @@
         (Σ실제손해 ÷ Σ(위험보험료 × 전체손해율 × 10분위 상대도)를 정상과 비교하므로 신용 분위 차이는 빠집니다).
         <span class="lowcred">흐린 칸</span>은 사고 <span id="minClaims"></span>건 미만으로 신뢰가 부족합니다.
         <b>굵은 배수</b>는 1.3 이상이면서 신뢰 가능한 칸입니다.
+        <span class="heat-legend">배경: 손해율 열은 전체 평균 대비, 등급 열은 같은 행 손해율 대비 높을수록 진함</span>
         <br>※ '전체 담보'로 보면 고액 담보(일반암·장해 등) 사고 몇 건이 손해율을 좌우해 사고 건수가 많아도 흔들릴 수 있습니다.
         연령대·성별은 담보를 골라(예: 질병입원) 함께 보는 것을 권장합니다.</p>
     </div>
   </section>
 
   <section id="tab-apps" class="tab">
+    <div class="sec-head"><span class="no">STEP 4</span><h2>스코어 결과</h2><p>청약별 스코어 · 권고 인수조건 · 담보별 권고 가입금액</p></div>
     <div class="card">
-      <div class="row" style="justify-content:space-between">
-        <h2 style="margin:0">권고 인수조건 분포 <span class="muted" id="uwBasis" style="font-weight:400;font-size:12px"></span></h2>
+      <div class="card-head">
+        <h2>권고 인수조건 분포 <span class="sub" id="uwBasis"></span></h2>
         <button id="exportBtn" class="btn ghost">결과 CSV 내보내기</button>
       </div>
-      <div class="kpis" id="uwKpis" style="margin-top:12px"></div>
+      <div class="kpis" id="uwKpis"></div>
       <p class="note" id="uwRuleNote"></p>
     </div>
     <div class="two apps">
       <div class="card">
         <h2>청약 목록</h2>
-        <div class="row" style="margin-bottom:12px">
+        <div class="row no-print" style="margin-bottom:12px">
           <label>권고 <select id="appFilter"></select></label>
           <label>청약번호 <input id="appSearch" type="search" placeholder="A2610…" size="12"></label>
           <span class="muted" id="appCount"></span>
@@ -1215,6 +1404,11 @@ const fmtInt = n => n == null ? '-' : n.toLocaleString('ko-KR');
 const fmtPct = (x, d = 1) => x == null ? '-' : (x * 100).toFixed(d) + '%';
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const tick = () => new Promise(r => setTimeout(r, 0)); // 무거운 계산 전에 화면 갱신 기회 주기
+// 손해율 히트맵: 기준값보다 높은 칸만 옅은 레드 배경, 기준 대비 높을수록 진하게 (표시 전용)
+const heat = (v, base) => {
+  if (v == null || !base || !(v > base)) return '';
+  return ` style="background:rgba(180,35,42,${Math.min(0.28, 0.05 + (v / base - 1) * 0.35).toFixed(3)})"`;
+};
 
 document.querySelectorAll('nav button').forEach(b => b.addEventListener('click', () => {
   if (b.disabled) return;
@@ -1308,7 +1502,8 @@ function renderFileStatus() {
 }
 
 function setTabsEnabled(on) {
-  document.querySelectorAll('nav button[data-tab="analysis"], nav button[data-tab="apps"]').forEach(b => { b.disabled = !on; });
+  document.querySelectorAll('nav button[data-tab="analysis"], nav button[data-tab="strat"], nav button[data-tab="apps"]').forEach(b => { b.disabled = !on; });
+  document.body.classList.toggle('analyzed', on);
 }
 
 function requiredReady() {
@@ -1365,14 +1560,35 @@ function runAnalysis() {
       + (ds.basis !== 'raw' ? ' · ' + LOSS_BASIS_LABELS[ds.basis] : '')],
   ]);
   $('summaryKpis').innerHTML = kpis;
-  $('anaKpis').innerHTML = kpis;
+  renderTopKpis(ds, dec);
   $('summaryCard').style.display = '';
   renderDecile(dec);
   renderDelinqAndSeparation(ds, dec);
   initApps(ds, dec, state.delinq);
   setTabsEnabled(true);
-  $('runMsg').textContent = '분석 완료 · ② 분석·비교 탭에서 결과를 확인하세요';
+  $('runMsg').textContent = '분석 완료 · 2 상관분석 → 3 층화검증 → 4 스코어 결과 탭에서 확인하세요';
   runUncertainty(ds, dec);
+}
+
+// 상단 KPI 4개. 표시용 등급 A~E = 신용 10분위 2개씩 묶음 (A 1·2 · B 3·4 · C 5·6 · D 7·8 · E 9·10분위)
+function renderTopKpis(ds, dec) {
+  const sum = (rows, k) => rows.reduce((s, r) => s + r[k], 0);
+  const lrOf = rows => sum(rows, 'premium') ? sum(rows, 'loss') / sum(rows, 'premium') : null;
+  const pick = (lo, hi) => dec.rows.filter(r => r.decile >= lo && r.decile <= hi);
+  const total = sum(dec.rows, 'n'), high = pick(7, 10), gA = pick(1, 2), gE = pick(9, 10);
+  const lrA = lrOf(gA), lrE = lrOf(gE), lift = lrA && lrE != null ? lrE / lrA : null;
+  const card = (label, value, sub, cls = '') => `<div class="kcard ${cls}"><div class="k-label">${label}</div>
+    <div class="k-value">${value}</div><div class="k-sub">${sub}</div></div>`;
+  $('topKpis').innerHTML = [
+    card('전체 손해율', fmtPct(dec.overall), `위험보험료 ${fmtEok(sum(dec.rows, 'premium'))} · 손해 ${fmtEok(sum(dec.rows, 'loss'))}`
+      + (ds.basis !== 'raw' ? ` · ${LOSS_BASIS_LABELS[ds.basis]}` : '')),
+    card('고위험 등급(D·E) 비중', total ? fmtPct(sum(high, 'n') / total) : '-',
+      `${fmtInt(sum(high, 'n'))}건 · 신용 7~10분위 · 손해율 ${fmtPct(lrOf(high))}`, 'risk'),
+    card('등급 간 손해율 격차 (리프트)', lift == null ? '-' : `${lift.toFixed(2)}<small>배</small>`,
+      `E(9·10분위) ${fmtPct(lrE)} ÷ A(1·2분위) ${fmtPct(lrA)}`),
+    card('분석 건수', `${fmtInt(ds.counts.analyzed)}<small>건</small>`,
+      `담보 ${fmtInt(ds.cov.length)}행 · 청약 ${fmtInt(ds.counts.apps)}건 · ${ds.hasDelinq ? '모델 A·B' : '모델 A만'}`),
+  ].join('');
 }
 
 // 신뢰구간·교차 검증 분리도는 몇 초 걸리므로 기본 결과를 먼저 그린 뒤 채운다 (설정이 바뀌면 이전 계산 결과는 버림)
@@ -1442,12 +1658,16 @@ function renderDelinqAndSeparation(ds, dec) {
   state.sep = { A: sepA, B: sepB };
   renderSeparationKpis();
   const range = g => g.relMin === g.relMax ? fmtRel(g.relMin) : `${fmtRel(g.relMin)}~${fmtRel(g.relMax)}`;
+  const ov = dec.overall;
   $('sepBody').innerHTML = sepA.groups.map((g, i) => {
     const b = sepB ? sepB.groups[i] : null;
     const label = i === 0 ? '1 (최우량 10%)' : i === sepA.groups.length - 1 ? `${i + 1} (최악 10%)` : String(i + 1);
-    return `<tr><td>${label}</td><td class="num">${range(g)}</td><td class="num">${fmtPct(g.lr)}</td>
-      <td class="num">${b ? range(b) : '-'}</td><td class="num">${b ? fmtPct(b.lr) : '-'}</td></tr>`;
+    const diff = b ? (b.lr - g.lr) * 100 : null;
+    return `<tr><td>${label}</td><td class="num">${fmtInt(g.n)}</td><td class="num">${range(g)}</td><td class="num"${heat(g.lr, ov)}>${fmtPct(g.lr)}</td>
+      <td class="num">${b ? range(b) : '-'}</td><td class="num"${b ? heat(b.lr, ov) : ''}>${b ? fmtPct(b.lr) : '-'}</td>
+      <td class="num">${diff == null ? '-' : `${diff >= 0 ? '+' : ''}${diff.toFixed(1)}%p`}</td></tr>`;
   }).join('');
+  renderSepCharts(sepA, sepB, ov);
   if (ds.hasDelinq) initSegment(ds, dec);
 }
 
@@ -1459,25 +1679,47 @@ function renderDelinqRows(dq, ci) {
     const c = ci?.adjRel?.[r.grade];
     const flag = c && c.lo != null && c.lo <= 1 && c.hi >= 1 ? ' <span class="badge muted" title="95% 구간이 1을 포함">효과 미확인</span>' : '';
     return `<tr><td>${r.grade} ${r.label}</td><td class="muted" style="font-size:12px">${esc(state.dqRule[r.grade])}</td>
-      <td class="num">${fmtInt(r.n)}</td><td class="num">${fmtPct(r.n / state.dqTotal)}</td><td class="num">${fmtPct(r.lr)}</td>
+      <td class="num">${fmtInt(r.n)}</td><td class="num">${fmtPct(r.n / state.dqTotal)}</td><td class="num"${heat(r.lr, state.decile?.overall)}>${fmtPct(r.lr)}</td>
       <td class="num">${fmtRel(r.simpleRel)}</td><td class="num"><b>${fmtRel(r.adjRel)}</b></td>
       <td class="num">${ci ? ciText(c) : '…'}${flag}</td></tr>`;
   }).join('');
 }
 
-// 분리도: 교차 검증을 주 지표로, 같은 데이터 기준은 참고로
+// 분리도(리프트): 교차 검증을 주 지표로, 같은 데이터 기준은 참고로. A(연체 미포함)와 B(포함)를 좌우로 비교
 function renderSeparationKpis() {
   const { A: sepA, B: sepB } = state.sep, cv = state.cv;
-  const main = cv ? [
-    ['분리도 A · 교차 검증', cv.A.toFixed(2)],
-    ['분리도 B · 교차 검증', cv.B != null ? cv.B.toFixed(2) : '연체정보 없음'],
-    ['개선폭 (B − A) · 교차 검증', cv.B != null ? signedRel(cv.B - cv.A) : '-'],
-  ] : [['분리도 · 교차 검증', '계산 중…']];
-  $('sepKpis').innerHTML = kpiHtml(main) + `<div class="kpi sub"><div class="label">참고: 같은 데이터 기준 A / B</div>
-    <div class="value">${sepA.ratio.toFixed(2)} / ${sepB ? sepB.ratio.toFixed(2) : '-'}</div></div>`;
+  const vA = cv ? cv.A : null, vB = cv ? cv.B : null;
+  $('sepLiftA').innerHTML = cv ? `${vA.toFixed(2)}<small class="muted" style="font-size:14px">배</small>` : '계산 중…';
+  $('sepLiftB').innerHTML = !sepB ? '<span class="muted" style="font-size:16px">연체정보 없음</span>'
+    : cv && vB != null ? `${vB.toFixed(2)}<small class="muted" style="font-size:14px">배</small>` : '계산 중…';
+  $('sepCapA').textContent = `리프트 · 교차 검증 (같은 데이터 기준 ${sepA.ratio.toFixed(2)})`;
+  $('sepCapB').textContent = sepB ? `리프트 · 교차 검증 (같은 데이터 기준 ${sepB.ratio.toFixed(2)})` : '연체정보 파일이 없어 계산하지 않음';
+  const d = cv && vB != null ? vB - vA : null;
+  $('sepKpis').innerHTML = `<div class="lbl">리프트 차이 (B − A)</div>
+    <div class="val ${d == null ? '' : d >= 0 ? 'up' : 'down'}">${d == null ? (cv ? '-' : '…') : signedRel(d)}</div>
+    <div class="cap">${d == null ? '교차 검증 기준' : `A 대비 ${d >= 0 ? '+' : ''}${(d / vA * 100).toFixed(1)}% · 교차 검증`}</div>`;
+  const rows = [['A · 연체 미포함', vA, sepA.ratio, ''], ...(sepB ? [['B · 연체 포함', vB, sepB.ratio, 'b']] : [])];
+  const max = Math.max(...rows.map(r => Math.max(r[1] ?? 0, r[2])));
+  const w = v => `${(v / max * 100).toFixed(1)}%`;
+  $('sepLiftBars').innerHTML = rows.map(([label, v, ins, cls]) => `<div class="liftbar ${cls}"><span>${label}</span>
+    <div class="track"><div class="fill" style="width:${v == null ? 0 : w(v)}"></div><span class="ins" style="left:${w(ins)}" title="같은 데이터 기준 ${ins.toFixed(2)}"></span></div>
+    <span class="v">${v == null ? '…' : v.toFixed(2)}</span></div>`).join('')
+    + '<div class="legend"><span>막대 = 교차 검증 리프트 (0 기준)</span><span><i style="background:var(--text-2);width:2px"></i>같은 데이터 기준 리프트(참고)</span></div>';
   $('sepCvNote').textContent = !cv ? '교차 검증 분리도 계산 중…' : cv.B == null ? `교차 검증: 반분 × ${cv.repeats}회 반복 평균.`
     : `교차 검증: 반분 × ${cv.repeats}회 반복 평균. B가 A보다 높았던 반복은 ${cv.repeats}회 중 ${Math.round(cv.BgtA * cv.repeats)}회입니다`
       + (cv.BgtA < 0.8 ? ' — 연체정보의 변별력 개선은 이 데이터 규모로는 확실하지 않습니다.' : '.');
+}
+
+// A·B 구간별 손해율 차트: 같은 세로축 범위로 그려 바로 비교되게 함
+function renderSepCharts(sepA, sepB, overall) {
+  const top = Math.max(overall, ...sepA.groups.map(g => g.lr), ...(sepB ? sepB.groups.map(g => g.lr) : []));
+  const opts = { ref: overall, top, fmt: v => fmtPct(v), axisFmt: v => (v * 100).toFixed(0) + '%',
+    yTitle: '손해율', xTitle: '종합상대도 구간 (1 최우량 → 10 최악)' };
+  const data = (sep, name) => sep.groups.map((g, i) => ({ label: String(i + 1), value: g.lr, n: g.n,
+    tip: `${name} ${i + 1}구간 · 손해율 ${fmtPct(g.lr)} · 상대도 ${fmtRel(g.relMin)}~${fmtRel(g.relMax)} · ${fmtInt(g.n)}건` }));
+  barChart($('sepChartA'), data(sepA, '모델 A'), opts);
+  if (sepB) barChart($('sepChartB'), data(sepB, '모델 B'), opts);
+  else $('sepChartB').innerHTML = '<p class="muted">연체정보 파일(credit_delinq.csv)이 없어 모델 B를 계산하지 않았습니다.</p>';
 }
 
 function initSegment(ds, dec) {
@@ -1505,11 +1747,12 @@ function renderSegment(segs, dim, coverage, ds) {
   $('segHead').textContent = { coverage: '담보', gender: '성별', age: '연령대',
     sumInsured: `${covName} 가입금액${isDaily ? '(일당)' : ''}` }[dim];
   const label = s => dim === 'sumInsured' ? fmtWon(s.key) : esc(s.key);
-  const cell = (c, html) => `<td class="num${c.credible ? '' : ' lowcred'}" title="담보 ${fmtInt(c.n)}건 · 사고 ${fmtInt(c.claims)}건">${html}</td>`;
+  const cell = (c, html, bg = '') => `<td class="num${c.credible ? '' : ' lowcred'}"${bg} title="담보 ${fmtInt(c.n)}건 · 사고 ${fmtInt(c.claims)}건">${html}</td>`;
+  const overall = state.decile?.overall;
   const mult = c => c.multiple == null ? '-' : (c.credible && c.multiple >= 1.3 ? `<b>×${c.multiple.toFixed(2)}</b>` : `×${c.multiple.toFixed(2)}`);
   $('segBody').innerHTML = segs.length ? segs.map(s => `<tr><td>${label(s)}</td>
-      <td class="num">${fmtInt(s.total.n)}</td><td class="num">${fmtInt(s.total.claims)}</td><td class="num">${fmtPct(s.total.lr)}</td>
-      ${s.cells.map(c => cell(c, fmtPct(c.lr, 0))).join('')}
+      <td class="num">${fmtInt(s.total.n)}</td><td class="num">${fmtInt(s.total.claims)}</td><td class="num"${heat(s.total.lr, overall)}>${fmtPct(s.total.lr)}</td>
+      ${s.cells.map(c => cell(c, fmtPct(c.lr), c.credible ? heat(c.lr, s.total.lr) : '')).join('')}
       ${cell(s.cells[1], mult(s.cells[1]))}${cell(s.cells[2], mult(s.cells[2]))}</tr>`).join('')
     : '<tr><td colspan="9" class="muted">해당 데이터가 없습니다.</td></tr>';
 }
@@ -1593,7 +1836,7 @@ function showApp(appNo) {
       <tbody>${a.coverageResults.map(c => `<tr><td>${esc(c.name)}${/입원/.test(c.name) ? ' <span class="muted">(일당)</span>' : ''}</td>
         <td class="num">${fmtWon(c.sum_insured)}</td><td class="num">${c.pct == null ? '-' : c.pct + '%'}</td>
         <td class="num"><b>${c.recommended == null ? '-' : fmtWon(c.recommended)}</b></td><td>${noteBadge(c.note)}</td></tr>`).join('')}
-      <tr><td><b>합계</b></td><td class="num">${fmtWon(totalSI)}</td><td></td><td class="num"><b>${totalRec == null ? '심사역 판단' : fmtWon(totalRec)}</b></td><td></td></tr>
+      <tr class="total"><td>합계</td><td class="num">${fmtWon(totalSI)}</td><td></td><td class="num"><b>${totalRec == null ? '심사역 판단' : fmtWon(totalRec)}</b></td><td></td></tr>
       </tbody>
     </table></div>
     <p class="note">입원 담보는 일당 금액이라 합계는 참고용입니다.</p>`;
@@ -1620,52 +1863,59 @@ function renderDecile(dec, ci = null) {
   $('decileBody').closest('table').classList.toggle('mono-off', !dec.monotone);
   $('decileBody').innerHTML = dec.rows.map(r => `<tr><td>${r.decile}분위</td>
     <td class="num">${fmtInt(r.n)}</td><td class="num" title="${fmtInt(Math.round(r.premium))}원">${fmtEok(r.premium)}</td>
-    <td class="num" title="${fmtInt(Math.round(r.loss))}원">${fmtEok(r.loss)}</td><td class="num">${fmtPct(r.lr)}</td>
+    <td class="num" title="${fmtInt(Math.round(r.loss))}원">${fmtEok(r.loss)}</td><td class="num"${heat(r.lr, dec.overall)}>${fmtPct(r.lr)}</td>
     <td class="num">${dec.monotone ? fmtRel(r.rawRel) : `<b>${fmtRel(r.rel)}</b>`}</td>
     <td class="num mono-col"><b>${fmtRel(r.rel)}</b></td>
     <td class="num">${ci ? ciText(ci.decRel[r.decile - 1]) : '…'}</td>
     <td class="mono-col">${r.block.includes('~') ? `<span class="badge info">${r.block}분위</span>` : ''}</td></tr>`).join('');
   barChart($('decileChart'), dec.rows.map(r => ({
-    label: String(r.decile), value: r.rel, mark: dec.monotone && Math.abs(r.rel - r.rawRel) > 1e-9 ? r.rawRel : null,
+    label: String(r.decile), value: r.rel, n: r.n, mark: dec.monotone && Math.abs(r.rel - r.rawRel) > 1e-9 ? r.rawRel : null,
     lo: ci?.decRel[r.decile - 1]?.lo, hi: ci?.decRel[r.decile - 1]?.hi,
     tip: `${r.decile}분위 · 상대도 ${fmtRel(r.rel)}${dec.monotone ? ` (보정 전 ${fmtRel(r.rawRel)})` : ''}${ci ? ` · 95% ${ciText(ci.decRel[r.decile - 1])}` : ''} · 손해율 ${fmtPct(r.lr)} · ${fmtInt(r.n)}건`,
-  })), { ref: 1.0, xTitle: dec.monotone ? '신용 10분위 (막대: 보정 상대도 · 검은 눈금: 보정 전)' : '신용 10분위' });
+  })), { ref: 1.0, yTitle: '상대도 (전체 = 1.00)',
+    xTitle: dec.monotone ? '신용 10분위 (막대: 보정 상대도 · 검은 눈금: 보정 전)' : '신용 10분위 (1 우량 → 10 불량)' });
 }
 
-// 의존성 없는 세로 막대차트 (SVG). 0 기준, ref 값에 점선
-function barChart(el, data, { ref = null, xTitle = '' } = {}) {
-  const W = 480, H = 280, m = { t: 12, r: 8, b: 40, l: 36 };
+// 의존성 없는 세로 막대차트 (SVG). 0 기준, ref 값에 점선, 막대 위 값 라벨, 분류 라벨 아래 건수(n), 축 제목
+function barChart(el, data, { ref = null, xTitle = '', yTitle = '', fmt = fmtRel, axisFmt = v => v.toFixed(2), top: topIn = null } = {}) {
+  const W = 560, H = 300, m = { t: 20, r: 10, b: 60, l: 56 };
   const iw = W - m.l - m.r, ih = H - m.t - m.b;
-  const maxV = Math.max(ref ?? 0, ...data.map(d => Math.max(d.value ?? 0, d.mark ?? 0, d.hi ?? 0)));
-  const step = maxV > 2 ? 0.5 : 0.25;
-  const top = Math.ceil(maxV / step) * step || 1;
+  const maxV = topIn ?? Math.max(ref ?? 0, ...data.map(d => Math.max(d.value ?? 0, d.mark ?? 0, d.hi ?? 0)));
+  const raw = (maxV || 1) / 5, pow = 10 ** Math.floor(Math.log10(raw)), f = raw / pow;
+  const step = (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * pow;
+  const top = Math.ceil((maxV * 1.06) / step) * step || 1;
   const y = v => m.t + ih - (v / top) * ih;
-  const bw = iw / data.length, gap = Math.max(2, bw * 0.25);
-  let g = '<g class="grid axis">';
+  const bw = iw / data.length, gap = Math.max(4, bw * 0.3);
+  let g = '<g class="grid">';
   for (let v = 0; v <= top + 1e-9; v += step) {
     g += `<line x1="${m.l}" x2="${W - m.r}" y1="${y(v)}" y2="${y(v)}"></line>
-      <text x="${m.l - 6}" y="${y(v) + 4}" text-anchor="end">${v.toFixed(2)}</text>`;
+      <text x="${m.l - 6}" y="${y(v) + 4}" text-anchor="end">${axisFmt(v)}</text>`;
   }
-  g += '</g>';
+  g += `</g><line class="base" x1="${m.l}" x2="${W - m.r}" y1="${y(0)}" y2="${y(0)}"></line>`;
   let bars = '';
   data.forEach((d, i) => {
     const x = m.l + i * bw + gap / 2, w = bw - gap, v = d.value ?? 0;
-    const h = Math.max(0, y(0) - y(v)), r = Math.min(4, w / 2, h);
-    // 위쪽 모서리만 둥글게 (바닥은 기준선에 붙임)
+    const h = Math.max(0, y(0) - y(v)), r = Math.min(2, w / 2, h);
     const path = `M${x},${y(0)} V${y(v) + r} Q${x},${y(v)} ${x + r},${y(v)} H${x + w - r} Q${x + w},${y(v)} ${x + w},${y(v) + r} V${y(0)} Z`;
+    const labelTop = Math.max(v, d.hi ?? v, d.mark ?? v);
     bars += `<rect class="hit" data-i="${i}" x="${m.l + i * bw}" y="${m.t}" width="${bw}" height="${ih}"></rect>
       <path class="bar" d="${path}"></path>${d.mark == null ? '' :
         `<line class="mark" x1="${x - 3}" x2="${x + w + 3}" y1="${y(d.mark)}" y2="${y(d.mark)}"></line>`}${d.lo == null ? '' :
         `<line class="ci" x1="${x + w / 2}" x2="${x + w / 2}" y1="${y(d.lo)}" y2="${y(d.hi)}"></line>
          <line class="ci" x1="${x + w / 2 - 4}" x2="${x + w / 2 + 4}" y1="${y(d.lo)}" y2="${y(d.lo)}"></line>
          <line class="ci" x1="${x + w / 2 - 4}" x2="${x + w / 2 + 4}" y1="${y(d.hi)}" y2="${y(d.hi)}"></line>`}
-      <text class="axis" x="${x + w / 2}" y="${H - m.b + 16}" text-anchor="middle">${esc(d.label)}</text>`;
+      ${d.value == null ? '' : `<text class="vlab" x="${x + w / 2}" y="${y(labelTop) - 5}" text-anchor="middle">${esc(fmt(d.value))}</text>`}
+      <text class="xlab" x="${x + w / 2}" y="${y(0) + 15}" text-anchor="middle">${esc(d.label)}</text>
+      ${d.n == null ? '' : `<text class="nlab" x="${x + w / 2}" y="${y(0) + 28}" text-anchor="middle">${fmtInt(d.n)}</text>`}`;
   });
   const refLine = ref == null ? '' :
     `<line class="ref" x1="${m.l}" x2="${W - m.r}" y1="${y(ref)}" y2="${y(ref)}"></line>`;
-  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(xTitle)} 막대차트">
-    ${g}<g class="axis">${bars}</g>${refLine}
-    <text class="axis" x="${m.l + iw / 2}" y="${H - 4}" text-anchor="middle" style="fill:var(--muted);font-size:11px">${esc(xTitle)}</text>
+  const hasN = data.some(d => d.n != null);
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(yTitle)} · ${esc(xTitle)} 막대차트">
+    ${g}${refLine}<g>${bars}</g>
+    ${hasN ? `<text class="nlab" x="${m.l - 6}" y="${y(0) + 28}" text-anchor="end">계약 수</text>` : ''}
+    <text class="ttl" x="${m.l + iw / 2}" y="${H - 6}" text-anchor="middle">${esc(xTitle)}</text>
+    ${yTitle ? `<text class="ttl" transform="translate(14 ${m.t + ih / 2}) rotate(-90)" text-anchor="middle">${esc(yTitle)}</text>` : ''}
     </svg><div class="tip"></div>`;
   const tip = el.querySelector('.tip');
   el.querySelectorAll('.hit').forEach(h => {
