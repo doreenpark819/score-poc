@@ -79,6 +79,11 @@ const quant = (arr, q) => { const a = [...arr].sort((x, y) => x - y); const i = 
 const mean = a => a.reduce((s, x) => s + x, 0) / a.length;
 const sd = a => { const m = mean(a); return Math.sqrt(a.reduce((s, x) => s + (x - m) ** 2, 0) / (a.length - 1)); };
 
+// 분리도 진단에 쓸 참값 상대도: 직전 검증 결과가 있으면 그 값, 없으면 앱 공식 참값 근사(DGP 정규화)
+let truthPre;
+try { truthPre = JSON.parse(fs.readFileSync(path.join(__dirname, 'stat_validation.json'), 'utf8')).truth; } catch { /* 첫 실행 */ }
+if (!truthPre) { const m = TRUE_DECILE.reduce((a, b) => a + b, 0) / 10; truthPre = { decRel: TRUE_DECILE.map(x => x / m), adjRel: [1, 1.2, 1.4] }; }
+
 // ---------- 반복 실험 ----------
 const runs = [];
 const popCnt = Array(30).fill(0), popPrem = Array(30).fill(0), popExp = Array(30).fill(0);
@@ -119,6 +124,17 @@ for (const seed of SEEDS) {
     const v = boot[key].map(x => idx == null ? x : x[idx]);
     return { lo: quant(v, 0.025), hi: quant(v, 0.975), se: sd(v) };
   };
+  // 분리도 진단: 같은 표본을 참값 순서로 정렬(선택 편향 없음) / 절반으로 추정·나머지 절반으로 측정(교차)
+  est.sepOracleA = calc.separation(ds.policies, p => truthPre.decRel[p.decile - 1]).ratio;
+  est.sepOracleB = calc.separation(ds.policies, p => truthPre.decRel[p.decile - 1] * truthPre.adjRel[p.grade]).ratio;
+  {
+    const halves = [ds.policies.filter((_, i) => i % 2 === 0), ds.policies.filter((_, i) => i % 2 === 1)];
+    est.sepHoldA = 0; est.sepHoldB = 0;
+    for (const [tr, te] of [[0, 1], [1, 0]]) {
+      const d2 = calc.decileTable(halves[tr], { monotone: false }), q2 = calc.delinqTable(halves[tr], d2), f2 = calc.makeRelFns(d2, q2);
+      est.sepHoldA += calc.separation(halves[te], f2.A).ratio / 2; est.sepHoldB += calc.separation(halves[te], f2.B).ratio / 2;
+    }
+  }
   runs.push({
     seed, est, sampleTruth: metricsFromCells(cPrem, cExp),
     ci: {
@@ -156,8 +172,14 @@ for (let d = 0; d < 10; d++) rows.push(summarize(`10분위 상대도 ${d + 1}분
 const L = CONFIG.DELINQ.LABELS;
 for (let g = 0; g < 3; g++) rows.push(summarize(`연체 단순 상대도 ${L[g]}`, truth.simpleRel[g], r => r.est.simpleRel[g], r => r.ci.simpleRel[g]));
 for (let g = 0; g < 3; g++) rows.push(summarize(`연체 보정 상대도 ${L[g]}`, truth.adjRel[g], r => r.est.adjRel[g], r => r.ci.adjRel[g]));
-rows.push(summarize('분리도 A', truth.sepA, r => r.est.sepA));
-rows.push(summarize('분리도 B', truth.sepB, r => r.est.sepB));
+rows.push(summarize('분리도 A (앱 방식: 같은 데이터로 정렬·측정)', truth.sepA, r => r.est.sepA));
+rows.push(summarize('분리도 B (앱 방식: 같은 데이터로 정렬·측정)', truth.sepB, r => r.est.sepB));
+const sepDiag = {
+  oracleA: mean(runs.map(r => r.est.sepOracleA)), oracleB: mean(runs.map(r => r.est.sepOracleB)),
+  inA: mean(runs.map(r => r.est.sepA)), inB: mean(runs.map(r => r.est.sepB)),
+  holdA: mean(runs.map(r => r.est.sepHoldA)), holdB: mean(runs.map(r => r.est.sepHoldB)),
+  holdBgtA: runs.filter(r => r.est.sepHoldB > r.est.sepHoldA).length / runs.length,
+};
 
 // 방향성 검정
 const share = f => runs.filter(f).length / runs.length;
@@ -187,7 +209,7 @@ for (let d = 1; d <= 10; d++) for (let g = 0; g < 3; g++) {
 const meanTD = TRUE_DECILE.reduce((s, x) => s + x, 0) / 10;
 const result = {
   generatedAt: new Date().toISOString(), replications: R, bootstrap: B, policiesPerRun: runs[0] && runs[0].apps ? 100000 : null,
-  seeds: SEEDS, truth, rows, direction,
+  seeds: SEEDS, truth, rows, direction, sepDiag,
   uw: { agreementMean: mean(agree), agreementMin: Math.min(...agree), agreementMax: Math.max(...agree), confusion: conf, nearEdge },
   dgp: { TRUE_DECILE_normalized: TRUE_DECILE.map(x => x / meanTD), TRUE_DELINQ },
   seconds: (Date.now() - t0) / 1000,
@@ -224,6 +246,18 @@ for (const r of rows) {
 md += `
 - 분리도는 증권 정렬이 필요해 붓스트랩을 생략했습니다. 반복 실험 분포로만 판정합니다.
 - **반복 표준편차 ≈ 붓스트랩 SE**이면, 화면 한 번의 결과에 붙일 오차 범위를 붓스트랩으로 구할 수 있다는 뜻입니다.
+
+### 분리도 과대 추정의 원인 (반복 ${R}회 평균)
+| 측정 방식 | A | B | B − A |
+|---|---|---|---|
+| 참값(모집단) | ${f(truth.sepA, 2)} | ${f(truth.sepB, 2)} | ${(truth.sepB - truth.sepA >= 0 ? '+' : '') + f(truth.sepB - truth.sepA, 2)} |
+| 표본을 **참값 순서**로 정렬 (선택 편향 없음) | ${f(sepDiag.oracleA, 2)} | ${f(sepDiag.oracleB, 2)} | ${(sepDiag.oracleB - sepDiag.oracleA >= 0 ? '+' : '') + f(sepDiag.oracleB - sepDiag.oracleA, 2)} |
+| **앱 방식** (같은 데이터로 상대도 추정·정렬·측정) | ${f(sepDiag.inA, 2)} | ${f(sepDiag.inB, 2)} | ${(sepDiag.inB - sepDiag.inA >= 0 ? '+' : '') + f(sepDiag.inB - sepDiag.inA, 2)} |
+| 교차 검증 (절반으로 추정 → 나머지 절반으로 측정) | ${f(sepDiag.holdA, 2)} | ${f(sepDiag.holdB, 2)} | ${(sepDiag.holdB - sepDiag.holdA >= 0 ? '+' : '') + f(sepDiag.holdB - sepDiag.holdA, 2)} |
+
+- 앱 방식은 **같은 데이터로 순서를 정하고 그 데이터로 채점**합니다. 그래서 우연히 손해가 높았던 칸이 '최악'으로 뽑혀 분리도가 부풀려집니다(과적합).
+- 칸이 30개(10분위 × 연체 3등급)인 B가 10개인 A보다 더 부풀려지므로, **B의 개선폭이 실제보다 크게 보입니다.**
+- 교차 검증은 절반 데이터로 추정하니 약간 비관적이지만 선택 편향이 없습니다. 교차 검증에서 B > A인 비율은 ${pct(sepDiag.holdBgtA)}입니다.
 
 ## 2. 방향성 (반복 ${R}회 중 비율)
 | 확인 | 결과 |
