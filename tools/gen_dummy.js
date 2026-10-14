@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // 더미 v4 생성기: 증권 × 담보 단위 데이터 (시드 고정으로 항상 같은 결과)
 // 사용법: node tools/gen_dummy.js  → 저장소 루트에 CSV 7개, tools/expected_v4.json 생성
+//         require('./gen_dummy').simulate({ seed, nPolicies }) → 파일 없이 메모리로 생성 (통계 검증용)
 //
 // 생성 가정 (실제 효과 근거 아님, PRD 8장)
 //  - 위험보험료 = 연령·성별만 반영한 기대손해 (신용·연체 미반영) → 신용·연체 효과가 손해율 차이로 드러남
@@ -109,9 +110,13 @@ function chooseCoverages() {
   return list.map(cv => ({ cv, si: pick(cv.si) }));
 }
 
+// 시드별 생성. 난수 호출 순서를 바꾸지 않아야 공식 데이터(시드 20261014)가 그대로 나온다
+// policies[].expLoss = 사고 우연성을 뺀 기대손해 (통계 검증의 정답지)
+function simulate({ seed: s = 20261014, nPolicies = N_POLICIES, nApps = N_APPS } = {}) {
+seed = s;
 // 참값 평균을 1로 맞추는 정규화 (위험보험료 기준 가중이 아닌 고객 단순평균, 근사)
 const customers = [];
-for (let i = 1; i <= N_POLICIES; i++) customers.push(makeCustomer('C' + pad(i, 6)));
+for (let i = 1; i <= nPolicies; i++) customers.push(makeCustomer('C' + pad(i, 6)));
 const norm = customers.reduce((s, c) => s + TRUE_DECILE[c.decile - 1] * TRUE_DELINQ[c.grade], 0) / customers.length;
 
 // ---------- 계약·담보·실적 ----------
@@ -128,12 +133,14 @@ customers.forEach((c, i) => {
   contracts.push([policyNo, c.id, ymd(d), c.age, c.gender, channel]);
   const cr = creditRows(c, baseDate); credInfo.push(cr.info); credDelinq.push(cr.delinq);
 
-  let pPrem = 0, pLoss = 0;
+  let pPrem = 0, pLoss = 0, pExp = 0;
   for (const { cv, si } of chooseCoverages()) {
     const base = cv.freq * ageF(cv, c.age) * sexF(cv, c.gender);
     const premium = Math.max(100, round100(base * sevMean(cv, si) * months / 12));
     const credit = TRUE_DECILE[c.decile - 1] * Math.pow(TRUE_DELINQ[c.grade], cv.dq) / norm;
-    const n = poisson(base * credit * months / 12);
+    const lambda = base * credit * months / 12;
+    const n = poisson(lambda);
+    pExp += lambda * sevMean(cv, si) + premium * 0.01; // 기대 사고손해 + 소액 적립의 기댓값
     let paid = 0, reserve = round100(premium * 0.02 * rand()); // IBNR 성격의 소액 적립
     for (let k = 0; k < n; k++) {
       const amt = round1000(sevDraw(cv, si));
@@ -143,12 +150,12 @@ customers.forEach((c, i) => {
     loss.push([policyNo, cv.code, months, premium, paid, reserve, n]);
     pPrem += premium; pLoss += paid + reserve;
   }
-  policies.push({ policy_no: policyNo, decile: c.decile, grade: c.grade, premium: pPrem, loss: pLoss });
+  policies.push({ policy_no: policyNo, decile: c.decile, grade: c.grade, premium: pPrem, loss: pLoss, expLoss: pExp });
 });
 
 // ---------- 청약 ----------
 const apps = [], appCov = [], appCust = [];
-for (let i = 1; i <= N_APPS; i++) {
+for (let i = 1; i <= nApps; i++) {
   const c = makeCustomer('N' + pad(i, 6));
   const d = new Date(Date.UTC(2026, 9, randInt(1, 13)));
   const appNo = 'A2610' + pad(i, 5);
@@ -157,6 +164,12 @@ for (let i = 1; i <= N_APPS; i++) {
   for (const { cv, si } of chooseCoverages()) appCov.push([appNo, cv.code, cv.name, si]);
   appCust.push({ app_no: appNo, decile: c.decile, grade: c.grade });
 }
+return { contracts, contractCov, loss, credInfo, credDelinq, apps, appCov, appCust, policies };
+}
+module.exports = { simulate, COVERAGES, TRUE_DECILE, TRUE_DELINQ };
+
+if (require.main === module) {
+const { contracts, contractCov, loss, credInfo, credDelinq, apps, appCov, appCust, policies } = simulate();
 
 // ---------- CSV 저장 (UTF-8 BOM, LF) ----------
 function writeCsv(name, header, rows) {
@@ -212,3 +225,4 @@ console.log('10분위 상대도', decRel.map(f2).join(', '));
 console.log('연체등급 계약 수', gradeCnt.join(' / '), '| 단순', simpleRel.map(f2).join(' / '), '| 보정', adjRel.map(f2).join(' / '));
 console.log('분리도 A / B', f2(expected.separationA), '/', f2(expected.separationB));
 console.log('청약 권고(B)', JSON.stringify(uwCnt));
+}
