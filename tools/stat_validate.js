@@ -17,12 +17,16 @@ const { simulate, TRUE_DECILE, TRUE_DELINQ } = require('./gen_dummy');
 const ROOT = path.join(__dirname, '..');
 const R = Number(process.argv[2] || 30);
 const B = Number(process.argv[3] || 200);
+const B_METHOD = Number(process.argv[4] || 100);   // 보정 방법 비교용 붓스트랩 수 (앱의 bootstrapCI 사용)
+const CV_REPEATS = 3;                                // 보정 방법 비교용 교차 검증 반복 수 (앱의 separationCV 사용)
+// 보정 방법: [손해 기준, 표시 이름, 상한 분위수]
+const METHODS = [['raw', '원손해', null], ['capped', '대형사고 상한 1%', 0.99], ['capped', '대형사고 상한 5%', 0.95], ['frequency', '빈도 기준', null]];
 const SEEDS = [20261014, ...Array.from({ length: R - 1 }, (_, i) => 1000 + i)];
 
 // index.html 계산 블록을 그대로 실행 (verify.js와 같은 코드, 속도 때문에 vm 대신 Function)
 const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 const block = html.match(/\/\/ @calc-begin[^\n]*\n([\s\S]*?)\/\/ @calc-end/)[1];
-const calc = new Function(block + ';return { CONFIG, buildDataset, decileTable, delinqTable, makeRelFns, separation, assessApps };')();
+const calc = new Function(block + ';return { CONFIG, buildDataset, decileTable, delinqTable, makeRelFns, separation, assessApps, applyLossBasis, bootstrapCI, separationCV };')();
 const { CONFIG } = calc;
 const UW = CONFIG.UW_RULES.map(r => r.label);
 const uwOf = rel => CONFIG.UW_RULES.find(r => rel < r.max).label;
@@ -135,8 +139,25 @@ for (const seed of SEEDS) {
       est.sepHoldA += calc.separation(halves[te], f2.A).ratio / 2; est.sepHoldB += calc.separation(halves[te], f2.B).ratio / 2;
     }
   }
+  // 보정 방법 비교: 앱의 applyLossBasis·bootstrapCI·separationCV·assessApps를 그대로 사용
+  const methods = {};
+  for (const [basis, label, q] of METHODS) {
+    const keepQ = CONFIG.CAP.QUANTILE;
+    if (q) CONFIG.CAP.QUANTILE = q;
+    const md = calc.applyLossBasis(ds, basis);
+    CONFIG.CAP.QUANTILE = keepQ;
+    const mdec = calc.decileTable(md.policies, { monotone: false }), mdq = calc.delinqTable(md.policies, mdec);
+    const mci = calc.bootstrapCI(md.policies, { B: B_METHOD, seed });
+    const mcv = calc.separationCV(md.policies, { repeats: CV_REPEATS, seed });
+    methods[label] = {
+      decRel: mdec.rows.map(r => r.rel), adjRel: mdq.map(r => r.adjRel),
+      ciDec: mci.decRel.map(c => [c.lo, c.hi]), ciAdj: mci.adjRel.map(c => [c.lo, c.hi]),
+      cvA: mcv.A, cvB: mcv.B, cvRuns: mcv.runs,
+      uw: calc.assessApps(md, mdec, mdq).map(a => a.status),
+    };
+  }
   runs.push({
-    seed, est, sampleTruth: metricsFromCells(cPrem, cExp),
+    seed, est, methods, sampleTruth: metricsFromCells(cPrem, cExp),
     ci: {
       overall: ci('overall'), decRel: est.decRel.map((_, i) => ci('decRel', i)),
       simpleRel: [0, 1, 2].map(g => ci('simpleRel', g)), adjRel: [0, 1, 2].map(g => ci('adjRel', g)),
@@ -207,9 +228,30 @@ for (let d = 1; d <= 10; d++) for (let g = 0; g < 3; g++) {
 
 // DGP 참값과의 관계 (해석용): 10분위 참값은 연체 효과와 섞여 있지 않은 '순수' 효과
 const meanTD = TRUE_DECILE.reduce((s, x) => s + x, 0) / 10;
+// ---------- 보정 방법 비교 요약 ----------
+const methodSummary = METHODS.map(([, label]) => {
+  const ms = runs.map(r => r.methods[label]);
+  const rmse = (get, t) => Math.sqrt(mean(ms.map(m => (get(m) - t) ** 2)));
+  const decRmse = mean(truth.decRel.map((t, d) => rmse(m => m.decRel[d], t)));
+  const decBias = mean(truth.decRel.map((t, d) => Math.abs(mean(ms.map(m => m.decRel[d])) - t)));
+  const adjRmse = truth.adjRel.map((t, g) => rmse(m => m.adjRel[g], t));
+  let cov = 0, tot = 0, width = 0;
+  for (const m of ms) {
+    m.ciDec.forEach(([lo, hi], d) => { tot++; width += hi - lo; if (lo <= truth.decRel[d] && truth.decRel[d] <= hi) cov++; });
+    m.ciAdj.forEach(([lo, hi], g) => { tot++; width += hi - lo; if (lo <= truth.adjRel[g] && truth.adjRel[g] <= hi) cov++; });
+  }
+  const cvRuns = ms.flatMap(m => m.cvRuns);
+  let agree = 0, nApps = 0;
+  runs.forEach((r, i) => r.apps.forEach((a, j) => { nApps++; if (uwOf(truthRel(a.decile, a.grade)) === ms[i].uw[j]) agree++; }));
+  const inversions = mean(ms.map(m => m.decRel.filter((v, i, a) => i > 0 && v < a[i - 1]).length));
+  return { label, decRmse, decBias, adjRmse, coverage: cov / tot, ciWidth: width / tot,
+    cvA: mean(ms.map(m => m.cvA)), cvB: mean(ms.map(m => m.cvB)), cvBgtA: cvRuns.filter(x => x.B > x.A).length / cvRuns.length,
+    uwAgree: agree / nApps, inversions };
+});
+
 const result = {
   generatedAt: new Date().toISOString(), replications: R, bootstrap: B, policiesPerRun: runs[0] && runs[0].apps ? 100000 : null,
-  seeds: SEEDS, truth, rows, direction, sepDiag,
+  seeds: SEEDS, truth, rows, direction, sepDiag, methodSummary,
   uw: { agreementMean: mean(agree), agreementMin: Math.min(...agree), agreementMax: Math.max(...agree), confusion: conf, nearEdge },
   dgp: { TRUE_DECILE_normalized: TRUE_DECILE.map(x => x / meanTD), TRUE_DELINQ },
   seconds: (Date.now() - t0) / 1000,
@@ -275,7 +317,27 @@ md += `
 |---|${UW.map(() => '---').join('|')}|
 ${UW.map(o => `| ${o} | ${UW.map(a => conf[o][a].toLocaleString()).join(' | ')} |`).join('\n')}
 
-## 4. 생성 가정(DGP)과의 관계 (해석)
+## 4. 보정 방법 비교 (실데이터 적용 대비)
+앱의 손해 기준 선택지를 같은 데이터에 적용해 참값(기대손해 기준)과 비교했습니다. 반복 ${R}회, 붓스트랩 ${B_METHOD}회, 교차 검증 ${CV_REPEATS}회.
+흔들림을 줄이는 보정은 대신 참값에서 조금 벗어날 수 있어(편향), 둘을 합친 **RMSE(평균 제곱근 오차)**가 작을수록 좋습니다.
+
+| 손해 기준 | 10분위 상대도 RMSE | 10분위 평균 편향 | 연체 보정 RMSE (정상/연체/채무불이행) | 95% 구간 포함률 | 평균 구간 폭 | 교차 검증 분리도 A / B (참값 ${f(truth.sepA, 2)} / ${f(truth.sepB, 2)}) | B>A 비율 | 권고 일치율 | 분위 역전 (회당) |
+|---|---|---|---|---|---|---|---|---|---|
+${methodSummary.map(m => `| ${m.label} | ${f(m.decRmse)} | ${f(m.decBias)} | ${m.adjRmse.map(x => f(x)).join(' / ')} | ${pct(m.coverage)} | ${f(m.ciWidth)} | ${f(m.cvA, 2)} / ${f(m.cvB, 2)} | ${pct(m.cvBgtA)} | ${pct(m.uwAgree)} | ${m.inversions.toFixed(1)} |`).join('\n')}
+
+${(() => {
+  const base = methodSummary[0], best = [...methodSummary].sort((a, b) => a.decRmse - b.decRmse)[0];
+  const lines = [];
+  lines.push(`- 10분위 상대도 오차가 가장 작은 방법: **${best.label}** (RMSE ${f(best.decRmse)}, 원손해 대비 ${((1 - best.decRmse / base.decRmse) * 100).toFixed(0)}% 감소).`);
+  for (const m of methodSummary.slice(1)) {
+    const d = (1 - m.decRmse / base.decRmse) * 100, dg = (1 - m.adjRmse[2] / base.adjRmse[2]) * 100;
+    lines.push(`- ${m.label}: 10분위 오차 ${d >= 0 ? d.toFixed(0) + '% 감소' : (-d).toFixed(0) + '% 증가'}, 채무불이행 보정 오차 ${dg >= 0 ? dg.toFixed(0) + '% 감소' : (-dg).toFixed(0) + '% 증가'}, 평균 편향 ${f(m.decBias)}, 구간 포함률 ${pct(m.coverage)}.`);
+  }
+  lines.push('- 구간 포함률이 95%보다 많이 낮으면, 보정으로 생긴 편향 때문에 구간이 참값을 빗나간다는 뜻입니다. 이 경우 그 보정은 오차는 줄여도 구간 해석에 주의해야 합니다.');
+  return lines.join('\n');
+})()}
+
+## 5. 생성 가정(DGP)과의 관계 (해석)
 - 10분위 '순수' 효과(평균 1로 맞춘 값): ${result.dgp.TRUE_DECILE_normalized.map(x => x.toFixed(2)).join(', ')}
 - 앱의 10분위 상대도 참값: ${truth.decRel.map(x => x.toFixed(2)).join(', ')}
   - 앱의 상대도는 **연체 효과가 섞인 값**입니다. 불량 분위일수록 연체자가 많아서, 순수 효과보다 양 끝이 더 벌어집니다.
