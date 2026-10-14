@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>심사 스코어 PoC</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --panel: #ffffff; --text: #1f2933; --muted: #6b7280;
+    --line: #e3e6ea; --accent: #2457c5; --accent-soft: #e8eefb;
+    --ok: #1a7f4b; --ok-soft: #e6f4ec; --warn: #b45309; --warn-soft: #fdf3e2;
+    --bad: #b42318; --bad-soft: #fdecea;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; font-size: 14px; }
+  header { background: var(--panel); border-bottom: 1px solid var(--line); padding: 16px 24px; }
+  header h1 { margin: 0; font-size: 18px; }
+  header p { margin: 4px 0 0; color: var(--muted); font-size: 12px; }
+  nav { display: flex; gap: 4px; padding: 0 24px; background: var(--panel); border-bottom: 1px solid var(--line); }
+  nav button { border: 0; background: none; padding: 12px 16px; font: inherit; color: var(--muted);
+    cursor: pointer; border-bottom: 2px solid transparent; }
+  nav button.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+  nav button:disabled { cursor: not-allowed; opacity: .5; }
+  main { padding: 24px; max-width: 1200px; margin: 0 auto; }
+  section.tab { display: none; }
+  section.tab.active { display: block; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 20px; margin-bottom: 16px; }
+  .card h2 { margin: 0 0 12px; font-size: 15px; }
+  .drop { border: 2px dashed var(--line); border-radius: 8px; padding: 28px; text-align: center; color: var(--muted); }
+  .drop.over { border-color: var(--accent); background: var(--accent-soft); }
+  .btn { background: var(--accent); color: #fff; border: 0; border-radius: 6px; padding: 10px 18px;
+    font: inherit; font-weight: 600; cursor: pointer; }
+  .btn:disabled { background: #a9b4c6; cursor: not-allowed; }
+  .btn.ghost { background: var(--panel); color: var(--accent); border: 1px solid var(--accent); }
+  table { border-collapse: collapse; width: 100%; }
+  th, td { border-bottom: 1px solid var(--line); padding: 8px 10px; text-align: left; }
+  th { background: #fafbfc; font-weight: 600; color: var(--muted); font-size: 12px; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: 600; }
+  .badge.ok { background: var(--ok-soft); color: var(--ok); }
+  .badge.warn { background: var(--warn-soft); color: var(--warn); }
+  .badge.bad { background: var(--bad-soft); color: var(--bad); }
+  .kpis { display: flex; gap: 16px; flex-wrap: wrap; }
+  .kpi { flex: 1 1 180px; border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; }
+  .kpi .label { color: var(--muted); font-size: 12px; }
+  .kpi .value { font-size: 22px; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .muted { color: var(--muted); }
+  .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .msg { margin-top: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>신용정보 기반 심사 스코어 PoC</h1>
+  <p>더미 데이터 전용 · 서버 통신 없음 · 모든 계산은 이 브라우저 안에서만 수행됩니다</p>
+</header>
+<nav>
+  <button data-tab="upload" class="active">① 업로드</button>
+  <button data-tab="analysis" disabled>② 분석·비교</button>
+  <button data-tab="apps" disabled>③ 청약 조회</button>
+</nav>
+<main>
+  <section id="tab-upload" class="tab active">
+    <div class="card">
+      <h2>CSV 파일 선택</h2>
+      <div id="drop" class="drop">
+        <p>CSV 파일을 여기로 끌어다 놓거나</p>
+        <input type="file" id="fileInput" accept=".csv,text/csv" multiple>
+        <p class="muted" style="margin-bottom:0">파일 이름이 아니라 헤더 컬럼으로 종류를 자동 인식합니다.
+          credit_delinq.csv가 없으면 버전 A만 계산합니다.</p>
+      </div>
+    </div>
+    <div class="card">
+      <h2>파일별 인식 여부</h2>
+      <table>
+        <thead><tr><th>구분</th><th>필수 여부</th><th>인식된 파일</th><th class="num">행 수</th><th>상태</th></tr></thead>
+        <tbody id="fileStatus"></tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h2>매칭 건수</h2>
+      <table>
+        <thead><tr><th>항목</th><th class="num">건수</th><th class="num">비율</th></tr></thead>
+        <tbody id="matchStatus"><tr><td colspan="3" class="muted">필수 파일을 올리면 표시됩니다.</td></tr></tbody>
+      </table>
+      <div class="row msg">
+        <button id="runBtn" class="btn" disabled>분석 실행</button>
+        <span id="runMsg" class="muted"></span>
+      </div>
+    </div>
+    <div class="card" id="summaryCard" style="display:none">
+      <h2>분석 결과 요약</h2>
+      <div class="kpis" id="summaryKpis"></div>
+    </div>
+  </section>
+
+  <section id="tab-analysis" class="tab">
+    <div class="card"><p class="muted">분석·비교 화면은 2~3단계에서 구현합니다.</p></div>
+  </section>
+
+  <section id="tab-apps" class="tab">
+    <div class="card"><p class="muted">청약 조회 화면은 4단계에서 구현합니다.</p></div>
+  </section>
+</main>
+
+<script>
+// @calc-begin  (CONFIG ~ 계산 블록: verify.js가 이 구간을 그대로 실행)
+/* =====================================================================
+ * CONFIG: 기준값은 여기서만 수정
+ * ===================================================================== */
+const CONFIG = {
+  // ① 연체등급 판정 컬럼
+  DELINQ: {
+    DEFAULT_COLS: ['default_kcis_cnt', 'default_cb_cnt', 'default_loanbiz_cnt'], // 합계 ≥ 1 → 2 채무불이행
+    DELINQ_COLS: ['cb_delinq_cnt', 'soho_delinq_cnt'],                            // 합계 ≥ 1 → 1 연체
+    LABELS: ['정상', '연체', '채무불이행'],
+  },
+  // ⑤ 권고 인수조건 (종합상대도 상한 미만이면 해당 구간, 마지막 구간은 상한 없음)
+  UW_RULES: [
+    { max: 1.0,      label: '표준인수',      limitPct: 100 },
+    { max: 1.3,      label: '한도축소',      limitPct: 70 },
+    { max: 1.6,      label: '부담보+한도축소', limitPct: 50 },
+    { max: Infinity, label: '심사역검토',     limitPct: null },
+  ],
+  // ⑥ 분리도 등분 수
+  SEPARATION_BUCKETS: 10,
+};
+
+/* =====================================================================
+ * <calc> 순수 계산 블록: DOM 접근 금지. verify.js가 이 블록을 그대로 실행함
+ * ===================================================================== */
+// 파일 종류 정의: required = PRD 3장 사용 컬럼, extra = 세그먼트 분석용(없어도 동작)
+const FILE_SPECS = [
+  { key: 'contracts', name: 'contracts.csv', required: true,
+    cols: ['policy_no', 'customer_id'], extra: ['age', 'gender', 'product_type', 'sum_insured'] },
+  { key: 'credit', name: 'credit_info.csv', required: true,
+    cols: ['customer_id', 'credit_decile'], extra: [] },
+  { key: 'delinq', name: 'credit_delinq.csv', required: false,
+    cols: ['customer_id', 'default_kcis_cnt', 'default_cb_cnt', 'default_loanbiz_cnt', 'cb_delinq_cnt', 'soho_delinq_cnt'], extra: [] },
+  { key: 'loss', name: 'loss_experience.csv', required: true,
+    cols: ['policy_no', 'risk_premium', 'claim_paid', 'reserve_change'], extra: [] },
+  { key: 'apps', name: 'applications.csv', required: true,
+    cols: ['app_no', 'customer_id', 'product_type', 'sum_insured'], extra: [] },
+];
+
+// RFC4180 기본 규칙(따옴표, 따옴표 안 쉼표·줄바꿈, "" 이스케이프)과 BOM·CRLF 처리
+function parseCSV(text) {
+  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+  const rows = [];
+  let row = [], field = '', inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inQ) {
+      if (ch === '"') {
+        if (text[i + 1] === '"') { field += '"'; i++; } else inQ = false;
+      } else field += ch;
+    } else if (ch === '"') inQ = true;
+    else if (ch === ',') { row.push(field); field = ''; }
+    else if (ch === '\n' || ch === '\r') {
+      if (ch === '\r' && text[i + 1] === '\n') i++;
+      row.push(field); field = '';
+      if (row.length > 1 || row[0] !== '') rows.push(row);
+      row = [];
+    } else field += ch;
+  }
+  row.push(field);
+  if (row.length > 1 || row[0] !== '') rows.push(row);
+  if (!rows.length) return { header: [], records: [] };
+  const header = rows[0].map(h => h.trim());
+  const records = rows.slice(1).map(r => {
+    const o = {};
+    header.forEach((h, i) => { o[h] = (r[i] ?? '').trim(); });
+    return o;
+  });
+  return { header, records };
+}
+
+// 헤더로 파일 종류 판별: 필수 컬럼을 모두 가진 spec 중 컬럼 수가 가장 많은(가장 구체적인) 것
+function detectFileType(header) {
+  const set = new Set(header);
+  const hits = FILE_SPECS.filter(s => s.cols.every(c => set.has(c)));
+  hits.sort((a, b) => b.cols.length - a.cols.length);
+  return hits.length ? hits[0].key : null;
+}
+
+function toNum(v) {
+  const n = Number(v);
+  return v === '' || !Number.isFinite(n) ? null : n;
+}
+
+function indexBy(records, key) {
+  const m = new Map();
+  for (const r of records) m.set(r[key], r);
+  return m;
+}
+
+// files: { contracts, credit, delinq?, loss, apps } 각각 parseCSV 결과의 records 배열
+function buildDataset(files) {
+  const creditBy = indexBy(files.credit, 'customer_id');
+  const delinqBy = files.delinq ? indexBy(files.delinq, 'customer_id') : null;
+  const lossBy = indexBy(files.loss, 'policy_no');
+  const hasDelinq = !!delinqBy;
+
+  const counts = { contracts: files.contracts.length, withLoss: 0, withCredit: 0, withDelinq: 0,
+    badNumber: 0, analyzed: 0, apps: files.apps.length, appsWithCredit: 0, appsWithDelinq: 0 };
+
+  const policies = [];
+  for (const c of files.contracts) {
+    const loss = lossBy.get(c.policy_no);
+    const credit = creditBy.get(c.customer_id);
+    const delinq = delinqBy ? delinqBy.get(c.customer_id) : null;
+    if (loss) counts.withLoss++;
+    if (credit) counts.withCredit++;
+    if (delinq) counts.withDelinq++;
+    if (!loss || !credit) continue;
+    // 버전 B를 계산할 때는 연체정보도 있어야 분석 대상 (A·B를 같은 계약 집합으로 비교)
+    if (hasDelinq && !delinq) continue;
+
+    const premium = toNum(loss.risk_premium), paid = toNum(loss.claim_paid),
+          reserve = toNum(loss.reserve_change), decile = toNum(credit.credit_decile);
+    if (premium === null || paid === null || reserve === null || decile === null) { counts.badNumber++; continue; }
+
+    policies.push({
+      policy_no: c.policy_no, customer_id: c.customer_id,
+      decile, premium, loss: paid + reserve,
+      delinqRaw: delinq,
+      // 세그먼트 분석용 (가입금액대·성별·연령대·상품)
+      age: toNum(c.age), gender: c.gender || null, product_type: c.product_type || null,
+      sum_insured: toNum(c.sum_insured),
+    });
+  }
+  counts.analyzed = policies.length;
+
+  const apps = files.apps.map(a => {
+    const credit = creditBy.get(a.customer_id);
+    const delinq = delinqBy ? delinqBy.get(a.customer_id) : null;
+    if (credit) counts.appsWithCredit++;
+    if (delinq) counts.appsWithDelinq++;
+    return { app_no: a.app_no, customer_id: a.customer_id, product_type: a.product_type,
+      sum_insured: toNum(a.sum_insured), decile: credit ? toNum(credit.credit_decile) : null,
+      delinqRaw: delinq, raw: a };
+  });
+
+  return { hasDelinq, counts, policies, apps };
+}
+
+// 손해율 = (Σ보험금 + Σ준비금변동) ÷ Σ위험보험료
+function lossRatio(policies) {
+  let p = 0, l = 0;
+  for (const x of policies) { p += x.premium; l += x.loss; }
+  return p > 0 ? l / p : null;
+}
+/* ===================================================================== </calc> */
+// @calc-end
+
+/* =====================================================================
+ * 화면
+ * ===================================================================== */
+const state = { files: {}, dataset: null };
+const $ = id => document.getElementById(id);
+const fmtInt = n => n == null ? '-' : n.toLocaleString('ko-KR');
+const fmtPct = (x, d = 1) => x == null ? '-' : (x * 100).toFixed(d) + '%';
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+document.querySelectorAll('nav button').forEach(b => b.addEventListener('click', () => {
+  if (b.disabled) return;
+  document.querySelectorAll('nav button').forEach(x => x.classList.toggle('active', x === b));
+  document.querySelectorAll('section.tab').forEach(s => s.classList.toggle('active', s.id === 'tab-' + b.dataset.tab));
+}));
+
+function readFile(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result);
+    r.onerror = () => reject(r.error);
+    r.readAsText(file, 'UTF-8');
+  });
+}
+
+async function handleFiles(fileList) {
+  const unknown = [];
+  for (const f of fileList) {
+    const parsed = parseCSV(await readFile(f));
+    const key = detectFileType(parsed.header);
+    if (!key) { unknown.push(f.name); continue; }
+    state.files[key] = { fileName: f.name, header: parsed.header, records: parsed.records };
+  }
+  state.dataset = null;
+  $('summaryCard').style.display = 'none';
+  renderFileStatus();
+  renderMatch();
+  $('runMsg').textContent = unknown.length ? `인식하지 못한 파일: ${unknown.join(', ')}` : '';
+}
+
+function renderFileStatus() {
+  $('fileStatus').innerHTML = FILE_SPECS.map(s => {
+    const f = state.files[s.key];
+    let status;
+    if (f) {
+      const missingExtra = s.extra.filter(c => !f.header.includes(c));
+      status = missingExtra.length
+        ? `<span class="badge warn">인식 · 세그먼트 컬럼 없음(${esc(missingExtra.join(', '))})</span>`
+        : '<span class="badge ok">인식</span>';
+    } else {
+      status = s.required ? '<span class="badge bad">필요</span>'
+                          : '<span class="badge warn">없음 · 버전 A만 계산</span>';
+    }
+    return `<tr><td>${s.name}</td><td>${s.required ? '필수' : '선택'}</td>
+      <td>${f ? esc(f.fileName) : '-'}</td><td class="num">${f ? fmtInt(f.records.length) : '-'}</td><td>${status}</td></tr>`;
+  }).join('');
+}
+
+function requiredReady() {
+  return FILE_SPECS.filter(s => s.required).every(s => state.files[s.key]);
+}
+
+function currentFiles() {
+  const o = {};
+  for (const k in state.files) o[k] = state.files[k].records;
+  return o;
+}
+
+function renderMatch() {
+  if (!requiredReady()) {
+    $('matchStatus').innerHTML = '<tr><td colspan="3" class="muted">필수 파일을 올리면 표시됩니다.</td></tr>';
+    $('runBtn').disabled = true;
+    return;
+  }
+  const { counts: c, hasDelinq } = buildDataset(currentFiles());
+  const pct = (n, d) => d ? fmtPct(n / d) : '-';
+  const rows = [
+    ['계약 (contracts)', c.contracts, null],
+    ['└ 손해실적 매칭', c.withLoss, c.contracts],
+    ['└ 신용정보 매칭', c.withCredit, c.contracts],
+    ['└ 연체정보 매칭', hasDelinq ? c.withDelinq : null, c.contracts],
+    ['└ 숫자 오류로 제외', c.badNumber, c.contracts],
+    ['<b>분석 대상 계약</b>', c.analyzed, c.contracts],
+    ['청약 (applications)', c.apps, null],
+    ['└ 신용정보 매칭', c.appsWithCredit, c.apps],
+    ['└ 연체정보 매칭', hasDelinq ? c.appsWithDelinq : null, c.apps],
+  ];
+  $('matchStatus').innerHTML = rows.map(([label, n, d]) =>
+    `<tr><td>${label}</td><td class="num">${n == null ? '-' : fmtInt(n)}</td>
+      <td class="num">${n == null || d == null ? '' : pct(n, d)}</td></tr>`).join('');
+  $('runBtn').disabled = c.analyzed === 0;
+}
+
+function runAnalysis() {
+  state.dataset = buildDataset(currentFiles());
+  const ds = state.dataset;
+  const lr = lossRatio(ds.policies);
+  $('summaryKpis').innerHTML = [
+    ['분석 계약 수', fmtInt(ds.counts.analyzed) + '건'],
+    ['전체 손해율', fmtPct(lr)],
+    ['계산 버전', ds.hasDelinq ? 'A + B (연체 포함)' : 'A만 (연체정보 없음)'],
+  ].map(([l, v]) => `<div class="kpi"><div class="label">${l}</div><div class="value">${v}</div></div>`).join('');
+  $('summaryCard').style.display = '';
+  $('runMsg').textContent = '분석 완료';
+}
+
+$('fileInput').addEventListener('change', e => handleFiles(e.target.files));
+$('runBtn').addEventListener('click', runAnalysis);
+const drop = $('drop');
+drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('over'); });
+drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('over'); handleFiles(e.dataTransfer.files); });
+renderFileStatus();
+</script>
+</body>
+</html>
