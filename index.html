@@ -253,6 +253,22 @@
   .cmp-charts h3 { margin: 0 0 6px; font-size: 13px; }
   .cmp-charts h3 .h-sub { margin-left: 4px; }
 
+  /* 종합 해석 */
+  .headline { border-left: 4px solid var(--accent); }
+  .headline .h-label { font-size: 12px; font-weight: 700; color: var(--accent-strong); letter-spacing: .04em; }
+  .headline p { margin: 6px 0 0; font-size: 17px; font-weight: 600; line-height: 1.65; }
+  .legend-tags { font-size: 11.5px; color: var(--muted); display: inline-flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .legend-tags .badge { margin-left: 6px; }
+  .findings { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .finding { border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; }
+  .finding .f-head { display: flex; gap: 8px; align-items: center; font-size: 14.5px; }
+  .finding .f-result { margin-top: 8px; font-variant-numeric: tabular-nums; line-height: 1.7; }
+  .finding .f-result .badge { margin-left: 4px; }
+  .finding .f-mean { margin-top: 6px; color: var(--text-2); font-size: 13px; line-height: 1.7; }
+  .finding .f-where { margin-top: 8px; font-size: 11.5px; color: var(--muted); }
+  .sum-list { margin: 0; padding-left: 20px; line-height: 1.8; }
+  .sum-list li + li { margin-top: 4px; }
+  @media (max-width: 900px) { .findings { grid-template-columns: 1fr; } }
   .two { display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px; }
   .two > * { min-width: 0; }
   .two.decile { grid-template-columns: 1fr 1.2fr; align-items: start; }
@@ -304,8 +320,9 @@
     main { max-width: none; padding: 10px 0 0; }
     section.tab { display: block !important; }
     #tab-intro { display: none !important; }
-    body:not(.analyzed) #tab-analysis, body:not(.analyzed) #tab-strat, body:not(.analyzed) #tab-apps { display: none !important; }
-    #tab-analysis, #tab-strat, #tab-apps { break-before: page; }
+    body:not(.analyzed) #tab-analysis, body:not(.analyzed) #tab-strat, body:not(.analyzed) #tab-apps, body:not(.analyzed) #tab-summary { display: none !important; }
+    #tab-analysis, #tab-strat, #tab-apps, #tab-summary { break-before: page; }
+    .finding { break-inside: avoid; }
     .sec-head { margin-bottom: 10px; }
     .card { border-color: #C9CED3; padding: 10px 12px; margin-bottom: 10px; break-inside: avoid; }
     .card:has(table tbody tr:nth-child(15)) { break-inside: auto; }
@@ -338,7 +355,7 @@
       <h1>신용정보 기반 심사 스코어 분석</h1>
       <p>초안(PoC) · 가상 데이터 기준 · 업로드한 파일은 서버로 전송되지 않고 이 브라우저 안에서만 계산됩니다</p>
     </div>
-    <div class="meta">데이터 → 상관분석 → 층화검증 → 스코어 결과<br>권고는 참고용이며 최종 판단은 심사역</div>
+    <div class="meta">데이터 → 상관분석 → 층화검증 → 스코어 결과 → 종합 해석<br>권고는 참고용이며 최종 판단은 심사역</div>
   </div>
 </header>
 <nav>
@@ -348,6 +365,7 @@
     <button data-tab="analysis" disabled><span class="step">2</span>상관분석</button>
     <button data-tab="strat" disabled><span class="step">3</span>층화검증</button>
     <button data-tab="apps" disabled><span class="step">4</span>스코어 결과</button>
+    <button data-tab="summary" disabled><span class="step">5</span>종합 해석</button>
   </div>
 </nav>
 <main>
@@ -374,6 +392,7 @@
           <li><b>3 층화검증</b>: 연체정보 미포함 모델(A)과 포함 모델(B)의 리프트(분리도)를 나란히 비교하고,
             담보·가입금액대·연령대·성별로 나눠 연체 수준별 손해율이 일관되게 나타나는지 확인합니다.</li>
           <li><b>4 스코어 결과</b>: 청약별 스코어, 권고 인수조건, 담보별 권고 가입금액을 보고 CSV로 내보냅니다.</li>
+          <li><b>5 종합 해석</b>: 결과의 의미, 한계점, 다음 단계 제안을 쉬운 말로 정리해 보여줍니다.</li>
         </ol>
         <p class="note demo-only" style="display:block">오른쪽 아래 <b>AI 도우미</b>(무료 Nemotron)에게 화면의 결과와 계산 방식을 물어볼 수 있습니다.
           질문과 집계 요약만 외부 AI로 전송되며, 웹 데모에서만 동작합니다.
@@ -615,6 +634,25 @@
       </div>
       <div class="card" id="appDetail"><p class="muted">목록에서 청약을 클릭하면 상세 내역이 표시됩니다.</p></div>
     </div>
+  </section>
+
+  <section id="tab-summary" class="tab">
+    <div class="sec-head"><span class="no">STEP 5</span><h2>종합 해석</h2><p>분석 결과를 쉬운 말로 정리했습니다 · 설정을 바꾸면 다시 계산됩니다</p></div>
+    <div class="card headline">
+      <div class="h-label">한 줄 요약</div>
+      <p id="sumHeadline"></p>
+      <div class="note" id="sumSettings"></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>핵심 발견</h2>
+        <span class="legend-tags"><span class="badge ok">확인됨</span> 오차 범위로 봐도 분명함 <span class="badge warn">주의</span> 일부만 확인·해석 주의 <span class="badge muted">미확인</span> 아직 단정 불가</span></div>
+      <div class="findings" id="sumFindings"></div>
+    </div>
+    <div class="two">
+      <div class="card"><h2>한계점·유의사항</h2><ul class="sum-list" id="sumLimits"></ul></div>
+      <div class="card"><h2>다음 단계 제안</h2><ol class="sum-list" id="sumNext"></ol></div>
+    </div>
+    <p class="note">이 해석은 화면의 수치를 정해진 규칙으로 문장화한 것입니다(AI 미사용, 외부 전송 없음). 용어 풀이는 오른쪽 아래 용어집을 참고하세요. 최종 판단은 심사역과 담당 부서가 합니다.</p>
   </section>
 </main>
 <button id="chatFab" class="btn" type="button">AI 도우미 · 용어집</button>
@@ -1572,7 +1610,7 @@ function renderFileStatus() {
 }
 
 function setTabsEnabled(on) {
-  document.querySelectorAll('nav button[data-tab="analysis"], nav button[data-tab="strat"], nav button[data-tab="apps"]').forEach(b => { b.disabled = !on; });
+  document.querySelectorAll('nav button[data-tab="analysis"], nav button[data-tab="strat"], nav button[data-tab="apps"], nav button[data-tab="summary"]').forEach(b => { b.disabled = !on; });
   document.body.classList.toggle('analyzed', on);
 }
 
@@ -1636,7 +1674,8 @@ function runAnalysis() {
   renderDelinqAndSeparation(ds, dec);
   initApps(ds, dec, state.delinq);
   setTabsEnabled(true);
-  $('runMsg').textContent = '분석 완료 · 2 상관분석 → 3 층화검증 → 4 스코어 결과 탭에서 확인하세요';
+  renderSummary();
+  $('runMsg').textContent = '분석 완료 · 2 상관분석 → 3 층화검증 → 4 스코어 결과 → 5 종합 해석 탭에서 확인하세요';
   runUncertainty(ds, dec);
 }
 
@@ -1661,6 +1700,138 @@ function renderTopKpis(ds, dec) {
   ].join('');
 }
 
+// ─ 5 종합 해석: 화면의 결과를 쉬운 말로 정리 (규칙 기반, 외부 통신 없음). 95% 구간·교차 검증이 끝나면 다시 그림 ─
+const TAG = { ok: ['ok', '확인됨'], warn: ['warn', '주의'], no: ['muted', '미확인'], ref: ['info', '참고'], wait: ['muted', '계산 중'] };
+// 받침 유무로 조사 고르기 (예: josa('채무불이행', '은', '는') → '채무불이행은')
+const josa = (w, a, b) => { const c = w.charCodeAt(w.length - 1) - 0xAC00; return w + (c >= 0 && c <= 11171 && c % 28 ? a : b); };
+const pctUp = x => x == null ? '-' : `${x >= 1 ? '+' : '−'}${Math.abs((x - 1) * 100).toFixed(0)}%`;
+
+function renderSummary() {
+  const ds = state.ads, dec = state.decile, ci = state.ci, cv = state.cv, dq = state.delinq, sep = state.sep;
+  if (!ds || !dec) return;
+  const rows = dec.rows, sum = (rs, k) => rs.reduce((s, r) => s + r[k], 0);
+  const lrOf = rs => sum(rs, 'premium') ? sum(rs, 'loss') / sum(rs, 'premium') : null;
+  const lrA = lrOf(rows.filter(r => r.decile <= 2)), lrE = lrOf(rows.filter(r => r.decile >= 9));
+  const lift = lrA ? lrE / lrA : null;
+  const findings = [], limits = [], next = [];
+  const isDemo = Object.values(state.files || {}).some(f => /\(데모\)/.test(f.fileName));
+
+  // 1) 신용 10분위 효과
+  const d1 = ci?.decRel?.[0], d10 = ci?.decRel?.[rows.length - 1];
+  findings.push({ tag: !ci ? 'wait' : d10.lo > d1.hi ? 'ok' : 'warn', title: '신용이 나쁜 고객일수록 손해율이 높습니다',
+    result: `신용 1·2분위(우량) 손해율 ${fmtPct(lrA)} → 9·10분위(불량) ${fmtPct(lrE)}, 약 <b>${lift.toFixed(1)}배</b> 차이`,
+    meaning: '신용 10분위 하나만으로도 손해 위험이 큰 고객과 작은 고객을 꽤 잘 나눌 수 있다는 뜻입니다.'
+      + (!ci ? '' : d10.lo > d1.hi ? ' 1분위와 10분위의 오차 범위(95% 구간)가 겹치지 않아 우연으로 보기 어렵습니다.' : ' 다만 1분위와 10분위의 오차 범위가 겹쳐 차이를 단정하기 어렵습니다.'),
+    where: '2 상관분석' });
+
+  // 2) 분위 역전
+  const flips = [];
+  for (let i = 1; i < rows.length; i++) if (rows[i].rel < rows[i - 1].rel - 1e-9) flips.push(i);
+  if (flips.length) {
+    const overlap = ci && flips.every(i => ci.decRel[i].hi >= ci.decRel[i - 1].lo);
+    findings.push({ tag: 'warn', title: '일부 분위는 순서가 뒤집혀 있습니다',
+      result: flips.map(i => `${rows[i].decile}분위(${fmtRel(rows[i].rel)})가 ${rows[i - 1].decile}분위(${fmtRel(rows[i - 1].rel)})보다 낮음`).join(', '),
+      meaning: '신용이 더 나쁜 분위의 손해율이 오히려 낮게 나온 곳이 있습니다. '
+        + (overlap ? '두 분위의 오차 범위가 겹쳐 데이터의 우연한 흔들림일 가능성이 큽니다.' : '오차 범위를 함께 확인해야 합니다.')
+        + ' 실제 적용 시에는 이런 역전을 그대로 쓰지 않도록 보정하는 것이 일반적입니다.', where: '2 상관분석' });
+    next.push("분위 역전이 우연인지 보려면 2 상관분석의 '10분위 단조 보정'을 켜고 결과가 얼마나 달라지는지 비교합니다.");
+  }
+
+  // 3) 연체 고유 효과
+  if (dq) {
+    const lines = [], verdict = [];
+    for (const r of dq) if (r.grade > 0) {
+      const c = ci?.adjRel?.[r.grade];
+      const v = !c ? 'wait' : c.lo > 1 ? 'ok' : c.hi < 1 ? 'warn' : 'no';
+      verdict.push(v);
+      lines.push(`<b>${esc(r.label)}</b>(${fmtInt(r.n)}건): 같은 신용등급 대비 손해 ${pctUp(r.adjRel)}`
+        + (c ? ` (오차 범위 ${pctUp(c.lo)} ~ ${pctUp(c.hi)}) ${badgeOf(v)}` : ''));
+    }
+    const allOk = verdict.every(v => v === 'ok'), someOk = verdict.some(v => v === 'ok');
+    const weak = dq.filter(r => r.grade > 0 && ci?.adjRel?.[r.grade] && ci.adjRel[r.grade].lo <= 1 && ci.adjRel[r.grade].hi >= 1);
+    findings.push({ tag: !ci ? 'wait' : allOk ? 'ok' : someOk ? 'warn' : 'no', title: '연체 이력은 신용등급과 별개로 손해를 더 높입니다',
+      result: lines.join('<br>'),
+      meaning: '신용평점에 이미 반영된 몫을 빼고도 연체 고객의 손해가 더 큰지를 본 것입니다(보정 상대도).'
+        + (weak.length ? ` ${josa(weak.map(r => r.label).join('·'), '은', '는')} 오차 범위가 0%를 포함해 '효과가 있다'고 단정할 수 없습니다. 효과가 없다는 뜻이 아니라, 대상 건수가 적어 아직 증명하지 못했다는 뜻입니다.` : ''),
+      where: '2 상관분석 · 연체등급별 상대도' });
+    if (weak.length) next.push(`${josa(weak.map(r => r.label).join('·'), '을', '를')} 연체와 합쳐 '연체 이상' 한 등급으로 보거나, 데이터 기간을 늘려 오차 범위를 좁힌 뒤 다시 판단합니다.`);
+  }
+
+  // 4) 모델 A vs B
+  if (sep?.B) {
+    if (!cv) findings.push({ tag: 'wait', title: '연체정보를 더한 모델(B)과 뺀 모델(A) 비교', result: '교차 검증 계산 중…', meaning: '', where: '3 층화검증' });
+    else {
+      const d = cv.B - cv.A, wins = Math.round(cv.BgtA * cv.repeats);
+      const solid = d > 0 && cv.BgtA >= 0.8;
+      findings.push({ tag: d <= 0 ? 'no' : solid ? 'ok' : 'warn',
+        title: d > 0 ? '연체정보를 더하면 고객 구분력이 조금 좋아집니다' : '연체정보를 더해도 구분력이 좋아지지 않았습니다',
+        result: `리프트 ${cv.A.toFixed(2)}배(A) → ${cv.B.toFixed(2)}배(B), ${signedRel(d)} (${d >= 0 ? '+' : ''}${(d / cv.A * 100).toFixed(1)}%) · ${cv.repeats}번 반복 검증 중 ${wins}번 B가 앞섬`,
+        meaning: '리프트는 가장 나쁜 10% 고객의 손해율이 가장 좋은 10%의 몇 배인지입니다. 클수록 좋은 고객과 나쁜 고객을 잘 가려냅니다. '
+          + (solid ? '반복 검증에서도 꾸준히 B가 앞서 개선 효과가 안정적입니다.'
+            : d > 0 ? '하지만 개선 폭이 작고 반복할 때마다 결과가 달라, 이 데이터만으로는 연체정보를 넣는 효과가 확실하다고 보기 어렵습니다.'
+              : '이 데이터에서는 연체정보가 구분력을 더해 주지 못했습니다.'),
+        where: '3 층화검증' });
+      if (!solid) next.push('실데이터로 같은 분석을 돌려, 반복 검증에서 모델 B가 꾸준히 앞서는지 확인한 뒤 연체정보 반영 여부를 결정합니다.');
+      if (sep.A.ratio > cv.A) limits.push(`<b>리프트 과대평가</b>: 같은 데이터로 만들고 채점한 리프트(A ${sep.A.ratio.toFixed(2)}배)는 처음 보는 데이터로 잰 값(${cv.A.toFixed(2)}배)보다 약 ${((sep.A.ratio / cv.A - 1) * 100).toFixed(0)}% 부풀려져 있습니다. 이 해석은 더 보수적인 교차 검증 값을 기준으로 했습니다.`);
+    }
+  }
+
+  // 5) 담보별 일관성
+  if (ds.hasDelinq) {
+    const segs = segmentTable(ds, dec, { dim: 'coverage' });
+    const cred = segs.filter(s => s.cells[1].credible && s.cells[1].multiple != null);
+    const up = cred.filter(s => s.cells[1].multiple > 1);
+    const top = [...cred].sort((a, b) => b.cells[1].multiple - a.cells[1].multiple).slice(0, 3);
+    if (cred.length) findings.push({ tag: up.length / cred.length >= 0.8 ? 'ok' : 'warn', title: '담보별로 나눠 봐도 대체로 같은 방향입니다',
+      result: `사고가 충분한 ${cred.length}개 담보 중 <b>${up.length}개</b>에서 연체 고객의 손해가 정상 고객보다 큼 · 영향이 큰 담보: ${top.map(s => `${esc(s.key)} ×${s.cells[1].multiple.toFixed(2)}`).join(', ')}`,
+      meaning: '한두 담보에서만 우연히 나타난 현상이 아니라 여러 담보에서 공통으로 보이는 경향인지 확인한 것입니다(층화검증). 영향이 큰 담보는 부담보·한도 관리의 우선 검토 대상이 될 수 있습니다.',
+      where: '3 층화검증 · 세그먼트 표' });
+  }
+
+  // 6) 청약 권고 결과
+  if (state.apps) {
+    const list = state.apps.list, total = list.length, s = uwSummary(list);
+    const rev = list.filter(a => a.status === '심사역검토'), rev10 = rev.filter(a => a.decile === 10).length;
+    findings.push({ tag: 'ref', title: '청약 권고 결과',
+      result: `청약 ${fmtInt(total)}건 중 ` + [...s].map(([k, n]) => `${k} ${fmtPct(total ? n / total : null)}`).join(' · '),
+      meaning: rev.length ? `심사역검토 ${fmtInt(rev.length)}건 중 ${fmtInt(rev10)}건(${fmtPct(rev10 / rev.length, 0)})이 신용 10분위(최하위)입니다. 신용정보만으로 인수를 거절할 수는 없으므로, 이 건들은 심사역이 건강 고지 등 다른 정보와 함께 판단해야 합니다.` : '',
+      where: '4 스코어 결과' });
+  }
+
+  // 한계점 (공통 + 데이터 기반)
+  limits.unshift(isDemo ? '<b>가상 데이터</b>: 지금 수치는 생성 가정에서 나온 값이라 실제 손해율이나 연체 효과의 근거로 쓸 수 없습니다.'
+    : '<b>과거 데이터</b>: 특정 기간의 결과이므로 앞으로도 같은 차이가 유지된다고 보장할 수 없습니다.');
+  const scaleWarn = (state.scale || []).filter(i => i.level === 'warn');
+  if (scaleWarn.length) limits.push('<b>데이터 규모</b>: ' + scaleWarn.map(i => `${esc(i.message)} (${esc(i.examples.join(', '))})`).join(' · ')
+    + '. 사고 건수가 기준보다 적은 등급·분위는 결과가 흔들릴 수 있어 오차 범위와 함께 봐야 합니다.');
+  limits.push('<b>관계 ≠ 원인</b>: 연체와 높은 손해율이 함께 나타난다는 관계를 보인 것이지, 연체가 사고를 일으킨다는 원인을 증명한 것은 아닙니다.');
+  if (ds.basis === 'raw') {
+    limits.push('<b>고액 사고</b>: 몇 건의 큰 사고가 손해율을 크게 움직일 수 있습니다.');
+    next.push("2 상관분석의 손해 기준을 '대형사고 상한'으로 바꿔도 결론이 같은지 확인합니다.");
+  } else limits.push(`<b>손해 기준</b>: 지금 결과는 '${esc(LOSS_BASIS_LABELS[ds.basis])}' 기준입니다. 원손해 기준과 비교해 결론이 같은지 확인하세요.`);
+  limits.push('<b>규제</b>: 신용정보만을 이유로 인수를 거절하거나 차별할 수 없으며, 권고는 참고용입니다. 실제 적용 전 법무·준법 검토가 필요합니다.');
+  next.push('권고 기준(종합상대도 1.0 / 1.3 / 1.6)과 한도 비율을 회사의 손해율 목표·인수 정책에 맞게 조정합니다.');
+  next.push('실제 적용 전 법무·준법 검토와 심사역 의견 수렴을 거칩니다.');
+
+  // 한 줄 요약
+  const dqOk = dq?.find(r => r.grade === 1 && ci?.adjRel?.[1]?.lo > 1);
+  let head = `신용이 나쁜 고객일수록 손해율이 뚜렷하게 높습니다(우량 대비 불량 약 ${lift.toFixed(1)}배).`;
+  if (dq) head += dqOk ? ` 연체 이력은 신용등급과 별개로 손해를 ${pctUp(dqOk.adjRel)} 더 높이지만,` : ' 연체 이력의 추가 효과는 아직 확실하지 않고,';
+  if (sep?.B && cv) {
+    const d = cv.B - cv.A;
+    head += cv.BgtA >= 0.8 && d > 0 ? ` 이를 스코어에 더하면 구분력이 ${signedRel(d)} 좋아집니다.`
+      : ` 이를 스코어에 더했을 때의 개선은 작아(${signedRel(d)}) 실데이터로 다시 확인이 필요합니다.`;
+  } else if (dq) head += ' 모델 비교는 계산 중입니다.';
+  $('sumHeadline').innerHTML = esc(head);
+  $('sumSettings').textContent = `기준: ${LOSS_BASIS_LABELS[ds.basis]} · 10분위 단조 보정 ${dec.monotone ? '적용' : '미적용'} · 분석 계약 ${fmtInt(ds.counts.analyzed)}건`;
+  $('sumFindings').innerHTML = findings.map(f => `<div class="finding"><div class="f-head">${badgeOf(f.tag)}<b>${f.title}</b></div>
+    <div class="f-result">${f.result}</div>${f.meaning ? `<div class="f-mean">${f.meaning}</div>` : ''}
+    <div class="f-where">자세히: ${esc(f.where)}</div></div>`).join('');
+  $('sumLimits').innerHTML = limits.map(l => `<li>${l}</li>`).join('');
+  $('sumNext').innerHTML = next.map(l => `<li>${l}</li>`).join('');
+}
+function badgeOf(t) { return `<span class="badge ${TAG[t][0]}">${TAG[t][1]}</span>`; }
+
 // 신뢰구간·교차 검증 분리도는 몇 초 걸리므로 기본 결과를 먼저 그린 뒤 채운다 (설정이 바뀌면 이전 계산 결과는 버림)
 let uncertaintyRun = 0;
 async function runUncertainty(ds, dec) {
@@ -1675,11 +1846,13 @@ async function runUncertainty(ds, dec) {
   $('ciStatus').textContent = `95% 구간: 증권 붓스트랩 ${ci.B}회`;
   renderDecile(dec, ci);
   if (state.delinq) renderDelinqRows(state.delinq, ci);
+  renderSummary();
   await tick();
   const cv = separationCV(ds.policies, { monotone: dec.monotone });
   if (id !== uncertaintyRun) return;
   state.cv = cv;
   renderSeparationKpis();
+  renderSummary();
 }
 
 function renderBasisNote(ds) {
