@@ -57,7 +57,7 @@
   /* 상단 KPI 4개 */
   .kpi-strip { display: none; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 20px; }
   body.analyzed .kpi-strip { display: grid; }
-  body.analyzed[data-tab="summary"] .kpi-strip { display: none; } /* 종합 해석은 한 줄 요약이 같은 역할 */
+  body.analyzed[data-tab="summary"] .kpi-strip, body.analyzed[data-tab="intro"] .kpi-strip { display: none; } /* 종합 해석은 한 줄 요약이 같은 역할 */
   .kcard { background: var(--panel); border: 1px solid var(--line); border-top: 3px solid var(--accent); border-radius: 6px;
     padding: 14px 16px 12px; min-width: 0; }
   .kcard.risk { border-top-color: var(--risk); }
@@ -254,6 +254,85 @@
   .cmp-charts h3 { margin: 0 0 6px; font-size: 13px; }
   .cmp-charts h3 .h-sub { margin-left: 4px; }
 
+  /* 개요: 히어로 · 3단계 흐름 · 직접 해보기 · 화면 안내 */
+  .hero { padding: 28px 28px 24px; }
+  .eyebrow-s { font-size: 12px; font-weight: 700; color: var(--accent-strong); letter-spacing: .06em; }
+  .hero-title { font-size: 24px !important; line-height: 1.45; margin: 6px 0 10px !important; letter-spacing: -.02em; }
+  .hero-title .hl { color: var(--accent-strong); box-shadow: inset 0 -8px 0 var(--accent-soft); }
+  .hero-desc { font-size: 15px; line-height: 1.8; margin: 0; max-width: 900px; color: var(--text); }
+  .hero-sub { font-size: 13px; color: var(--muted); margin: 6px 0 0; }
+  .hero-cta { margin-top: 16px; }
+  .demo-inline, .demo-inline-note { display: none; }
+  .has-demo .demo-inline, .has-demo .demo-inline-note { display: inline-block; }
+  .flow3 { display: grid; grid-template-columns: 1fr 28px 1fr 28px 1fr; gap: 0; margin-top: 22px; align-items: stretch; }
+  .fstep { display: flex; gap: 12px; align-items: flex-start; border: 1px solid var(--line); border-radius: 6px; padding: 14px;
+    background: var(--panel); animation: rise .5s ease both; animation-delay: calc(var(--i) * .18s + .1s); }
+  .fstep svg { width: 40px; height: 40px; flex: none; fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+  .fstep .fnum { font-size: 11px; font-weight: 700; color: var(--accent-strong); letter-spacing: .04em; }
+  .fstep b { font-size: 14.5px; }
+  .fstep p { margin: 4px 0 0; font-size: 12.5px; color: var(--text-2); line-height: 1.6; }
+  .farrow { position: relative; }
+  .farrow::after { content: ''; position: absolute; left: 50%; top: 50%; width: 9px; height: 9px; border-top: 2px solid #A3A9AF;
+    border-right: 2px solid #A3A9AF; transform: translate(-70%, -50%) rotate(45deg); }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+
+  .try-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 24px; align-items: start; }
+  .try-label { font-size: 13px; font-weight: 600; color: var(--text-2); display: block; margin-bottom: 6px; }
+  .try-label b { color: var(--accent-strong); font-size: 18px; }
+  #tryDecile { width: 100%; accent-color: var(--accent); }
+  .range-ends { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--muted); }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+  .seg button { border: 0; background: var(--panel); font: inherit; font-size: 13px; padding: 7px 16px; cursor: pointer; color: var(--text-2); }
+  .seg button + button { border-left: 1px solid var(--line); }
+  .seg button.on { background: var(--accent); color: #fff; font-weight: 700; }
+  .seg button:disabled { color: #B9C0C6; cursor: not-allowed; }
+  .try-out { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }
+  .to-box { border: 1px solid var(--line); border-radius: 6px; padding: 10px 14px; }
+  .to-l { font-size: 12px; color: var(--text-2); font-weight: 600; }
+  .to-v { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; margin-top: 2px; transition: color .2s; }
+  .to-s { font-size: 11px; color: var(--muted); }
+  .gauge { position: relative; display: grid; grid-template-columns: 30fr 15fr 15fr 40fr; height: 10px; margin-top: 16px; border-radius: 2px; overflow: visible; }
+  .gz.z1 { background: var(--accent); } .gz.z2 { background: #B9C0C6; } .gz.z3 { background: #8E979F; } .gz.z4 { background: var(--risk); }
+  .gmark { position: absolute; top: -5px; width: 4px; height: 20px; background: var(--text); border: 1px solid #fff; border-radius: 1px;
+    transform: translateX(-50%); transition: left .35s ease; }
+  .gauge-lab { display: grid; grid-template-columns: 30fr 15fr 15fr 40fr; font-size: 10.5px; color: var(--muted); margin-top: 4px; }
+  .gauge-lab span { padding-right: 4px; }
+  .try-rec { margin-top: 14px; padding: 12px 14px; border-radius: 6px; background: var(--head); border: 1px solid var(--line); line-height: 1.7; }
+  .try-rec .badge { margin-right: 6px; }
+  .try-formula { margin-top: 8px; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .try-chart .bar.dim { fill: #CDD2D7; }
+  .try-chart .chart .hit { cursor: pointer; }
+  .try-chart svg.anim .bar { transform-box: fill-box; transform-origin: bottom; animation: grow .6s ease both; }
+
+  .guide { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+  .gcard { text-align: left; font: inherit; color: var(--text); background: var(--panel); border: 1px solid var(--line); border-radius: 6px;
+    padding: 14px; cursor: pointer; display: flex; flex-direction: column; gap: 4px; transition: border-color .15s, box-shadow .15s, transform .15s; }
+  .gcard:hover:not(.locked) { border-color: var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,.06); transform: translateY(-2px); }
+  .gcard .gnum { width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 12px; font-weight: 700;
+    display: inline-flex; align-items: center; justify-content: center; margin-bottom: 4px; }
+  .gcard b { font-size: 15px; }
+  .gcard .gq { font-size: 13px; color: var(--accent-strong); font-weight: 600; line-height: 1.5; }
+  .gcard .gd { font-size: 12px; color: var(--text-2); line-height: 1.6; }
+  .gcard.locked { cursor: default; background: var(--head); }
+  .gcard.locked .gnum { background: #B9C0C6; }
+  .gcard.locked .gq { color: var(--text-2); }
+  .gcard.locked::after { content: '분석 실행 후 열림'; font-size: 11px; color: var(--muted); margin-top: auto; padding-top: 6px; }
+  .calc-details summary { cursor: pointer; list-style: none; }
+  .calc-details summary::-webkit-details-marker { display: none; }
+  .calc-details summary h2 { display: inline; margin: 0; }
+  .calc-details summary::before { content: ''; display: inline-block; width: 7px; height: 7px; border-right: 2px solid var(--text-2);
+    border-bottom: 2px solid var(--text-2); transform: rotate(-45deg); margin: 0 10px 2px 2px; transition: transform .2s; }
+  .calc-details[open] summary::before { transform: rotate(45deg); }
+  .calc-details[open] summary { margin-bottom: 10px; }
+  @media (max-width: 1100px) { .guide { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (max-width: 900px) {
+    .try-grid { grid-template-columns: 1fr; }
+    .flow3 { grid-template-columns: 1fr; gap: 0; }
+    .farrow { height: 22px; } .farrow::after { transform: translate(-50%, -70%) rotate(135deg); }
+  }
+  @media (max-width: 600px) { .guide { grid-template-columns: 1fr 1fr; } .hero { padding: 20px 16px; } .hero-title { font-size: 20px !important; } }
+  @media (prefers-reduced-motion: reduce) { .fstep, .try-chart svg.anim .bar { animation: none; } .gmark { transition: none; } }
   /* 종합 해석 */
   .headline { border-left: 4px solid var(--accent); }
   .headline .h-label { font-size: 12px; font-weight: 700; color: var(--accent-strong); letter-spacing: .04em; }
@@ -374,44 +453,101 @@
   <div class="kpi-strip" id="topKpis" aria-label="핵심 지표"></div>
 
   <section id="tab-intro" class="tab active">
-    <div class="card intro">
-      <h2>무엇을 하는 도구인가요</h2>
-      <p>신용 10분위와 연체 수준에 따라 건강보험 손해율이 어떻게 달라지는지 분석해 <b>심사 스코어</b>를 만들고,
-        청약 건에 <b>권고 인수조건과 담보별 권고 가입금액</b>을 보여주는 초안입니다.
-        연체정보를 넣지 않은 버전 A(신용 10분위만)와 넣은 버전 B(10분위 × 연체 보정)를 비교합니다.</p>
-      <div class="row demo-only" style="margin-top:12px">
-        <button class="btn demoBtn">데모 데이터로 바로 보기</button>
-        <span class="muted">가상 데이터 약 60MB(전송 약 10MB)를 이 사이트에서 불러와 분석합니다. 직접 올리려면 1 데이터 탭을 쓰세요.</span>
+    <div class="card hero">
+      <div class="eyebrow-s">한눈에 보기</div>
+      <h2 class="hero-title">신용 상태로 <span class="hl">‘보험금이 많이 나갈 고객’</span>을 미리 알아보는 도구</h2>
+      <p class="hero-desc">자동차보험에서 사고 이력이 있으면 보험료가 달라지듯, 이 도구는 <b>신용 상태와 연체 이력</b>에 따라
+        건강보험 <b>보험금이 평균보다 얼마나 더 나가는지</b>를 과거 데이터로 확인합니다.
+        그 결과로 새로 들어온 가입 신청(청약)마다 <b>점수와 가입 조건</b>을 추천합니다.</p>
+      <p class="hero-sub">최종 결정은 사람(심사역)이 하고, 이 도구는 참고 의견을 줍니다.</p>
+      <div class="row hero-cta">
+        <button class="btn demoBtn demo-inline">데모 데이터로 바로 보기</button>
+        <button class="btn ghost" type="button" id="goUpload">내 CSV 파일로 시작하기</button>
+        <span class="muted demo-inline-note">데모는 가상 데이터(전송 약 10MB)를 불러와 바로 분석합니다.</span>
+      </div>
+      <div class="flow3">
+        <div class="fstep" style="--i:0">
+          <svg viewBox="0 0 40 40" aria-hidden="true"><ellipse cx="20" cy="10" rx="12" ry="4"/><path d="M8 10v20c0 2.2 5.4 4 12 4s12-1.8 12-4V10"/><path d="M8 20c0 2.2 5.4 4 12 4s12-1.8 12-4"/></svg>
+          <div><div class="fnum">1 · 배우기</div><b>과거 데이터를 모아요</b>
+            <p>과거 가입자 10만 명의 신용 정보와 보험금 지급 기록을 한 사람씩 연결해요.</p></div>
+        </div>
+        <div class="farrow" aria-hidden="true"></div>
+        <div class="fstep" style="--i:1">
+          <svg viewBox="0 0 40 40" aria-hidden="true"><path d="M6 34h30"/><rect x="9" y="22" width="5" height="12"/><rect x="18" y="16" width="5" height="18"/><rect x="27" y="8" width="5" height="26"/></svg>
+          <div><div class="fnum">2 · 비교하기</div><b>패턴을 찾아요</b>
+            <p>신용이 나쁘거나 연체가 있는 사람은 보험금이 평균(1.00)보다 몇 배 나갔는지 비교해요.</p></div>
+        </div>
+        <div class="farrow" aria-hidden="true"></div>
+        <div class="fstep" style="--i:2">
+          <svg viewBox="0 0 40 40" aria-hidden="true"><rect x="8" y="5" width="24" height="30" rx="2"/><path d="M13 14l3 3 5-6M13 25h14M13 30h9"/></svg>
+          <div><div class="fnum">3 · 추천하기</div><b>새 가입 신청에 적용해요</b>
+            <p>새 신청마다 점수(높을수록 안전)를 매기고 가입 조건을 추천해요.</p></div>
+        </div>
       </div>
     </div>
-    <div class="two">
-      <div class="card intro">
-        <h2>화면 구성</h2>
-        <ol>
-          <li><b>1 데이터</b>: CSV 7개를 올리면 헤더로 종류를 자동 인식하고, <b>자동 검토·전처리</b>(EUC-KR·탭 구분자·한글 컬럼명·숫자/성별 표기 정리,
-            중복·빈 키·범위 밖 값·매칭 누락 점검, 규모 진단)를 한 뒤 매칭 건수를 보여줍니다.</li>
-          <li><b>2 상관분석</b>: 신용 10분위·연체등급과 손해율의 관계(상대도, 95% 구간)를 봅니다.</li>
-          <li><b>3 층화검증</b>: 연체정보 미포함 모델(A)과 포함 모델(B)의 리프트(분리도)를 나란히 비교하고,
-            담보·가입금액대·연령대·성별로 나눠 연체 수준별 손해율이 일관되게 나타나는지 확인합니다.</li>
-          <li><b>4 스코어 결과</b>: 청약별 스코어, 권고 인수조건, 담보별 권고 가입금액을 보고 CSV로 내보냅니다.</li>
-          <li><b>5 종합 해석</b>: 결과의 의미, 한계점, 다음 단계 제안을 쉬운 말로 정리해 보여줍니다.</li>
-        </ol>
-        <p class="note demo-only" style="display:block">오른쪽 아래 <b>AI 도우미</b>(무료 Nemotron)에게 화면의 결과와 계산 방식을 물어볼 수 있습니다.
-          질문과 집계 요약만 외부 AI로 전송되며, 웹 데모에서만 동작합니다.
-          같은 창의 <b>용어집</b> 탭에는 분리도·리프트·95% 구간·붓스트랩 등 어려운 용어 풀이가 있습니다.</p>
-      </div>
-      <div class="card intro">
-        <h2>계산 방식</h2>
-        <ul>
-          <li><b>손해율</b> = (Σ보험금 + Σ준비금변동) ÷ Σ위험보험료</li>
-          <li><b>10분위 상대도</b> = 분위 손해율 ÷ 전체 손해율</li>
-          <li><b>연체 보정 상대도</b> = 등급 Σ실제손해 ÷ 등급 Σ(위험보험료 × 전체손해율 × 10분위 상대도) — 신용평점과의 이중반영 제거</li>
-          <li><b>종합상대도</b> A = 10분위 상대도, B = 10분위 상대도 × 연체 보정 상대도 · <b>스코어</b> = 100 ÷ 종합상대도</li>
-          <li><b>권고(B)</b>: &lt;1.0 표준인수 · 1.0~1.3 한도축소(70%) · 1.3~1.6 부담보(입원·수술 4개 담보) + 나머지 50% · ≥1.6 심사역검토</li>
-          <li><b>검증·보정</b>: 분리도는 교차 검증 값이 주 지표, 상대도에 95% 구간(붓스트랩) 표시, 손해 기준(원손해·대형사고 상한·빈도)과 단조 보정 선택 가능</li>
-        </ul>
+
+    <div class="card try">
+      <div class="card-head"><h2>직접 해보기 <span class="sub">이런 고객이 신청하면 어떻게 될까요?</span></h2>
+        <span class="muted" style="font-size:12px" id="trySource"></span></div>
+      <div class="try-grid">
+        <div class="try-controls">
+          <label class="try-label" for="tryDecile">신용 분위 <b id="tryDecileVal">5</b>분위</label>
+          <input type="range" id="tryDecile" min="1" max="10" step="1" value="5">
+          <div class="range-ends"><span>1 · 신용 가장 좋음</span><span>10 · 가장 나쁨</span></div>
+          <div class="try-label" style="margin-top:16px">연체 이력</div>
+          <div class="seg" id="tryGrade" role="radiogroup" aria-label="연체 이력">
+            <button type="button" data-g="0" class="on" role="radio" aria-checked="true">없음</button>
+            <button type="button" data-g="1" role="radio" aria-checked="false">연체</button>
+            <button type="button" data-g="2" role="radio" aria-checked="false">채무불이행</button>
+          </div>
+          <div class="try-out">
+            <div class="to-box"><div class="to-l">예상 보험금 수준</div><div class="to-v" id="tryRel">-</div><div class="to-s">평균 고객 = 1.00배</div></div>
+            <div class="to-box"><div class="to-l">점수</div><div class="to-v" id="tryScore">-</div><div class="to-s">평균 100 · 높을수록 안전</div></div>
+          </div>
+          <div class="gauge" aria-hidden="true">
+            <div class="gz z1"></div><div class="gz z2"></div><div class="gz z3"></div><div class="gz z4"></div>
+            <div class="gmark" id="tryMark"></div>
+          </div>
+          <div class="gauge-lab"><span>표준</span><span>금액 축소</span><span>일부 보장 제외</span><span>담당자 검토</span></div>
+          <div class="try-rec" id="tryRec"></div>
+          <div class="try-formula" id="tryFormula"></div>
+        </div>
+        <div class="try-chart">
+          <div class="chart" id="tryChart"></div>
+          <p class="note" style="text-align:center;margin-top:4px">신용 분위별 보험금 수준 (평균 = 1.00, 점선) · 막대를 눌러도 분위가 바뀝니다</p>
+        </div>
       </div>
     </div>
+
+    <div class="card">
+      <h2>화면 구성 <span class="sub">카드를 누르면 해당 화면으로 이동합니다 · 2~5는 분석을 실행하면 열립니다</span></h2>
+      <div class="guide">
+        <button type="button" class="gcard" data-go="upload"><span class="gnum">1</span><b>데이터</b><span class="gq">데이터가 제대로 들어왔나?</span>
+          <span class="gd">CSV 파일을 넣으면 자동으로 점검·정리하고, 파일끼리 잘 연결됐는지 보여줘요.</span></button>
+        <button type="button" class="gcard" data-go="analysis"><span class="gnum">2</span><b>상관분석</b><span class="gq">신용이 나쁘면 정말 보험금이 더 나갈까?</span>
+          <span class="gd">신용 분위·연체 이력별로 보험금이 평균의 몇 배인지 그래프와 표로 보여줘요.</span></button>
+        <button type="button" class="gcard" data-go="strat"><span class="gnum">3</span><b>층화검증</b><span class="gq">연체 정보를 더하면 더 잘 가려낼까?</span>
+          <span class="gd">연체 정보를 뺀 모델과 넣은 모델을 나란히 비교하고, 담보·나이·성별로 나눠도 같은지 확인해요.</span></button>
+        <button type="button" class="gcard" data-go="apps"><span class="gnum">4</span><b>스코어 결과</b><span class="gq">새 신청마다 어떤 조건을 추천할까?</span>
+          <span class="gd">가입 신청 1,000건의 점수와 추천 조건, 담보별 추천 금액을 보고 파일로 받아요.</span></button>
+        <button type="button" class="gcard" data-go="summary"><span class="gnum">5</span><b>종합 해석</b><span class="gq">그래서 결론은? 믿을 만한가?</span>
+          <span class="gd">결과의 의미와 한계, 다음에 할 일을 쉬운 말로 정리해요.</span></button>
+      </div>
+      <p class="note">오른쪽 아래 <b>용어집</b>에서 어려운 말(분리도·리프트·95% 구간 등)의 뜻을 찾아볼 수 있습니다.
+        <span class="demo-only" style="display:inline">웹 데모에서는 <b>AI 도우미</b>에게 화면 결과를 물어볼 수도 있습니다(질문과 집계 요약만 외부 AI로 전송).</span></p>
+    </div>
+
+    <details class="card intro calc-details">
+      <summary><h2>계산 방식 자세히 보기 <span class="sub">실무자용</span></h2></summary>
+      <ul>
+        <li><b>손해율</b> = (Σ보험금 + Σ준비금변동) ÷ Σ위험보험료</li>
+        <li><b>10분위 상대도</b> = 분위 손해율 ÷ 전체 손해율</li>
+        <li><b>연체 보정 상대도</b> = 등급 Σ실제손해 ÷ 등급 Σ(위험보험료 × 전체손해율 × 10분위 상대도) — 신용평점과의 이중반영 제거</li>
+        <li><b>종합상대도</b> A = 10분위 상대도, B = 10분위 상대도 × 연체 보정 상대도 · <b>스코어</b> = 100 ÷ 종합상대도</li>
+        <li><b>권고(B)</b>: &lt;1.0 표준인수 · 1.0~1.3 한도축소(70%) · 1.3~1.6 부담보(입원·수술 4개 담보) + 나머지 50% · ≥1.6 심사역검토</li>
+        <li><b>검증·보정</b>: 분리도는 교차 검증 값이 주 지표, 상대도에 95% 구간(붓스트랩) 표시, 손해 기준(원손해·대형사고 상한·빈도)과 단조 보정 선택 가능</li>
+      </ul>
+    </details>
     <div class="card intro">
       <h2>데이터 구성 (가상 데이터 v4, 증권 × 담보 단위)</h2>
       <div class="tbl"><table>
@@ -1615,6 +1751,7 @@ function renderFileStatus() {
 function setTabsEnabled(on) {
   document.querySelectorAll('nav button[data-tab="analysis"], nav button[data-tab="strat"], nav button[data-tab="apps"], nav button[data-tab="summary"]').forEach(b => { b.disabled = !on; });
   document.body.classList.toggle('analyzed', on);
+  if (typeof renderGuide === 'function') renderGuide();
 }
 
 function requiredReady() {
@@ -1678,6 +1815,7 @@ function runAnalysis() {
   initApps(ds, dec, state.delinq);
   setTabsEnabled(true);
   renderSummary();
+  renderTry();
   $('runMsg').textContent = '분석 완료 · 2 상관분석 → 3 층화검증 → 4 스코어 결과 → 5 종합 해석 탭에서 확인하세요';
   runUncertainty(ds, dec);
 }
@@ -2165,6 +2303,64 @@ function barChart(el, data, { ref = null, xTitle = '', yTitle = '', fmt = fmtRel
     h.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
   });
 }
+
+// ─ 개요 '직접 해보기': 신용 분위·연체 이력을 고르면 예상 보험금 수준·점수·권고를 보여줌 ─
+// 분석 전에는 가상 데이터 예시값, 분석 후에는 현재 분석 결과(상대도)를 씀. 권고 구간은 CONFIG.UW_RULES 그대로
+const TRY_EXAMPLE = { dec: [0.62, 0.67, 0.71, 0.84, 0.82, 0.86, 1.10, 1.00, 1.47, 1.96], dq: [0.96, 1.14, 1.23] };
+const TRY_PLAIN = { '표준인수': '신청한 그대로 가입할 수 있어요.', '한도축소': '가입 금액을 70%로 줄여서 가입하도록 추천해요.',
+  '부담보+한도축소': '입원·수술 보장은 빼고, 나머지 보장은 금액을 50%로 줄여 가입하도록 추천해요.',
+  '심사역검토': '위험이 커서 자동 추천 없이 담당 심사역이 직접 검토해요.' };
+const tryState = { d: 5, g: 0, animated: false };
+function trySource() {
+  const live = state.decile && state.decile.rows.length === 10;
+  return { live, dec: live ? state.decile.rows.map(r => r.rel) : TRY_EXAMPLE.dec,
+    dq: live ? (state.delinq ? state.delinq.map(r => r.adjRel) : null) : TRY_EXAMPLE.dq };
+}
+function renderTry() {
+  const src = trySource(), d = tryState.d;
+  if (!src.dq) tryState.g = 0;
+  const g = tryState.g, relD = src.dec[d - 1], relG = src.dq ? src.dq[g] : 1, rel = relD * relG;
+  const rule = CONFIG.UW_RULES.find(r => rel < r.max), score = Math.round(100 / rel);
+  $('trySource').textContent = src.live ? '현재 분석 결과 기준' : '가상 데이터 예시 값 · 분석을 실행하면 실제 결과로 바뀝니다';
+  $('tryDecileVal').textContent = d;
+  document.querySelectorAll('#tryGrade button').forEach(b => {
+    const on = +b.dataset.g === g; b.classList.toggle('on', on); b.setAttribute('aria-checked', on);
+    b.disabled = !src.dq && b.dataset.g !== '0';
+  });
+  $('tryRel').innerHTML = `${rel.toFixed(2)}<small style="font-size:14px;color:var(--muted)">배</small>`;
+  $('tryRel').style.color = rule.max === Infinity ? 'var(--risk)' : rel < 1 ? 'var(--accent-strong)' : 'var(--text)';
+  $('tryScore').textContent = score;
+  const pos = Math.min(98, Math.max(2, (rel - 0.4) / 2.0 * 100)); // 게이지 범위 0.4 ~ 2.4
+  $('tryMark').style.left = pos + '%';
+  const diff = Math.round(Math.abs(rel - 1) * 100);
+  const words = diff < 3 ? '평균 고객과 비슷하게' : rel > 1 ? `평균 고객보다 약 <b>${diff}% 더</b>` : `평균 고객보다 약 <b>${diff}% 덜</b>`;
+  $('tryRec').innerHTML = `이 고객은 보험금이 ${words} 나갈 것으로 예상돼요.<br>
+    ${uwBadge(rule.label)}${TRY_PLAIN[rule.label] || ''}`;
+  $('tryFormula').textContent = `계산: 신용 ${d}분위 ${relD.toFixed(2)}` + (src.dq ? ` × 연체 이력 '${CONFIG.DELINQ.LABELS[g]}' ${relG.toFixed(2)}` : ' (연체정보 없음)')
+    + ` = ${rel.toFixed(2)} · 점수 = 100 ÷ ${rel.toFixed(2)} = ${score}`;
+  barChart($('tryChart'), src.dec.map((v, i) => ({ label: String(i + 1), value: v, tip: `${i + 1}분위 · 평균의 ${v.toFixed(2)}배` })),
+    { ref: 1.0, yTitle: '평균 대비 (배)', xTitle: '신용 분위 (1 좋음 → 10 나쁨)' });
+  const svg = $('tryChart').querySelector('svg');
+  if (!tryState.animated && $('tab-intro').classList.contains('active')) { svg.classList.add('anim'); tryState.animated = true; }
+  svg.querySelectorAll('.bar').forEach((p, i) => p.classList.toggle('dim', i !== d - 1));
+  $('tryChart').querySelectorAll('.hit').forEach(h => h.addEventListener('click', () => { tryState.d = +h.dataset.i + 1; $('tryDecile').value = tryState.d; renderTry(); }));
+}
+$('tryDecile').addEventListener('input', e => { tryState.d = +e.target.value; renderTry(); });
+document.querySelectorAll('#tryGrade button').forEach(b => b.addEventListener('click', () => { tryState.g = +b.dataset.g; renderTry(); }));
+
+// 화면 안내 카드: 누르면 해당 탭으로. 분석 전에는 2~5 잠금
+function renderGuide() {
+  document.querySelectorAll('.gcard').forEach(c => {
+    const b = document.querySelector(`nav button[data-tab="${c.dataset.go}"]`);
+    c.classList.toggle('locked', !b || b.disabled);
+  });
+}
+document.querySelectorAll('.gcard').forEach(c => c.addEventListener('click', () => {
+  if (c.classList.contains('locked')) return;
+  showTab(c.dataset.go); window.scrollTo({ top: 0, behavior: 'smooth' });
+}));
+$('goUpload').addEventListener('click', () => { showTab('upload'); window.scrollTo({ top: 0 }); });
+renderTry(); renderGuide();
 
 // ─ 데모 데이터: 웹(http/https)으로 열었을 때만, 같은 사이트의 가상 데이터 CSV를 불러옴 ─
 // 파일을 직접 연(file://) 내부망 사용에서는 버튼이 숨겨지고 어떤 통신도 하지 않음
