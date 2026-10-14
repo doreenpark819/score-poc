@@ -49,7 +49,9 @@ let html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 const head = html.match(/<head>([\s\S]*?)<\/head>/)[1]
   .replace(/<meta charset[^>]*>\s*/i, '')
   .replace(/<meta name="viewport"[^>]*>\s*/i, '');
-const body = html.match(/<body>([\s\S]*?)<\/body>/)[1];
+// claude.ai Artifact판에는 회사 로고(CI)를 싣지 않음 (공개 가능한 페이지에 실제 회사 브랜드를 넣지 않기 위함)
+const body = html.match(/<body>([\s\S]*?)<\/body>/)[1]
+  .replace(/const BRAND = \{.*\}; \/\/ @brand-logo/, "const BRAND = { name: '', logo: '' }; // @brand-logo");
 const flag = `<script>window.__ARTIFACT__ = ${JSON.stringify({ autoDemo: true, parts })};</script>\n`;
 const page = head.trim() + '\n' + flag + body.trim() + '\n';
 fs.writeFileSync(path.join(OUT, 'index.html'), page);
