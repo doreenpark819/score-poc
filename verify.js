@@ -13,7 +13,7 @@ if (!m) { console.error('index.html에서 @calc-begin ~ @calc-end 블록을 찾�
 
 const ctx = vm.createContext({});
 // const 선언은 컨텍스트 전역 프로퍼티가 되지 않으므로 필요한 이름을 명시적으로 꺼낸다
-vm.runInContext(m[1] + '\n;globalThis.__calc = { CONFIG, FILE_SPECS, parseFile, buildDataset, lossRatio, decileTable, delinqTable, makeRelFns, separation, segmentTable };', ctx);
+vm.runInContext(m[1] + '\n;globalThis.__calc = { CONFIG, FILE_SPECS, parseFile, buildDataset, lossRatio, decileTable, delinqTable, makeRelFns, separation, segmentTable, assessApps, uwSummary, exportCsv, parseCSV };', ctx);
 const calc = ctx.__calc;
 const indep = JSON.parse(fs.readFileSync(path.join(dir, 'tools', 'expected_v4.json'), 'utf8'));
 
@@ -62,6 +62,36 @@ const STEPS = {
     [0.96, 1.14, 1.23].forEach((e, g) => check(3, `연체 보정 상대도 ${g} ${L[g]}`, e, dq[g].adjRel, indep.adjRel[g], { fmt: f4 }));
     check(3, '분리도 A', 3.16, calc.separation(ds.policies, fn.A).ratio, indep.separationA, { fmt: f4 });
     check(3, '분리도 B', 3.37, calc.separation(ds.policies, fn.B).ratio, indep.separationB, { fmt: f4 });
+  },
+  4() {
+    const dec = calc.decileTable(ds.policies), dq = calc.delinqTable(ds.policies, dec);
+    const assessed = calc.assessApps(ds, dec, dq), sum = calc.uwSummary(assessed);
+    const exp = { 표준인수: 674, 한도축소: 127, '부담보+한도축소': 69, 심사역검토: 130 };
+    const cnt = v => v.toLocaleString('en-US') + '건';
+    for (const k in exp) check(4, `청약 권고(B) ${k}`, exp[k], sum.get(k), indep.uwCnt[k], { exact: true, fmt: cnt });
+
+    // 담보별 권고 가입금액: 앱과 별개로 규칙을 다시 적용해 대조 (PLAN.md 규칙)
+    const EXCL = new Set(['질병수술', '재해수술', '질병입원', '재해입원']);
+    const PCT = { 표준인수: 100, 한도축소: 70, '부담보+한도축소': 50 };
+    let bad = 0, recSum = 0;
+    for (const a of assessed) for (const c of a.coverageResults) {
+      let want;
+      if (a.status === '심사역검토') want = null;
+      else if (a.status === '부담보+한도축소' && EXCL.has(c.name)) want = 0;
+      else want = Math.round(c.sum_insured * PCT[a.status] / 100);
+      if (c.recommended !== want) bad++;
+      recSum += want || 0;
+    }
+    check(4, '담보별 권고 가입금액 규칙 불일치 행', 0, bad, 0, { exact: true, fmt: v => v + '행' });
+
+    // CSV 내보내기: BOM, 행 수(= 청약 담보 행), 다시 읽었을 때 권고 가입금액 합계 보존
+    const csv = calc.exportCsv(assessed);
+    const back = calc.parseCSV(csv, { num: ['recommended_sum_insured'] });
+    check(4, 'CSV 내보내기 BOM', 1, csv.charCodeAt(0) === 0xFEFF ? 1 : 0, 1, { exact: true, fmt: v => v ? '있음' : '없음' });
+    check(4, 'CSV 데이터 행 수 (= 청약 담보 행)', indep.appCoverageRows, back.length, indep.appCoverageRows,
+      { exact: true, fmt: v => v.toLocaleString('en-US') + '행' });
+    const csvSum = back.cols.recommended_sum_insured.reduce((s, v) => s + (v || 0), 0);
+    check(4, 'CSV 권고 가입금액 합계 (재계산과 일치)', recSum, csvSum, recSum, { exact: true, fmt: v => v.toLocaleString('en-US') + '원' });
   },
 };
 

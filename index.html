@@ -41,6 +41,8 @@
   .badge.ok { background: var(--ok-soft); color: var(--ok); }
   .badge.warn { background: var(--warn-soft); color: var(--warn); }
   .badge.bad { background: var(--bad-soft); color: var(--bad); }
+  .badge.info { background: var(--accent-soft); color: var(--accent); }
+  .badge.muted { background: #eef0f3; color: var(--muted); }
   .kpis { display: flex; gap: 16px; flex-wrap: wrap; }
   .kpi { flex: 1 1 180px; border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; }
   .kpi .label { color: var(--muted); font-size: 12px; }
@@ -68,7 +70,14 @@
   .two > * { min-width: 0; }
   .tbl { overflow-x: auto; }
   th, td { white-space: nowrap; }
-  @media (max-width: 900px) { .two { grid-template-columns: 1fr; } }
+  .two.apps { grid-template-columns: 1.45fr 1fr; align-items: start; }
+  .two.apps > .card { margin-bottom: 16px; }
+  table.clickable tbody tr { cursor: pointer; }
+  table.clickable tbody tr:hover { background: var(--accent-soft); }
+  table.clickable tbody tr.sel { background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent); }
+  .formula { font-variant-numeric: tabular-nums; background: #fafbfc; border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; margin: 8px 0 12px; }
+  .pager button { min-width: 32px; }
+  @media (max-width: 900px) { .two { grid-template-columns: 1fr; } .two.apps { grid-template-columns: 1fr; } }
   @media (max-width: 600px) { main { padding: 16px; } header, nav { padding-left: 16px; padding-right: 16px; }
     .card { padding: 16px; } }
 </style>
@@ -179,7 +188,31 @@
   </section>
 
   <section id="tab-apps" class="tab">
-    <div class="card"><p class="muted">청약 조회 화면은 4단계에서 구현합니다.</p></div>
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <h2 style="margin:0">권고 인수조건 분포 <span class="muted" id="uwBasis" style="font-weight:400;font-size:12px"></span></h2>
+        <button id="exportBtn" class="btn ghost">결과 CSV 내보내기</button>
+      </div>
+      <div class="kpis" id="uwKpis" style="margin-top:12px"></div>
+      <p class="note" id="uwRuleNote"></p>
+    </div>
+    <div class="two apps">
+      <div class="card">
+        <h2>청약 목록</h2>
+        <div class="row" style="margin-bottom:12px">
+          <label>권고 <select id="appFilter"></select></label>
+          <label>청약번호 <input id="appSearch" type="search" placeholder="A2610…" size="12"></label>
+          <span class="muted" id="appCount"></span>
+        </div>
+        <div class="tbl"><table class="clickable">
+          <thead><tr><th>청약번호</th><th>연령·성별</th><th class="num">10분위</th><th>연체등급</th>
+            <th class="num">스코어 A</th><th class="num">스코어 B</th><th>권고 (B)</th></tr></thead>
+          <tbody id="appBody"></tbody>
+        </table></div>
+        <div class="row msg" id="appPager"></div>
+      </div>
+      <div class="card" id="appDetail"><p class="muted">목록에서 청약을 클릭하면 상세 내역이 표시됩니다.</p></div>
+    </div>
   </section>
 </main>
 
@@ -199,7 +232,7 @@ const CONFIG = {
   UW_RULES: [
     { max: 1.0,      label: '표준인수',      limitPct: 100 },
     { max: 1.3,      label: '한도축소',      limitPct: 70 },
-    { max: 1.6,      label: '부담보+한도축소', limitPct: 50 },
+    { max: 1.6,      label: '부담보+한도축소', limitPct: 50, exclusion: true }, // exclusion: EXCLUSION_COVERAGES 부담보
     { max: Infinity, label: '심사역검토',     limitPct: null },
   ],
   // '부담보+한도축소' 권고 시 부담보(인수 제외)할 담보. 연체 영향이 큰 입원·수술 담보 (CV06~CV09)
@@ -567,6 +600,65 @@ function segmentTable(ds, dec, { dim, coverage = null } = {}) {
   }
   return segs;
 }
+// ⑤ 권고 인수조건: 종합상대도가 구간 상한(max) 미만인 첫 규칙
+function uwRule(rel) { return CONFIG.UW_RULES.find(r => rel < r.max); }
+
+// 청약 심사: 상대도 내역·스코어·권고(B, 연체정보 없으면 A)·담보별 권고 가입금액
+function assessApps(ds, dec, dq) {
+  const excl = new Set(CONFIG.EXCLUSION_COVERAGES);
+  return ds.apps.map(a => {
+    const out = { ...a, relDecile: null, relDelinq: null, relA: null, relB: null, scoreA: null, scoreB: null,
+      basis: null, rule: null, status: null, coverageResults: [] };
+    if (a.decile == null || !dec.rows[a.decile - 1] || dec.rows[a.decile - 1].rel == null) {
+      out.status = '신용정보 없음';
+      out.coverageResults = a.coverages.map(c => ({ ...c, pct: null, recommended: null, note: '평가 불가' }));
+      return out;
+    }
+    out.relDecile = dec.rows[a.decile - 1].rel;
+    out.relA = out.relDecile; out.scoreA = score(out.relA);
+    if (dq && a.grade != null) {
+      out.relDelinq = dq[a.grade].adjRel;
+      out.relB = out.relDecile * out.relDelinq; out.scoreB = score(out.relB);
+    }
+    out.basis = out.relB != null ? 'B' : 'A';
+    out.rule = uwRule(out.basis === 'B' ? out.relB : out.relA);
+    out.status = out.rule.label;
+    out.coverageResults = a.coverages.map(c => {
+      if (out.rule.limitPct == null) return { ...c, pct: null, recommended: null, note: '심사역 판단' };
+      if (out.rule.exclusion && excl.has(c.name)) return { ...c, pct: 0, recommended: 0, note: '부담보' };
+      return { ...c, pct: out.rule.limitPct, recommended: c.sum_insured == null ? null : Math.round(c.sum_insured * out.rule.limitPct / 100),
+        note: out.rule.limitPct < 100 ? '한도축소' : '' };
+    });
+    return out;
+  });
+}
+
+function uwSummary(assessed) {
+  const m = new Map(CONFIG.UW_RULES.map(r => [r.label, 0]));
+  for (const a of assessed) m.set(a.status, (m.get(a.status) || 0) + 1);
+  return m;
+}
+
+// 결과 CSV (청약 × 담보 한 행). 엑셀 한글 깨짐 방지를 위해 BOM 포함
+function csvCell(v) {
+  if (v == null) return '';
+  const s = typeof v === 'number' ? (Number.isInteger(v) ? String(v) : v.toFixed(4)) : String(v);
+  return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+function exportCsv(assessed) {
+  const header = ['app_no', 'customer_id', 'age', 'gender', 'credit_decile', 'delinq_grade', 'delinq_label',
+    'rel_decile', 'rel_delinq_adj', 'rel_A', 'rel_B', 'score_A', 'score_B', 'basis', 'uw_recommendation',
+    'coverage_code', 'coverage_name', 'sum_insured', 'recommended_pct', 'recommended_sum_insured', 'note'];
+  const lines = [header.join(',')];
+  for (const a of assessed) {
+    const base = [a.app_no, a.customer_id, a.age, a.gender, a.decile, a.grade,
+      a.grade == null ? null : CONFIG.DELINQ.LABELS[a.grade], a.relDecile, a.relDelinq, a.relA, a.relB,
+      a.scoreA, a.scoreB, a.basis, a.status];
+    const covs = a.coverageResults.length ? a.coverageResults : [{}];
+    for (const c of covs) lines.push([...base, c.code, c.name, c.sum_insured, c.pct, c.recommended, c.note].map(csvCell).join(','));
+  }
+  return '﻿' + lines.join('\r\n') + '\r\n';
+}
 /* ===================================================================== </calc> */
 // @calc-end
 
@@ -635,7 +727,7 @@ function renderFileStatus() {
 }
 
 function setTabsEnabled(on) {
-  document.querySelectorAll('nav button[data-tab="analysis"]').forEach(b => { b.disabled = !on; });
+  document.querySelectorAll('nav button[data-tab="analysis"], nav button[data-tab="apps"]').forEach(b => { b.disabled = !on; });
 }
 
 function requiredReady() {
@@ -692,6 +784,7 @@ function runAnalysis() {
   $('summaryCard').style.display = '';
   renderDecile(dec);
   renderDelinqAndSeparation(ds, dec);
+  initApps(ds, dec, state.delinq);
   setTabsEnabled(true);
   $('runMsg').textContent = '분석 완료 · ② 분석·비교 탭에서 결과를 확인하세요';
 }
@@ -699,7 +792,10 @@ function runAnalysis() {
 const fmtRel = x => x == null ? '-' : x.toFixed(2);
 const fmtWon = x => {
   if (x == null || Number.isNaN(x)) return '-';
-  if (x >= 1e8 && x % 1e8 === 0) return (x / 1e8) + '억원';
+  if (x >= 1e8) {
+    const eok = Math.floor(x / 1e8), man = Math.round((x % 1e8) / 1e4);
+    return man ? `${eok.toLocaleString('ko-KR')}억 ${man.toLocaleString('ko-KR')}만원` : `${eok.toLocaleString('ko-KR')}억원`;
+  }
   if (x >= 1e4) return (x / 1e4).toLocaleString('ko-KR') + '만원';
   return x.toLocaleString('ko-KR') + '원';
 };
@@ -767,6 +863,100 @@ function renderSegment(segs, dim, coverage, ds) {
       ${s.cells.map(c => cell(c, fmtPct(c.lr, 0))).join('')}
       ${cell(s.cells[1], mult(s.cells[1]))}${cell(s.cells[2], mult(s.cells[2]))}</tr>`).join('')
     : '<tr><td colspan="9" class="muted">해당 데이터가 없습니다.</td></tr>';
+}
+
+// ─ 청약 조회 ─
+const UW_BADGE = { '표준인수': 'ok', '한도축소': 'info', '부담보+한도축소': 'warn', '심사역검토': 'bad' };
+const uwBadge = label => `<span class="badge ${UW_BADGE[label] || 'muted'}">${esc(label)}</span>`;
+const PAGE = 50;
+
+function initApps(ds, dec, dq) {
+  const assessed = assessApps(ds, dec, dq);
+  state.apps = { list: assessed, page: 0, selected: null };
+  const sum = uwSummary(assessed), total = assessed.length;
+  const basisB = assessed.some(a => a.basis === 'B');
+  $('uwBasis').textContent = basisB ? '종합상대도 B(10분위 × 연체 보정) 기준' : '연체정보가 없어 종합상대도 A(10분위) 기준';
+  $('uwKpis').innerHTML = [...sum].map(([label, n]) =>
+    `<div class="kpi"><div class="label">${uwBadge(label)}</div><div class="value">${fmtInt(n)}건</div>
+      <div class="muted" style="font-size:12px">${fmtPct(total ? n / total : null)}</div></div>`).join('');
+  const rules = CONFIG.UW_RULES;
+  $('uwRuleNote').innerHTML = rules.map((r, i) => {
+    const lo = i === 0 ? null : rules[i - 1].max;
+    const range = lo == null ? `< ${r.max.toFixed(1)}` : r.max === Infinity ? `≥ ${lo.toFixed(1)}` : `${lo.toFixed(1)} ~ ${r.max.toFixed(1)} 미만`;
+    const act = r.limitPct == null ? '권고 금액 없음' : r.exclusion
+      ? `부담보(${CONFIG.EXCLUSION_COVERAGES.join('·')}) + 나머지 담보 ${r.limitPct}%` : `전 담보 ${r.limitPct}%`;
+    return `<b>${esc(r.label)}</b> ${range}: ${esc(act)}`;
+  }).join(' · ');
+  $('appFilter').innerHTML = '<option value="">전체</option>' +
+    [...sum.keys()].map(l => `<option>${esc(l)}</option>`).join('');
+  $('appFilter').onchange = () => { state.apps.page = 0; renderAppList(); };
+  $('appSearch').oninput = () => { state.apps.page = 0; renderAppList(); };
+  $('exportBtn').onclick = () => downloadCsv(exportCsv(assessed), `uw_result_${new Date().toISOString().slice(0, 10)}.csv`);
+  $('appDetail').innerHTML = '<p class="muted">목록에서 청약을 클릭하면 상세 내역이 표시됩니다.</p>';
+  renderAppList();
+}
+
+function filteredApps() {
+  const f = $('appFilter').value, q = $('appSearch').value.trim().toUpperCase();
+  return state.apps.list.filter(a => (!f || a.status === f) && (!q || a.app_no.toUpperCase().includes(q)));
+}
+
+function renderAppList() {
+  const list = filteredApps(), pages = Math.max(1, Math.ceil(list.length / PAGE));
+  const st = state.apps; st.page = Math.min(st.page, pages - 1);
+  const rows = list.slice(st.page * PAGE, (st.page + 1) * PAGE);
+  $('appCount').textContent = `${fmtInt(list.length)}건`;
+  const L = CONFIG.DELINQ.LABELS;
+  $('appBody').innerHTML = rows.length ? rows.map(a => `<tr data-app="${esc(a.app_no)}" class="${st.selected === a.app_no ? 'sel' : ''}">
+      <td>${esc(a.app_no)}</td><td>${a.age ?? '-'}세 · ${a.gender === 'M' ? '남' : a.gender === 'F' ? '여' : '-'}</td>
+      <td class="num">${a.decile ?? '-'}</td><td>${a.grade == null ? '-' : esc(L[a.grade])}</td>
+      <td class="num">${a.scoreA ?? '-'}</td><td class="num"><b>${a.scoreB ?? '-'}</b></td><td>${uwBadge(a.status)}</td></tr>`).join('')
+    : '<tr><td colspan="7" class="muted">조건에 맞는 청약이 없습니다.</td></tr>';
+  $('appBody').querySelectorAll('tr[data-app]').forEach(tr => tr.addEventListener('click', () => showApp(tr.dataset.app)));
+  $('appPager').className = 'row msg pager';
+  $('appPager').innerHTML = pages > 1
+    ? `<button class="btn ghost" data-p="${st.page - 1}" ${st.page === 0 ? 'disabled' : ''}>‹</button>
+       <span class="muted">${st.page + 1} / ${pages}</span>
+       <button class="btn ghost" data-p="${st.page + 1}" ${st.page >= pages - 1 ? 'disabled' : ''}>›</button>` : '';
+  $('appPager').querySelectorAll('button').forEach(b => b.addEventListener('click', () => { st.page = Number(b.dataset.p); renderAppList(); }));
+}
+
+function showApp(appNo) {
+  const a = state.apps.list.find(x => x.app_no === appNo);
+  state.apps.selected = appNo;
+  $('appBody').querySelectorAll('tr').forEach(tr => tr.classList.toggle('sel', tr.dataset.app === appNo));
+  const L = CONFIG.DELINQ.LABELS;
+  let formula;
+  if (a.relA == null) formula = '신용정보가 없어 상대도를 계산할 수 없습니다.';
+  else if (a.relB != null) formula = `10분위 상대도 <b>${fmtRel(a.relDecile)}</b> (${a.decile}분위) × 연체 보정 상대도 <b>${fmtRel(a.relDelinq)}</b> (${esc(L[a.grade])})
+      = 종합상대도 B <b>${fmtRel(a.relB)}</b><br>스코어 A = 100 ÷ ${fmtRel(a.relA)} = <b>${a.scoreA}</b> · 스코어 B = 100 ÷ ${fmtRel(a.relB)} = <b>${a.scoreB}</b>`;
+  else formula = `10분위 상대도 <b>${fmtRel(a.relDecile)}</b> (${a.decile}분위) = 종합상대도 A · 스코어 A = <b>${a.scoreA}</b> (연체정보 없음)`;
+  const totalSI = a.coverageResults.reduce((s, c) => s + (c.sum_insured || 0), 0);
+  const totalRec = a.coverageResults.every(c => c.recommended == null) ? null
+    : a.coverageResults.reduce((s, c) => s + (c.recommended || 0), 0);
+  const noteBadge = n => n === '부담보' ? '<span class="badge warn">부담보</span>' : n === '한도축소' ? '<span class="badge info">한도축소</span>'
+    : n ? `<span class="badge muted">${esc(n)}</span>` : '<span class="badge ok">인수</span>';
+  $('appDetail').innerHTML = `<h2>${esc(a.app_no)} <span class="muted" style="font-weight:400">${esc(a.customer_id)} · ${a.age ?? '-'}세 · ${a.gender === 'M' ? '남' : a.gender === 'F' ? '여' : '-'}</span></h2>
+    <div>권고 인수조건 (${a.basis ?? '-'}) ${uwBadge(a.status)}</div>
+    <div class="formula">${formula}</div>
+    <div class="tbl"><table>
+      <thead><tr><th>담보</th><th class="num">청약 가입금액</th><th class="num">권고율</th><th class="num">권고 가입금액</th><th>비고</th></tr></thead>
+      <tbody>${a.coverageResults.map(c => `<tr><td>${esc(c.name)}${/입원/.test(c.name) ? ' <span class="muted">(일당)</span>' : ''}</td>
+        <td class="num">${fmtWon(c.sum_insured)}</td><td class="num">${c.pct == null ? '-' : c.pct + '%'}</td>
+        <td class="num"><b>${c.recommended == null ? '-' : fmtWon(c.recommended)}</b></td><td>${noteBadge(c.note)}</td></tr>`).join('')}
+      <tr><td><b>합계</b></td><td class="num">${fmtWon(totalSI)}</td><td></td><td class="num"><b>${totalRec == null ? '심사역 판단' : fmtWon(totalRec)}</b></td><td></td></tr>
+      </tbody>
+    </table></div>
+    <p class="note">입원 담보는 일당 금액이라 합계는 참고용입니다.</p>`;
+  if (window.matchMedia('(max-width: 900px)').matches) $('appDetail').scrollIntoView({ behavior: 'smooth' });
+}
+
+function downloadCsv(text, name) {
+  const url = URL.createObjectURL(new Blob([text], { type: 'text/csv;charset=utf-8' }));
+  const link = document.createElement('a');
+  link.href = url; link.download = name;
+  document.body.appendChild(link); link.click(); link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 function renderDecile(dec) {
