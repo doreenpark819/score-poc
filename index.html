@@ -1133,7 +1133,7 @@ function reviewDataset(raw) {
       if (bad.length) add(key, 'warn', '가입금액이 없거나 0 이하', bad.length, ex(t, bad, 'sum_insured'), key === 'appCoverages' ? '권고 가입금액 계산 불가' : '가입금액대 분석에서 제외');
     }
     if (t.cols.coverage_name) {
-      const broken = []; for (let i = 0; i < t.length; i++) if (String(t.cols.coverage_name[i]).includes('�')) broken.push(i);
+      const broken = []; for (let i = 0; i < t.length; i++) if (String(t.cols.coverage_name[i]).includes('\uFFFD')) broken.push(i);
       if (broken.length) add(key, 'error', '담보명 글자가 깨졌습니다 (인코딩 확인 필요)', broken.length, ex(t, broken, 'coverage_name'), '부담보 판정 불가');
     }
     out[key] = t;
