@@ -48,6 +48,27 @@
   .muted { color: var(--muted); }
   .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
   .msg { margin-top: 12px; }
+  .checks { display: flex; gap: 16px; flex-wrap: wrap; }
+  .checks label { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+  .chart { position: relative; }
+  .chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .chart .axis text { fill: var(--muted); font-size: 11px; }
+  .chart .grid line { stroke: var(--line); }
+  .chart .ref { stroke: var(--text); stroke-dasharray: 4 3; stroke-width: 1; }
+  .chart .bar { fill: var(--accent); }
+  .chart .hit { fill: transparent; cursor: default; }
+  .chart .bar, .chart .ref, .chart text { pointer-events: none; }
+  .chart .hit:hover + .bar { fill: #183f94; }
+  .tip { position: absolute; pointer-events: none; background: var(--text); color: #fff; font-size: 12px;
+    padding: 6px 8px; border-radius: 4px; white-space: nowrap; transform: translate(-50%, -110%); display: none; }
+  .note { font-size: 12px; color: var(--muted); margin: 8px 0 0; }
+  .two { display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px; }
+  .two > * { min-width: 0; }
+  .tbl { overflow-x: auto; }
+  th, td { white-space: nowrap; }
+  @media (max-width: 900px) { .two { grid-template-columns: 1fr; } }
+  @media (max-width: 600px) { main { padding: 16px; } header, nav { padding-left: 16px; padding-right: 16px; }
+    .card { padding: 16px; } }
 </style>
 </head>
 <body>
@@ -73,17 +94,23 @@
     </div>
     <div class="card">
       <h2>파일별 인식 여부</h2>
-      <table>
+      <div class="tbl"><table>
         <thead><tr><th>구분</th><th>필수 여부</th><th>인식된 파일</th><th class="num">행 수</th><th>상태</th></tr></thead>
         <tbody id="fileStatus"></tbody>
-      </table>
+      </table></div>
+    </div>
+    <div class="card">
+      <h2>분석 제외 상품</h2>
+      <div id="excludeBox" class="checks"><span class="muted">contracts.csv를 올리면 상품 목록이 표시됩니다.</span></div>
+      <p class="note">체크한 상품은 계약 분석(손해율·상대도)에서 제외됩니다. 기본값은 CONFIG.EXCLUDE_PRODUCTS입니다.
+        PRD 6장 정답값은 제외 없음(전체) 기준입니다.</p>
     </div>
     <div class="card">
       <h2>매칭 건수</h2>
-      <table>
+      <div class="tbl"><table>
         <thead><tr><th>항목</th><th class="num">건수</th><th class="num">비율</th></tr></thead>
         <tbody id="matchStatus"><tr><td colspan="3" class="muted">필수 파일을 올리면 표시됩니다.</td></tr></tbody>
-      </table>
+      </table></div>
       <div class="row msg">
         <button id="runBtn" class="btn" disabled>분석 실행</button>
         <span id="runMsg" class="muted"></span>
@@ -96,7 +123,22 @@
   </section>
 
   <section id="tab-analysis" class="tab">
-    <div class="card"><p class="muted">분석·비교 화면은 2~3단계에서 구현합니다.</p></div>
+    <div class="card">
+      <div class="kpis" id="anaKpis"></div>
+    </div>
+    <div class="card">
+      <h2>신용 10분위별 상대도 (1 = 우량 ~ 10 = 불량)</h2>
+      <div class="two">
+        <div class="chart" id="decileChart"></div>
+        <div class="tbl"><table>
+          <thead><tr><th>분위</th><th class="num">계약 수</th><th class="num">위험보험료</th><th class="num">실제손해</th>
+            <th class="num">손해율</th><th class="num">상대도</th></tr></thead>
+          <tbody id="decileBody"></tbody>
+        </table></div>
+      </div>
+      <p class="note">손해율 = (Σ보험금 + Σ준비금변동) ÷ Σ위험보험료 · 상대도 = 분위 손해율 ÷ 전체 손해율 · 점선은 상대도 1.0(전체 평균)</p>
+    </div>
+    <div class="card"><p class="muted">연체등급별 상대도·분리도·세그먼트 분석은 3단계에서 구현합니다.</p></div>
   </section>
 
   <section id="tab-apps" class="tab">
@@ -125,6 +167,10 @@ const CONFIG = {
   ],
   // ⑥ 분리도 등분 수
   SEPARATION_BUCKETS: 10,
+  // 분석에서 제외할 상품(product_type). 당사 미판매 상품. 화면에서 체크로 변경 가능
+  // ※ PRD 6장 정답값은 제외 없음(전체 10,000건) 기준
+  EXCLUDE_PRODUCTS: ['실손'],
+  DECILES: 10,
 };
 
 /* =====================================================================
@@ -196,14 +242,16 @@ function indexBy(records, key) {
 }
 
 // files: { contracts, credit, delinq?, loss, apps } 각각 parseCSV 결과의 records 배열
-function buildDataset(files) {
+// opts.excludeProducts: 분석에서 뺄 product_type 목록 (기본 CONFIG.EXCLUDE_PRODUCTS)
+function buildDataset(files, opts = {}) {
+  const exclude = new Set(opts.excludeProducts ?? CONFIG.EXCLUDE_PRODUCTS);
   const creditBy = indexBy(files.credit, 'customer_id');
   const delinqBy = files.delinq ? indexBy(files.delinq, 'customer_id') : null;
   const lossBy = indexBy(files.loss, 'policy_no');
   const hasDelinq = !!delinqBy;
 
   const counts = { contracts: files.contracts.length, withLoss: 0, withCredit: 0, withDelinq: 0,
-    badNumber: 0, analyzed: 0, apps: files.apps.length, appsWithCredit: 0, appsWithDelinq: 0 };
+    excludedProduct: 0, badNumber: 0, analyzed: 0, apps: files.apps.length, appsWithCredit: 0, appsWithDelinq: 0 };
 
   const policies = [];
   for (const c of files.contracts) {
@@ -214,6 +262,7 @@ function buildDataset(files) {
     if (credit) counts.withCredit++;
     if (delinq) counts.withDelinq++;
     if (!loss || !credit) continue;
+    if (exclude.has(c.product_type)) { counts.excludedProduct++; continue; }
     // 버전 B를 계산할 때는 연체정보도 있어야 분석 대상 (A·B를 같은 계약 집합으로 비교)
     if (hasDelinq && !delinq) continue;
 
@@ -242,7 +291,7 @@ function buildDataset(files) {
       delinqRaw: delinq, raw: a };
   });
 
-  return { hasDelinq, counts, policies, apps };
+  return { hasDelinq, excludeProducts: [...exclude], counts, policies, apps };
 }
 
 // 손해율 = (Σ보험금 + Σ준비금변동) ÷ Σ위험보험료
@@ -251,13 +300,27 @@ function lossRatio(policies) {
   for (const x of policies) { p += x.premium; l += x.loss; }
   return p > 0 ? l / p : null;
 }
+// ② 10분위 상대도 = 분위 손해율 ÷ 전체 손해율
+function decileTable(policies) {
+  const overall = lossRatio(policies);
+  const rows = [];
+  for (let d = 1; d <= CONFIG.DECILES; d++) {
+    const g = policies.filter(p => p.decile === d);
+    let premium = 0, loss = 0;
+    for (const p of g) { premium += p.premium; loss += p.loss; }
+    const lr = premium > 0 ? loss / premium : null;
+    rows.push({ decile: d, n: g.length, premium, loss, lr,
+      rel: lr != null && overall ? lr / overall : null });
+  }
+  return { overall, rows };
+}
 /* ===================================================================== </calc> */
 // @calc-end
 
 /* =====================================================================
  * 화면
  * ===================================================================== */
-const state = { files: {}, dataset: null };
+const state = { files: {}, dataset: null, exclude: new Set(CONFIG.EXCLUDE_PRODUCTS) };
 const $ = id => document.getElementById(id);
 const fmtInt = n => n == null ? '-' : n.toLocaleString('ko-KR');
 const fmtPct = (x, d = 1) => x == null ? '-' : (x * 100).toFixed(d) + '%';
@@ -289,6 +352,7 @@ async function handleFiles(fileList) {
   state.dataset = null;
   $('summaryCard').style.display = 'none';
   renderFileStatus();
+  renderExclude();
   renderMatch();
   $('runMsg').textContent = unknown.length ? `인식하지 못한 파일: ${unknown.join(', ')}` : '';
 }
@@ -311,6 +375,29 @@ function renderFileStatus() {
   }).join('');
 }
 
+function renderExclude() {
+  const f = state.files.contracts;
+  if (!f) return;
+  const cnt = {};
+  for (const r of f.records) cnt[r.product_type] = (cnt[r.product_type] || 0) + 1;
+  $('excludeBox').innerHTML = Object.keys(cnt).sort().map(p =>
+    `<label><input type="checkbox" value="${esc(p)}" ${state.exclude.has(p) ? 'checked' : ''}>
+      ${esc(p)} <span class="muted">(${fmtInt(cnt[p])}건)</span></label>`).join('');
+  $('excludeBox').querySelectorAll('input').forEach(cb => cb.addEventListener('change', () => {
+    cb.checked ? state.exclude.add(cb.value) : state.exclude.delete(cb.value);
+    state.dataset = null;
+    $('summaryCard').style.display = 'none';
+    setTabsEnabled(false);
+    renderMatch();
+  }));
+}
+
+function buildOpts() { return { excludeProducts: [...state.exclude] }; }
+
+function setTabsEnabled(on) {
+  document.querySelectorAll('nav button[data-tab="analysis"]').forEach(b => { b.disabled = !on; });
+}
+
 function requiredReady() {
   return FILE_SPECS.filter(s => s.required).every(s => state.files[s.key]);
 }
@@ -327,13 +414,14 @@ function renderMatch() {
     $('runBtn').disabled = true;
     return;
   }
-  const { counts: c, hasDelinq } = buildDataset(currentFiles());
+  const { counts: c, hasDelinq, excludeProducts } = buildDataset(currentFiles(), buildOpts());
   const pct = (n, d) => d ? fmtPct(n / d) : '-';
   const rows = [
     ['계약 (contracts)', c.contracts, null],
     ['└ 손해실적 매칭', c.withLoss, c.contracts],
     ['└ 신용정보 매칭', c.withCredit, c.contracts],
     ['└ 연체정보 매칭', hasDelinq ? c.withDelinq : null, c.contracts],
+    [`└ 제외 상품 (${excludeProducts.length ? esc(excludeProducts.join(', ')) : '없음'})`, c.excludedProduct, c.contracts],
     ['└ 숫자 오류로 제외', c.badNumber, c.contracts],
     ['<b>분석 대상 계약</b>', c.analyzed, c.contracts],
     ['청약 (applications)', c.apps, null],
@@ -346,17 +434,80 @@ function renderMatch() {
   $('runBtn').disabled = c.analyzed === 0;
 }
 
+function kpiHtml(items) {
+  return items.map(([l, v]) => `<div class="kpi"><div class="label">${l}</div><div class="value">${v}</div></div>`).join('');
+}
+
 function runAnalysis() {
-  state.dataset = buildDataset(currentFiles());
+  state.dataset = buildDataset(currentFiles(), buildOpts());
   const ds = state.dataset;
-  const lr = lossRatio(ds.policies);
-  $('summaryKpis').innerHTML = [
+  const dec = decileTable(ds.policies);
+  state.decile = dec;
+  const kpis = kpiHtml([
     ['분석 계약 수', fmtInt(ds.counts.analyzed) + '건'],
-    ['전체 손해율', fmtPct(lr)],
+    ['전체 손해율', fmtPct(dec.overall)],
+    ['제외 상품', ds.excludeProducts.length ? esc(ds.excludeProducts.join(', ')) : '없음'],
     ['계산 버전', ds.hasDelinq ? 'A + B (연체 포함)' : 'A만 (연체정보 없음)'],
-  ].map(([l, v]) => `<div class="kpi"><div class="label">${l}</div><div class="value">${v}</div></div>`).join('');
+  ]);
+  $('summaryKpis').innerHTML = kpis;
+  $('anaKpis').innerHTML = kpis;
   $('summaryCard').style.display = '';
-  $('runMsg').textContent = '분석 완료';
+  renderDecile(dec);
+  setTabsEnabled(true);
+  $('runMsg').textContent = '분석 완료 · ② 분석·비교 탭에서 결과를 확인하세요';
+}
+
+function renderDecile(dec) {
+  $('decileBody').innerHTML = dec.rows.map(r => `<tr><td>${r.decile}분위</td>
+    <td class="num">${fmtInt(r.n)}</td><td class="num">${fmtInt(Math.round(r.premium))}</td>
+    <td class="num">${fmtInt(Math.round(r.loss))}</td><td class="num">${fmtPct(r.lr)}</td>
+    <td class="num"><b>${r.rel == null ? '-' : r.rel.toFixed(2)}</b></td></tr>`).join('');
+  barChart($('decileChart'), dec.rows.map(r => ({
+    label: String(r.decile), value: r.rel,
+    tip: `${r.decile}분위 · 상대도 ${r.rel == null ? '-' : r.rel.toFixed(2)} · 손해율 ${fmtPct(r.lr)} · ${fmtInt(r.n)}건`,
+  })), { ref: 1.0, xTitle: '신용 10분위' });
+}
+
+// 의존성 없는 세로 막대차트 (SVG). 0 기준, ref 값에 점선
+function barChart(el, data, { ref = null, xTitle = '' } = {}) {
+  const W = 480, H = 280, m = { t: 12, r: 8, b: 40, l: 36 };
+  const iw = W - m.l - m.r, ih = H - m.t - m.b;
+  const maxV = Math.max(ref ?? 0, ...data.map(d => d.value ?? 0));
+  const step = maxV > 2 ? 0.5 : 0.25;
+  const top = Math.ceil(maxV / step) * step || 1;
+  const y = v => m.t + ih - (v / top) * ih;
+  const bw = iw / data.length, gap = Math.max(2, bw * 0.25);
+  let g = '<g class="grid axis">';
+  for (let v = 0; v <= top + 1e-9; v += step) {
+    g += `<line x1="${m.l}" x2="${W - m.r}" y1="${y(v)}" y2="${y(v)}"></line>
+      <text x="${m.l - 6}" y="${y(v) + 4}" text-anchor="end">${v.toFixed(2)}</text>`;
+  }
+  g += '</g>';
+  let bars = '';
+  data.forEach((d, i) => {
+    const x = m.l + i * bw + gap / 2, w = bw - gap, v = d.value ?? 0;
+    const h = Math.max(0, y(0) - y(v)), r = Math.min(4, w / 2, h);
+    // 위쪽 모서리만 둥글게 (바닥은 기준선에 붙임)
+    const path = `M${x},${y(0)} V${y(v) + r} Q${x},${y(v)} ${x + r},${y(v)} H${x + w - r} Q${x + w},${y(v)} ${x + w},${y(v) + r} V${y(0)} Z`;
+    bars += `<rect class="hit" data-i="${i}" x="${m.l + i * bw}" y="${m.t}" width="${bw}" height="${ih}"></rect>
+      <path class="bar" d="${path}"></path>
+      <text class="axis" x="${x + w / 2}" y="${H - m.b + 16}" text-anchor="middle">${esc(d.label)}</text>`;
+  });
+  const refLine = ref == null ? '' :
+    `<line class="ref" x1="${m.l}" x2="${W - m.r}" y1="${y(ref)}" y2="${y(ref)}"></line>`;
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(xTitle)} 막대차트">
+    ${g}<g class="axis">${bars}</g>${refLine}
+    <text class="axis" x="${m.l + iw / 2}" y="${H - 4}" text-anchor="middle" style="fill:var(--muted);font-size:11px">${esc(xTitle)}</text>
+    </svg><div class="tip"></div>`;
+  const tip = el.querySelector('.tip');
+  el.querySelectorAll('.hit').forEach(h => {
+    h.addEventListener('mousemove', e => {
+      const box = el.getBoundingClientRect(), d = data[+h.dataset.i];
+      tip.textContent = d.tip; tip.style.display = 'block';
+      tip.style.left = (e.clientX - box.left) + 'px'; tip.style.top = (e.clientY - box.top) + 'px';
+    });
+    h.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
+  });
 }
 
 $('fileInput').addEventListener('change', e => handleFiles(e.target.files));
