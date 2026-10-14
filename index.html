@@ -25,7 +25,8 @@
   header .eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .08em; color: var(--accent); }
   header h1 { margin: 2px 0 0; font-size: 20px; letter-spacing: -.01em; }
   header p { margin: 4px 0 0; color: var(--muted); font-size: 12px; }
-  header .meta { font-size: 12px; color: var(--muted); text-align: right; line-height: 1.6; }
+  .brand-logo { height: 40px; width: auto; max-width: 220px; object-fit: contain; align-self: center; }
+  .brand-logo[hidden] { display: none; }
   nav { background: var(--panel); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 20; }
   .nav-in { max-width: 1240px; margin: 0 auto; padding: 0 12px; display: flex; gap: 2px; overflow-x: auto; }
   nav button { border: 0; background: none; padding: 13px 14px 11px; font: inherit; color: var(--muted); cursor: pointer;
@@ -384,7 +385,7 @@
     .liftbar { grid-template-columns: 96px minmax(0, 1fr) 44px; }
   }
   @media (max-width: 600px) {
-    main { padding: 16px; } .head-in { padding: 14px 16px 12px; } header .meta { text-align: left; }
+    main { padding: 16px; } .head-in { padding: 14px 16px 12px; } .brand-logo { height: 30px; }
     .card { padding: 16px; } .kcard { padding: 12px; } .kcard .k-value { font-size: 22px; }
     .cmp-side .lift { font-size: 26px; } .sec-head h2 { font-size: 16px; }
   }
@@ -436,7 +437,7 @@
       <h1>신용정보 기반 심사 스코어 분석</h1>
       <p>초안(PoC) · 가상 데이터 기준 · 업로드한 파일은 서버로 전송되지 않고 이 브라우저 안에서만 계산됩니다</p>
     </div>
-    <div class="meta">데이터 → 상관분석 → 층화검증 → 스코어 결과 → 종합 해석<br>권고는 참고용이며 최종 판단은 심사역</div>
+    <img id="brandLogo" class="brand-logo" alt="" hidden>
   </div>
 </header>
 <nav>
@@ -1644,6 +1645,10 @@ function scaleDiagnostics(ds) {
 /* =====================================================================
  * 화면
  * ===================================================================== */
+// 회사 로고(CI): 공식 이미지 파일을 tools/set_logo.js로 넣으면 아래 값이 data URI로 채워져 머리글 오른쪽에 표시됨 (외부 파일·통신 없음)
+const BRAND = {"name":"","logo":""}; // @brand-logo
+if (BRAND.logo) { const img = document.getElementById('brandLogo'); img.src = BRAND.logo; img.alt = BRAND.name; img.hidden = false; }
+
 const state = { files: {}, dataset: null };
 const $ = id => document.getElementById(id);
 const fmtInt = n => n == null ? '-' : n.toLocaleString('ko-KR');
