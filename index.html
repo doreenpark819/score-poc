@@ -222,16 +222,25 @@
   .two { display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px; }
   .two > * { min-width: 0; }
   .two.decile { grid-template-columns: 1fr 1.2fr; align-items: start; }
-  .two.apps { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); align-items: start; }
+  .two.apps { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); align-items: start; }
   /* 청약 상세: 좁은 오른쪽 열에서도 비고 배지가 잘리지 않도록 머리글·담보·비고 칸은 줄바꿈 허용 */
   #appDetail th, #appDetail td { padding: 8px 7px; }
   #appDetail th, #appDetail td:first-child, #appDetail td:last-child { white-space: normal; }
   #appDetail .badge { white-space: nowrap; }
+  #appDetail table { font-size: 13px; }
+  table.clickable th, table.clickable td { padding: 8px 7px; }
+  #fileStatus td:nth-child(1), #fileStatus td:nth-child(3), #fileStatus td:last-child, #matchStatus td:first-child { white-space: normal; }
+  #fileStatus td:nth-child(1), #fileStatus td:nth-child(3) { word-break: break-all; }
+  @media (max-width: 1100px) { th, td { padding: 7px 6px; } }
+  @media (max-width: 1280px) {
+    #appDetail th, #appDetail td, table.clickable th, table.clickable td { padding: 7px 5px; }
+    #appDetail table, table.clickable { font-size: 12.5px; }
+    #appDetail .badge { white-space: normal; text-align: center; }
+  }
   .two.apps > .card { margin-bottom: 16px; }
 
   @media (max-width: 1000px) { .kpi-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-  @media (max-width: 1180px) { .two, .two.apps { grid-template-columns: 1fr; } }
-  @media (max-width: 900px) { .two.decile { grid-template-columns: 1fr; } }
+  @media (max-width: 900px) { .two, .two.apps, .two.decile { grid-template-columns: 1fr; } }
   @media (max-width: 760px) {
     .cmp-banner { grid-template-columns: 1fr 1fr; }
     .cmp-delta { grid-column: 1 / -1; order: 3; min-width: 0; }
