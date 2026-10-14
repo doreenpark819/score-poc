@@ -359,6 +359,84 @@
   .ab-matrix td.down { background: var(--accent-soft); }
   @media (max-width: 760px) { .ab-grid { grid-template-columns: 1fr; } }
   @media print { .ab-open { display: none !important; } .ab-case, .ab-pair { break-inside: avoid; } }
+  /* 스코어 결과: 기준·결과 막대, 단계 머리, 목록 칩, 상세(결론·이유·금액) */
+  .step-head { display: flex; align-items: baseline; gap: 6px 10px; flex-wrap: wrap; margin-bottom: 12px; }
+  .step-head .st { width: 22px; height: 22px; border-radius: 50%; background: var(--text); color: #fff; font-size: 12px; font-weight: 700;
+    display: inline-flex; align-items: center; justify-content: center; align-self: center; flex: none; }
+  .step-head h2 { margin: 0; font-size: 15.5px; }
+  .step-head .sub { color: var(--muted); font-size: 12px; }
+  .ladder { display: grid; gap: 3px; }
+  .lseg { border: 0; border-radius: 4px; padding: 10px 12px; color: #fff; text-align: left; font: inherit; cursor: pointer; min-width: 0; overflow: hidden; }
+  .lseg b { display: block; font-size: 22px; line-height: 1.15; font-variant-numeric: tabular-nums; }
+  .lseg span { font-size: 12px; white-space: nowrap; }
+  .lseg.u0 { background: var(--accent); } .lseg.u1 { background: #9AA3AB; } .lseg.u2 { background: #6E767E; } .lseg.u3 { background: var(--risk); }
+  .lseg:hover { filter: brightness(1.06); }
+  .lseg.on { outline: 3px solid var(--text); outline-offset: 2px; }
+  .ladder-rules { margin-top: 8px; }
+  .ladder-rules div { font-size: 11.5px; color: var(--text-2); line-height: 1.5; padding: 0 2px; min-width: 0; }
+  .ladder-rules div b { display: block; color: var(--text); font-size: 12px; }
+  .udot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: 0; }
+  .udot.u0 { background: var(--accent); } .udot.u1 { background: #9AA3AB; } .udot.u2 { background: #6E767E; } .udot.u3 { background: var(--risk); }
+  .ab-main { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 20px; align-items: center; }
+  .ab-big { font-size: 19px; font-weight: 700; line-height: 1.55; }
+  .ab-big em { font-style: normal; color: var(--risk); }
+  .ab-big em.down { color: var(--accent-strong); }
+  .ab-small { font-size: 12.5px; color: var(--text-2); margin-top: 4px; line-height: 1.6; }
+  .ab-btns { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .ab-btns .btn { padding: 6px 12px; font-size: 12.5px; }
+  .ab-more { margin-top: 14px; border-top: 1px solid var(--line-soft); padding-top: 10px; }
+  .ab-more summary { cursor: pointer; font-size: 12.5px; color: var(--text-2); list-style: none; }
+  .ab-more summary::-webkit-details-marker { display: none; }
+  .ab-more summary::before { content: ''; display: inline-block; width: 6px; height: 6px; border-right: 2px solid var(--text-2);
+    border-bottom: 2px solid var(--text-2); transform: rotate(-45deg); margin: 0 8px 1px 2px; transition: transform .2s; }
+  .ab-more[open] summary::before { transform: rotate(45deg); }
+  .ab-more[open] summary { margin-bottom: 12px; }
+  .list-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px 10px; flex-wrap: wrap; margin-bottom: 10px; }
+  .chips-f { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chips-f button { border: 1px solid var(--line); border-radius: 14px; padding: 3px 11px; font: inherit; font-size: 12px; color: var(--text-2);
+    background: var(--panel); cursor: pointer; white-space: nowrap; }
+  .chips-f button:hover { border-color: var(--accent); }
+  .chips-f button.on { background: var(--text); color: #fff; border-color: var(--text); }
+  .list-tools { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .list-tools .btn { padding: 5px 12px; font-size: 12.5px; white-space: nowrap; }
+  td.chg { font-size: 11.5px; font-weight: 600; color: var(--risk); }
+  td.chg.down { color: var(--accent-strong); }
+  .detail-panel { border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; position: sticky; top: 56px; }
+  .dp-title { font-weight: 700; font-size: 15px; }
+  .dp-title span { font-weight: 400; color: var(--muted); font-size: 12.5px; }
+  .dp-lbl { font-size: 12px; font-weight: 700; color: var(--text-2); margin: 14px 0 6px; }
+  .dp-lbl span { font-weight: 400; color: var(--muted); }
+  .concl { display: flex; justify-content: space-between; align-items: center; gap: 12px; border-left: 4px solid #9AA3AB; background: var(--head);
+    padding: 12px 14px; border-radius: 4px; }
+  .concl.u0 { border-left-color: var(--accent); } .concl.u2 { border-left-color: #6E767E; } .concl.u3 { border-left-color: var(--risk); }
+  .concl .l { font-size: 12px; color: var(--text-2); }
+  .concl .v { font-size: 18px; font-weight: 700; line-height: 1.4; }
+  .concl .s { font-size: 12px; color: var(--text-2); text-align: right; white-space: nowrap; }
+  .concl .s b { font-size: 18px; color: var(--text); font-variant-numeric: tabular-nums; }
+  .why { display: grid; grid-template-columns: minmax(0, 1fr) 18px minmax(0, 1fr) 18px minmax(0, 1fr) 18px minmax(0, 1.15fr); align-items: center; text-align: center; }
+  .why.a-only { grid-template-columns: minmax(0, 1fr) 18px minmax(0, 1.15fr); }
+  .why .bx { border: 1px solid var(--line); border-radius: 6px; padding: 7px 4px; min-width: 0; }
+  .why .bx .k { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .why .bx .n { font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .why .bx.res { background: var(--head); border-color: #9AA3AB; }
+  .why .bx .n.t { font-size: 13px; padding: 2px 0; }
+  .why .op { color: var(--muted); font-weight: 700; }
+  .why-note { font-size: 12px; color: var(--muted); margin-top: 6px; line-height: 1.6; }
+  .covs { width: 100%; }
+  .cov-row { display: grid; grid-template-columns: 92px minmax(0, 1fr) 168px; gap: 10px; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--line-soft); }
+  .cov-row .nm { font-size: 12.5px; }
+  .cov-row .nm small { color: var(--muted); }
+  .cov-row .track { position: relative; height: 10px; background: #D5DADE; border-radius: 2px; overflow: hidden; }
+  .cov-row .track i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--accent); }
+  .cov-row .track.ex { background: repeating-linear-gradient(45deg, #E3E6E9 0 4px, #F3F4F5 4px 8px); }
+  .cov-row .amt { font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--muted); }
+  .cov-row .amt b { color: var(--accent-strong); }
+  .cov-row .amt b.x { color: var(--text-2); }
+  .cov-total { display: flex; justify-content: space-between; font-size: 12.5px; padding: 8px 0 0; font-variant-numeric: tabular-nums; }
+  .cov-total b { color: var(--accent-strong); }
+  @media (max-width: 900px) { .ab-main { grid-template-columns: 1fr; } .detail-panel { position: static; } }
+  @media (max-width: 600px) { .cov-row { grid-template-columns: 76px minmax(0, 1fr) 132px; } .lseg { padding: 8px; } .lseg b { font-size: 17px; } .lseg span { font-size: 11px; } .ladder-rules div { font-size: 10.5px; } }
+  @media print { .detail-panel { position: static; } .lseg { cursor: default; } .ab-btns { display: none !important; } }
   /* 종합 해석 */
   .headline { border-left: 4px solid var(--accent); }
   .headline .h-label { font-size: 12px; font-weight: 700; color: var(--accent-strong); letter-spacing: .04em; }
@@ -378,7 +456,7 @@
   .two { display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px; }
   .two > * { min-width: 0; }
   .two.decile { grid-template-columns: 1fr 1.2fr; align-items: start; }
-  .two.apps { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); align-items: start; }
+  .two.apps { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); align-items: start; }
   /* 청약 상세: 좁은 오른쪽 열에서도 비고 배지가 잘리지 않도록 머리글·담보·비고 칸은 줄바꿈 허용 */
   #appDetail th, #appDetail td { padding: 8px 7px; }
   #appDetail th, #appDetail td:first-child, #appDetail td:last-child { white-space: normal; }
@@ -399,7 +477,6 @@
     #appDetail table, table.clickable { font-size: 12.5px; }
     #appDetail .badge { white-space: normal; text-align: center; }
   }
-  .two.apps > .card { margin-bottom: 16px; }
 
   @media (max-width: 1000px) { .kpi-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   @media (max-width: 900px) { .two, .two.apps, .two.decile { grid-template-columns: 1fr; } }
@@ -421,7 +498,7 @@
     html, body { background: #fff; }
     body { font-size: 10.5px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     nav, #chatFab, #chatPanel, .btn, .demo-only, .has-demo .demo-only, .has-demo .card.demo-only, #drop, .tip,
-      .settings .row, #appPager, .no-print { display: none !important; }
+      .settings .row, .no-print { display: none !important; }
     header { border-top-width: 3px; } .head-in { padding: 0 0 8px; max-width: none; }
     main { max-width: none; padding: 10px 0 0; }
     section.tab { display: block !important; }
@@ -556,7 +633,7 @@
         <button type="button" class="gcard" data-go="strat"><span class="gnum">3</span><b>층화검증</b><span class="gq">연체 정보를 더하면 더 잘 가려낼까?</span>
           <span class="gd">연체 정보를 뺀 모델과 넣은 모델을 나란히 비교하고, 담보·나이·성별로 나눠도 같은지 확인해요.</span></button>
         <button type="button" class="gcard" data-go="apps"><span class="gnum">4</span><b>스코어 결과</b><span class="gq">새 신청마다 어떤 조건을 추천할까?</span>
-          <span class="gd">가입 신청 1,000건의 점수와 추천 조건, 담보별 추천 금액을 보고 파일로 받아요.</span></button>
+          <span class="gd">추천 기준과 결과, 연체 정보로 바뀐 건, 신청마다 추천 이유와 담보별 금액을 차례로 보여줘요.</span></button>
         <button type="button" class="gcard" data-go="summary"><span class="gnum">5</span><b>종합 해석</b><span class="gq">그래서 결론은? 믿을 만한가?</span>
           <span class="gd">결과의 의미와 한계, 다음에 할 일을 쉬운 말로 정리해요.</span></button>
       </div>
@@ -772,36 +849,38 @@
   </section>
 
   <section id="tab-apps" class="tab">
-    <div class="sec-head"><span class="no">STEP 4</span><h2>스코어 결과</h2><p>청약별 스코어 · 권고 인수조건 · 담보별 권고 가입금액</p></div>
+    <div class="sec-head"><span class="no">STEP 4</span><h2>스코어 결과</h2><p>기준 → 결과 → 연체정보 효과 → 청약별 확인</p></div>
     <div class="card">
-      <div class="card-head">
-        <h2>권고 인수조건 분포 <span class="sub" id="uwBasis"></span></h2>
-        <button id="exportBtn" class="btn ghost">결과 CSV 내보내기</button>
-      </div>
-      <div class="kpis" id="uwKpis"></div>
-      <p class="note" id="uwRuleNote"></p>
+      <div class="step-head"><span class="st">1</span><h2>권고 기준과 결과</h2><span class="sub" id="uwBasis"></span></div>
+      <div class="ladder" id="uwLadder"></div>
+      <div class="ladder ladder-rules" id="uwRules"></div>
+      <p class="note">막대 구간을 누르면 아래 '청약별 확인' 목록이 그 권고로 걸러집니다. 권고는 참고용이며 최종 판단은 심사역이 합니다.</p>
     </div>
     <div class="card" id="abCard" style="display:none">
-      <h2>모델 A vs B: 점수가 크게 달라진 사례 <span class="sub">연체 이력을 반영하면(B) 같은 고객의 점수와 권고가 어떻게 바뀌는지 실제 청약으로 비교</span></h2>
+      <div class="step-head"><span class="st">2</span><h2>연체정보를 넣으면 무엇이 바뀌나</h2><span class="sub">모델 A(신용 분위만) → 모델 B(연체 이력 반영)</span></div>
       <div id="abCases"></div>
     </div>
-    <div class="two apps">
-      <div class="card">
-        <h2>청약 목록</h2>
-        <div class="row no-print" style="margin-bottom:12px">
-          <label>권고 <select id="appFilter"></select></label>
-          <label>청약번호 <input id="appSearch" type="search" placeholder="A2610…" size="12"></label>
-          <span class="muted" id="appCount"></span>
+    <div class="card" id="appCard">
+      <div class="step-head"><span class="st" id="appStepNo">3</span><h2>청약별 확인</h2><span class="sub">목록에서 고르면 오른쪽에 결론 → 이유 → 담보별 금액 순으로 보여줍니다</span></div>
+      <div class="two apps">
+        <div class="app-list">
+          <div class="list-head no-print">
+            <div class="chips-f" id="appChips"></div>
+            <div class="list-tools">
+              <input id="appSearch" type="search" placeholder="청약번호 검색" size="13" aria-label="청약번호 검색">
+              <span class="muted" id="appCount"></span>
+              <button id="exportBtn" class="btn ghost" type="button">CSV 내보내기</button>
+            </div>
+          </div>
+          <div class="tbl app-scroll" id="appScroll"><table class="clickable">
+            <thead><tr><th>청약번호</th><th>연령·성별</th><th class="num">분위</th><th>연체</th>
+              <th class="num">점수 A→B</th><th>권고 (B)</th><th>A·B 변화</th></tr></thead>
+            <tbody id="appBody"></tbody>
+          </table></div>
+          <p class="note print-only">인쇄본에는 목록 상위 50건만 표시합니다. 전체는 CSV 내보내기로 받으세요.</p>
         </div>
-        <div class="tbl app-scroll" id="appScroll"><table class="clickable">
-          <thead><tr><th>청약번호</th><th>연령·성별</th><th class="num">10분위</th><th>연체등급</th>
-            <th class="num">스코어 A</th><th class="num">스코어 B</th><th>권고 (B)</th></tr></thead>
-          <tbody id="appBody"></tbody>
-        </table></div>
-        <div class="row msg" id="appPager"></div>
-        <p class="note print-only">인쇄본에는 목록 상위 50건만 표시합니다. 전체는 결과 CSV 내보내기로 받으세요.</p>
+        <div class="detail-panel" id="appDetail"><p class="muted">목록에서 청약을 고르면 상세 내역이 표시됩니다.</p></div>
       </div>
-      <div class="card" id="appDetail"><p class="muted">목록에서 청약을 클릭하면 상세 내역이 표시됩니다.</p></div>
     </div>
   </section>
 
@@ -1977,8 +2056,11 @@ function renderSummary() {
   if (state.apps) {
     const list = state.apps.list, total = list.length, s = uwSummary(list);
     const rev = list.filter(a => a.status === '심사역검토'), rev10 = rev.filter(a => a.decile === 10).length;
+    const chg = list.filter(a => a.basis === 'B' && a.statusA && a.statusA !== a.status);
+    const up = chg.filter(a => uwRank(a.status) > uwRank(a.statusA)).length;
     findings.push({ tag: 'ref', title: '청약 권고 결과',
-      result: `청약 ${fmtInt(total)}건 중 ` + [...s].map(([k, n]) => `${k} ${fmtPct(total ? n / total : null)}`).join(' · '),
+      result: `청약 ${fmtInt(total)}건 중 ` + [...s].map(([k, n]) => `${k} ${fmtPct(total ? n / total : null)}`).join(' · ')
+        + (chg.length ? `<br>연체정보를 반영하면서 <b>${fmtInt(chg.length)}건</b>의 권고가 바뀜 (엄격 ${fmtInt(up)}건 · 완화 ${fmtInt(chg.length - up)}건)` : ''),
       meaning: rev.length ? `심사역검토 ${fmtInt(rev.length)}건 중 ${fmtInt(rev10)}건(${fmtPct(rev10 / rev.length, 0)})이 신용 10분위(최하위)입니다. 신용정보만으로 인수를 거절할 수는 없으므로, 이 건들은 심사역이 건강 고지 등 다른 정보와 함께 판단해야 합니다.` : '',
       where: '4 스코어 결과' });
   }
@@ -2063,55 +2145,6 @@ function renderPrdCheck() {
     : ok === rows.length ? `<span class="badge ok">${ok}/${rows.length} 항목 일치</span>` : `<span class="badge bad">${rows.length - ok}개 항목 불일치</span>`;
   $('prdCheckBody').innerHTML = rows.map(r => `<tr><td>${esc(r.label)}</td><td class="num">${r.exp}</td><td class="num">${r.act}</td>
     <td class="num">${r.diff}</td><td>${r.pass == null ? '<span class="badge muted">계산 중</span>' : r.pass ? '<span class="badge ok">일치</span>' : '<span class="badge bad">불일치</span>'}</td></tr>`).join('');
-}
-
-// ─ 모델 A vs B 사례: 연체정보 반영으로 점수·권고가 크게 달라진 실제 청약을 좌우로 비교 (표시 전용) ─
-// A 권고는 계산 블록의 uwRule(relA)를 그대로 써서 B와 같은 규칙으로 판정
-function renderABCases(assessed) {
-  const rank = l => CONFIG.UW_RULES.findIndex(r => r.label === l);
-  const list = assessed.filter(a => a.relA != null && a.relB != null).map(a => ({ ...a, statusA: uwRule(a.relA).label }));
-  if (!list.length) { $('abCard').style.display = 'none'; return; }
-  $('abCard').style.display = '';
-  const L = CONFIG.DELINQ.LABELS;
-  const stricter = list.filter(a => rank(a.status) > rank(a.statusA)).sort((x, y) => (x.scoreB - x.scoreA) - (y.scoreB - y.scoreA));
-  const looser = list.filter(a => rank(a.status) < rank(a.statusA)).sort((x, y) => (y.scoreB - y.scoreA) - (x.scoreB - x.scoreA));
-  // 같은 신용 분위에서 연체 이력만 다른 두 사람 (정상 vs 가장 나쁜 등급, 권고가 갈리는 분위 우선)
-  let pair = null;
-  for (let d = 10; d >= 1 && !pair; d--) {
-    const g0 = list.find(a => a.decile === d && a.grade === 0), g2 = list.find(a => a.decile === d && a.grade === 2) || list.find(a => a.decile === d && a.grade === 1);
-    if (g0 && g2 && g0.status !== g2.status) pair = [g0, g2];
-  }
-  const who = a => `${esc(a.app_no)} · ${a.age ?? '-'}세 ${a.gender === 'M' ? '남' : a.gender === 'F' ? '여' : ''} · 신용 ${a.decile}분위 · 연체 이력 '${esc(L[a.grade])}'`;
-  const side = (tag, rel, sc, st) => `<div class="ab-side ${tag === 'B' ? 'b' : 'a'}"><div class="ab-tag">모델 ${tag}${tag === 'A' ? ' · 연체 미반영' : ' · 연체 반영'}</div>
-    <div class="ab-score">${sc}<small>점</small></div><div class="ab-rel">상대도 ${fmtRel(rel)}</div>${uwBadge(st)}</div>`;
-  const caseCard = (title, a, why) => !a ? '' : `<div class="ab-case"><div class="ab-title">${title}</div><div class="ab-who">${who(a)}</div>
-    <div class="ab-vs">${side('A', a.relA, a.scoreA, a.statusA)}<div class="ab-arrow" aria-hidden="true"></div>${side('B', a.relB, a.scoreB, a.status)}</div>
-    <p class="ab-why">${why}</p><button type="button" class="btn ghost ab-open" data-app="${esc(a.app_no)}">이 청약 상세 보기</button></div>`;
-  const s = stricter[0], l = looser[0];
-  const cards = [
-    caseCard('연체 이력 때문에 권고가 엄격해진 사례', s, s && `신용 분위만 보면(A) 상대도 ${fmtRel(s.relA)}로 '${esc(s.statusA)}'입니다. 그런데 '${esc(L[s.grade])}' 이력의 보정 상대도 ${fmtRel(s.relDelinq)}을 곱하면(B) ${fmtRel(s.relB)}로 올라,
-      점수가 ${s.scoreA}점 → ${s.scoreB}점으로 내려가고 권고가 '${esc(s.status)}'로 바뀝니다.`),
-    caseCard('연체 이력이 없어 권고가 완화된 사례', l, l && `신용 분위만 보면(A) 상대도 ${fmtRel(l.relA)}로 '${esc(l.statusA)}'입니다. 연체 이력이 없는 고객은 같은 분위 평균보다 손해가 조금 적어(보정 상대도 ${fmtRel(l.relDelinq)})
-      B에서는 ${fmtRel(l.relB)}로 낮아지고, 점수가 ${l.scoreA}점 → ${l.scoreB}점, 권고가 '${esc(l.status)}'로 바뀝니다.`),
-  ].join('');
-  const pairHtml = !pair ? '' : `<div class="ab-pair"><div class="ab-title">같은 신용 ${pair[0].decile}분위, 연체 이력만 다른 두 고객</div><div class="ab-who">모델 B 기준 비교 · 모델 A에서는 두 사람의 점수가 같음</div>
-    <div class="ab-vs">${[0, 1].map(i => { const a = pair[i]; return `<div class="ab-side ${i ? 'b' : 'a'}"><div class="ab-tag">${esc(a.app_no)} · 연체 이력 '${esc(L[a.grade])}'</div>
-      <div class="ab-score">${a.scoreB}<small>점</small></div><div class="ab-rel">상대도 ${fmtRel(a.relDecile)} × ${fmtRel(a.relDelinq)} = ${fmtRel(a.relB)}</div>${uwBadge(a.status)}</div>`; }).join('<div class="ab-arrow eq" aria-hidden="true"></div>')}</div>
-    <p class="ab-why">모델 A에서는 두 사람 모두 신용 ${pair[0].decile}분위라 점수(${pair[0].scoreA}점)와 권고('${esc(pair[0].statusA)}')가 같습니다. 연체 이력을 반영한 모델 B에서만 두 사람이 구분됩니다.</p></div>`;
-  // A → B 권고 이동 요약
-  const labels = CONFIG.UW_RULES.map(r => r.label);
-  const m = labels.map(a => labels.map(b => list.filter(x => x.statusA === a && x.status === b).length));
-  const same = labels.reduce((t, _, i) => t + m[i][i], 0);
-  const matrix = `<div class="tbl"><table class="ab-matrix"><thead><tr><th>A 권고 \\ B 권고</th>${labels.map(l => `<th class="num">${esc(l)}</th>`).join('')}<th class="num">합계</th></tr></thead><tbody>
-    ${labels.map((a, i) => `<tr><td>${uwBadge(a)}</td>${m[i].map((n, j) => `<td class="num${i === j ? ' diag' : n ? (j > i ? ' up' : ' down') : ''}">${n ? fmtInt(n) : '·'}</td>`).join('')}<td class="num">${fmtInt(m[i].reduce((t, n) => t + n, 0))}</td></tr>`).join('')}
-    </tbody></table></div>
-    <p class="note">청약 ${fmtInt(list.length)}건 중 <b>${fmtInt(same)}건</b>은 A와 B의 권고가 같고, <b>${fmtInt(stricter.length)}건</b>은 연체 이력 때문에 더 엄격해졌으며(오른쪽 위),
-      ${looser.length ? `<b>${fmtInt(looser.length)}건</b>은 연체 이력이 없어 완화됐습니다(왼쪽 아래).` : '완화된 건은 없습니다(정상 등급의 보정 상대도가 1에 가까워 권고 구간을 넘지 않음).'} 회색 대각선 칸은 권고가 바뀌지 않은 건입니다.</p>`;
-  $('abCases').innerHTML = `<div class="ab-grid">${cards}${pairHtml}</div><h3 class="ab-h3">A → B 권고 변화 요약</h3>${matrix}`;
-  $('abCases').querySelectorAll('.ab-open').forEach(b => b.addEventListener('click', () => {
-    $('appFilter').value = ''; $('appSearch').value = b.dataset.app; renderAppList(); showApp(b.dataset.app);
-    $('appDetail').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }));
 }
 
 // 신뢰구간·교차 검증 분리도는 몇 초 걸리므로 기본 결과를 먼저 그린 뒤 채운다 (설정이 바뀌면 이전 계산 결과는 버림)
@@ -2282,83 +2315,177 @@ function renderSegment(segs, dim, coverage, ds) {
     : '<tr><td colspan="9" class="muted">해당 데이터가 없습니다.</td></tr>';
 }
 
-// ─ 청약 조회 ─
+// ─ 스코어 결과 ─ ① 권고 기준과 결과 ② 연체정보 효과(A→B) ③ 청약별 확인(결론 → 이유 → 담보별 금액)
 const UW_BADGE = { '표준인수': 'ok', '한도축소': 'info', '부담보+한도축소': 'warn', '심사역검토': 'bad' };
 const uwBadge = label => `<span class="badge ${UW_BADGE[label] || 'muted'}">${esc(label)}</span>`;
+const uwRank = label => CONFIG.UW_RULES.findIndex(r => r.label === label);
+const UW_SHORT = { '표준인수': '표준', '한도축소': '한도축소', '부담보+한도축소': '부담보', '심사역검토': '심사역' };
+const uwShort = l => UW_SHORT[l] || l;
+function uwRange(i) {
+  const r = CONFIG.UW_RULES, lo = i === 0 ? null : r[i - 1].max;
+  return lo == null ? `종합상대도 ${r[i].max.toFixed(1)} 미만` : r[i].max === Infinity ? `${lo.toFixed(1)} 이상` : `${lo.toFixed(1)} ~ ${r[i].max.toFixed(1)}`;
+}
+function uwAction(rule) {
+  return rule.limitPct == null ? '자동 권고 없음 · 심사역 판단' : rule.exclusion
+    ? `${CONFIG.EXCLUSION_COVERAGES.map(n => n.replace(/(질병|재해)/, '')).filter((v, i, a) => a.indexOf(v) === i).join('·')} 담보 제외 + 나머지 ${rule.limitPct}%`
+    : rule.limitPct === 100 ? '신청한 그대로 · 전 담보 100%' : `전 담보 ${rule.limitPct}%`;
+}
 
 function initApps(ds, dec, dq) {
   const assessed = assessApps(ds, dec, dq);
-  state.apps = { list: assessed, selected: null };
-  const sum = uwSummary(assessed), total = assessed.length;
-  const basisB = assessed.some(a => a.basis === 'B');
-  $('uwBasis').textContent = basisB ? '종합상대도 B(10분위 × 연체 보정) 기준' : '연체정보가 없어 종합상대도 A(10분위) 기준';
-  $('uwKpis').innerHTML = [...sum].map(([label, n]) =>
-    `<div class="kpi"><div class="label">${uwBadge(label)}</div><div class="value">${fmtInt(n)}건</div>
-      <div class="muted" style="font-size:12px">${fmtPct(total ? n / total : null)}</div></div>`).join('');
-  const rules = CONFIG.UW_RULES;
-  $('uwRuleNote').innerHTML = rules.map((r, i) => {
-    const lo = i === 0 ? null : rules[i - 1].max;
-    const range = lo == null ? `< ${r.max.toFixed(1)}` : r.max === Infinity ? `≥ ${lo.toFixed(1)}` : `${lo.toFixed(1)} ~ ${r.max.toFixed(1)} 미만`;
-    const act = r.limitPct == null ? '권고 금액 없음' : r.exclusion
-      ? `부담보(${CONFIG.EXCLUSION_COVERAGES.join('·')}) + 나머지 담보 ${r.limitPct}%` : `전 담보 ${r.limitPct}%`;
-    return `<b>${esc(r.label)}</b> ${range}: ${esc(act)}`;
-  }).join(' · ');
-  $('appFilter').innerHTML = '<option value="">전체</option>' +
-    [...sum.keys()].map(l => `<option>${esc(l)}</option>`).join('');
-  $('appFilter').onchange = renderAppList;
+  for (const a of assessed) a.statusA = a.relA == null ? null : uwRule(a.relA).label; // 표시용: 같은 규칙으로 판정한 A 권고
+  const hasB = assessed.some(a => a.basis === 'B');
+  state.apps = { list: assessed, selected: null, filter: '', hasB };
+  const sum = uwSummary(assessed), total = assessed.length, rules = CONFIG.UW_RULES;
+  $('uwBasis').textContent = `청약 ${fmtInt(total)}건 · ` + (hasB ? '종합상대도 B(10분위 × 연체 보정) 기준' : '연체정보가 없어 종합상대도 A(10분위) 기준');
+  const counts = rules.map(r => sum.get(r.label) || 0);
+  const cols = counts.map(n => `minmax(84px, ${Math.max(n, 1)}fr)`).join(' ');
+  $('uwLadder').style.gridTemplateColumns = cols; $('uwRules').style.gridTemplateColumns = cols;
+  $('uwLadder').innerHTML = rules.map((r, i) => `<button type="button" class="lseg u${i}" data-f="${esc(r.label)}" title="${esc(r.label)}만 목록에서 보기">
+    <b>${fmtInt(counts[i])}건</b><span>${esc(uwShort(r.label))} · ${fmtPct(total ? counts[i] / total : null)}</span></button>`).join('');
+  $('uwRules').innerHTML = rules.map((r, i) => `<div><b>${uwRange(i)}</b>${esc(uwAction(r))}</div>`).join('');
+  $('uwLadder').querySelectorAll('.lseg').forEach(b => b.addEventListener('click', () => {
+    setAppFilter(state.apps.filter === b.dataset.f ? '' : b.dataset.f);
+    $('appCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }));
+  $('appSearch').value = '';
   $('appSearch').oninput = renderAppList;
   $('exportBtn').onclick = () => downloadCsv(exportCsv(assessed), `uw_result_${new Date().toISOString().slice(0, 10)}.csv`);
-  $('appDetail').innerHTML = '<p class="muted">목록에서 청약을 클릭하면 상세 내역이 표시됩니다.</p>';
+  const rep = renderABCases(assessed);
+  $('appStepNo').textContent = hasB ? '3' : '2';
+  setAppFilter('');
+  const first = rep || assessed.find(a => a.relA != null) || assessed[0];
+  if (first) showApp(first.app_no, { quiet: true });
+}
+
+function setAppFilter(f) {
+  state.apps.filter = f;
+  document.querySelectorAll('#uwLadder .lseg').forEach(b => b.classList.toggle('on', b.dataset.f === f));
+  renderAppChips();
   renderAppList();
-  renderABCases(assessed);
+}
+
+function renderAppChips() {
+  const st = state.apps, list = st.list, sum = uwSummary(list);
+  const changed = list.filter(a => a.statusA && a.basis === 'B' && a.statusA !== a.status).length;
+  const chips = [['', `전체 ${fmtInt(list.length)}`], ...CONFIG.UW_RULES.map(r => [r.label, `${uwShort(r.label)} ${fmtInt(sum.get(r.label) || 0)}`])];
+  if (st.hasB) chips.push(['changed', `A·B 다른 건 ${fmtInt(changed)}`]);
+  $('appChips').innerHTML = chips.map(([f, t]) => `<button type="button" data-f="${esc(f)}" class="${st.filter === f ? 'on' : ''}">${esc(t)}</button>`).join('');
+  $('appChips').querySelectorAll('button').forEach(b => b.addEventListener('click', () => setAppFilter(b.dataset.f)));
 }
 
 function filteredApps() {
-  const f = $('appFilter').value, q = $('appSearch').value.trim().toUpperCase();
-  return state.apps.list.filter(a => (!f || a.status === f) && (!q || a.app_no.toUpperCase().includes(q)));
+  const f = state.apps.filter, q = $('appSearch').value.trim().toUpperCase();
+  return state.apps.list.filter(a => (!f || (f === 'changed' ? a.basis === 'B' && a.statusA && a.statusA !== a.status : a.status === f))
+    && (!q || a.app_no.toUpperCase().includes(q)));
 }
 
 function renderAppList() {
   const list = filteredApps(), st = state.apps;
   $('appCount').textContent = `${fmtInt(list.length)}건`;
   const L = CONFIG.DELINQ.LABELS;
-  $('appBody').innerHTML = list.length ? list.map(a => `<tr data-app="${esc(a.app_no)}" class="${st.selected === a.app_no ? 'sel' : ''}">
+  $('appBody').innerHTML = list.length ? list.map(a => {
+    const rk = uwRank(a.status), diff = st.hasB && a.statusA && a.statusA !== a.status;
+    return `<tr data-app="${esc(a.app_no)}" class="${st.selected === a.app_no ? 'sel' : ''}">
       <td>${esc(a.app_no)}</td><td>${a.age ?? '-'}세 · ${a.gender === 'M' ? '남' : a.gender === 'F' ? '여' : '-'}</td>
       <td class="num">${a.decile ?? '-'}</td><td>${a.grade == null ? '-' : esc(L[a.grade])}</td>
-      <td class="num">${a.scoreA ?? '-'}</td><td class="num"><b>${a.scoreB ?? '-'}</b></td><td>${uwBadge(a.status)}</td></tr>`).join('')
-    : '<tr><td colspan="7" class="muted">조건에 맞는 청약이 없습니다.</td></tr>';
+      <td class="num">${a.scoreA == null ? '-' : a.scoreB == null ? a.scoreA : `${a.scoreA} → <b>${a.scoreB}</b>`}</td>
+      <td>${rk >= 0 ? `<span class="udot u${rk}"></span>` : ''}${esc(rk >= 0 ? uwShort(a.status) : a.status)}</td>
+      <td class="chg${diff && uwRank(a.status) < uwRank(a.statusA) ? ' down' : ''}">${diff ? `${esc(uwShort(a.statusA))} → ${esc(uwShort(a.status))}` : ''}</td></tr>`;
+  }).join('') : '<tr><td colspan="7" class="muted">조건에 맞는 청약이 없습니다.</td></tr>';
   $('appBody').querySelectorAll('tr[data-app]').forEach(tr => tr.addEventListener('click', () => showApp(tr.dataset.app)));
   $('appScroll').scrollTop = 0;
 }
 
-function showApp(appNo) {
+function showApp(appNo, { quiet = false } = {}) {
   const a = state.apps.list.find(x => x.app_no === appNo);
+  if (!a) return;
   state.apps.selected = appNo;
   $('appBody').querySelectorAll('tr').forEach(tr => tr.classList.toggle('sel', tr.dataset.app === appNo));
-  const L = CONFIG.DELINQ.LABELS;
-  let formula;
-  if (a.relA == null) formula = '신용정보가 없어 상대도를 계산할 수 없습니다.';
-  else if (a.relB != null) formula = `10분위 상대도 <b>${fmtRel(a.relDecile)}</b> (${a.decile}분위) × 연체 보정 상대도 <b>${fmtRel(a.relDelinq)}</b> (${esc(L[a.grade])})
-      = 종합상대도 B <b>${fmtRel(a.relB)}</b><br>스코어 A = 100 ÷ ${fmtRel(a.relA)} = <b>${a.scoreA}</b> · 스코어 B = 100 ÷ ${fmtRel(a.relB)} = <b>${a.scoreB}</b>`;
-  else formula = `10분위 상대도 <b>${fmtRel(a.relDecile)}</b> (${a.decile}분위) = 종합상대도 A · 스코어 A = <b>${a.scoreA}</b> (연체정보 없음)`;
-  const totalSI = a.coverageResults.reduce((s, c) => s + (c.sum_insured || 0), 0);
-  const totalRec = a.coverageResults.every(c => c.recommended == null) ? null
-    : a.coverageResults.reduce((s, c) => s + (c.recommended || 0), 0);
-  const noteBadge = n => n === '부담보' ? '<span class="badge warn">부담보</span>' : n === '한도축소' ? '<span class="badge info">한도축소</span>'
-    : n ? `<span class="badge muted">${esc(n)}</span>` : '<span class="badge ok">인수</span>';
-  $('appDetail').innerHTML = `<h2>${esc(a.app_no)} <span class="muted" style="font-weight:400">${esc(a.customer_id)} · ${a.age ?? '-'}세 · ${a.gender === 'M' ? '남' : a.gender === 'F' ? '여' : '-'}</span></h2>
-    <div>권고 인수조건 (${a.basis ?? '-'}) ${uwBadge(a.status)}</div>
-    <div class="formula">${formula}</div>
-    <div class="tbl"><table>
-      <thead><tr><th>담보</th><th class="num">청약 가입금액</th><th class="num">권고율</th><th class="num">권고 가입금액</th><th>비고</th></tr></thead>
-      <tbody>${a.coverageResults.map(c => `<tr><td>${esc(c.name)}${/입원/.test(c.name) ? ' <span class="muted">(일당)</span>' : ''}</td>
-        <td class="num">${fmtWon(c.sum_insured)}</td><td class="num">${c.pct == null ? '-' : c.pct + '%'}</td>
-        <td class="num"><b>${c.recommended == null ? '-' : fmtWon(c.recommended)}</b></td><td>${noteBadge(c.note)}</td></tr>`).join('')}
-      <tr class="total"><td>합계</td><td class="num">${fmtWon(totalSI)}</td><td></td><td class="num"><b>${totalRec == null ? '심사역 판단' : fmtWon(totalRec)}</b></td><td></td></tr>
-      </tbody>
-    </table></div>
-    <p class="note">입원 담보는 일당 금액이라 합계는 참고용입니다.</p>`;
-  if (window.matchMedia('(max-width: 900px)').matches) $('appDetail').scrollIntoView({ behavior: 'smooth' });
+  const L = CONFIG.DELINQ.LABELS, gender = a.gender === 'M' ? '남' : a.gender === 'F' ? '여' : '-';
+  const head = `<div class="dp-title">${esc(a.app_no)} <span>${esc(a.customer_id)} · ${a.age ?? '-'}세 · ${gender}${a.decile != null ? ` · 신용 ${a.decile}분위` : ''}${a.grade != null ? ` · 연체 이력 '${esc(L[a.grade])}'` : ''}</span></div>`;
+  if (a.relA == null) {
+    $('appDetail').innerHTML = head + `<div class="dp-lbl">① 결론</div><div class="concl"><div><div class="l">권고 인수조건</div><div class="v">${esc(a.status)}</div></div></div>
+      <p class="why-note">신용정보가 매칭되지 않아 상대도와 점수를 계산할 수 없습니다. 심사역이 직접 판단해야 합니다.</p>`;
+    return;
+  }
+  const rk = uwRank(a.status), rel = a.relB ?? a.relA, score = a.scoreB ?? a.scoreA;
+  const pct = Math.round(Math.abs(rel - 1) * 100);
+  const vs = pct < 1 ? '평균 고객과 비슷한 수준으로' : rel > 1 ? `평균 고객보다 약 ${pct}% 더` : `평균 고객보다 약 ${pct}% 덜`;
+  const diffA = a.basis === 'B' && a.statusA !== a.status;
+  const concl = `<div class="concl u${rk}"><div><div class="l">권고 인수조건 (모델 ${a.basis})</div><div class="v">${esc(a.status)} · ${esc(uwAction(a.rule))}</div></div>
+    <div class="s">점수<br><b>${a.basis === 'B' ? `${a.scoreA} → ${a.scoreB}` : a.scoreA}</b><br>${a.basis === 'B' ? (diffA ? `모델 A에선 ${esc(a.statusA)}` : '모델 A와 권고 같음') : '연체정보 없음'}</div></div>`;
+  const why = a.basis === 'B'
+    ? `<div class="why"><div class="bx"><div class="k">신용 ${a.decile}분위</div><div class="n">${fmtRel(a.relDecile)}</div></div><div class="op">×</div>
+      <div class="bx"><div class="k">${esc(L[a.grade])} 보정</div><div class="n">${fmtRel(a.relDelinq)}</div></div><div class="op">=</div>
+      <div class="bx res"><div class="k">종합상대도</div><div class="n">${fmtRel(a.relB)}</div></div><div class="op">→</div>
+      <div class="bx"><div class="k">${uwRange(rk).replace('종합상대도 ', '')}</div><div class="n t">${esc(uwShort(a.status))}</div></div></div>`
+    : `<div class="why a-only"><div class="bx res"><div class="k">신용 ${a.decile}분위 상대도</div><div class="n">${fmtRel(a.relA)}</div></div><div class="op">→</div>
+      <div class="bx"><div class="k">${uwRange(rk).replace('종합상대도 ', '')}</div><div class="n t">${esc(uwShort(a.status))}</div></div></div>`;
+  const whyNote = `보험금이 ${vs} 나갈 것으로 예상돼 '${esc(a.status)}' 구간에 들어갑니다. 점수 = 100 ÷ ${fmtRel(rel)} = ${score}`
+    + (diffA ? ` · 모델 A였다면 상대도 ${fmtRel(a.relA)}로 '${esc(a.statusA)}'` : '') + '.';
+  const daily = c => /입원/.test(c.name);
+  const rows = a.coverageResults.map(c => {
+    const ex = c.note === '부담보', none = c.recommended == null;
+    return `<div class="cov-row"><div class="nm">${esc(c.name)}${daily(c) ? ' <small>(일당)</small>' : ''}</div>
+      <div class="track${ex ? ' ex' : ''}">${none || ex ? '' : `<i style="width:${c.pct}%"></i>`}</div>
+      <div class="amt">${fmtWon(c.sum_insured)} → <b class="${none || ex ? 'x' : ''}">${ex ? '부담보(제외)' : none ? (a.relA == null ? '평가 불가' : '심사역 판단') : fmtWon(c.recommended)}</b></div></div>`;
+  }).join('');
+  const lump = a.coverageResults.filter(c => !daily(c));
+  const tSI = lump.reduce((s, c) => s + (c.sum_insured || 0), 0);
+  const tRec = lump.every(c => c.recommended == null) ? null : lump.reduce((s, c) => s + (c.recommended || 0), 0);
+  $('appDetail').innerHTML = head + `<div class="dp-lbl">① 결론</div>${concl}
+    <div class="dp-lbl">② 왜 이렇게 나왔나</div>${why}<p class="why-note">${whyNote}</p>
+    <div class="dp-lbl">③ 담보별 권고 금액 <span>막대 = 청약 금액 중 권고 비율</span></div><div class="covs">${rows}</div>
+    <div class="cov-total"><span>합계 (입원 일당 제외)</span><span>${fmtWon(tSI)} → <b>${tRec == null ? '심사역 판단' : fmtWon(tRec)}</b></span></div>`;
+  if (!quiet && window.matchMedia('(max-width: 900px)').matches) $('appDetail').scrollIntoView({ behavior: 'smooth' });
+}
+
+// ② 연체정보 효과: 결론 한 문장 + 대표 사례 1건(A vs B), 변화표·같은 분위 비교는 '자세히'에. 대표 사례를 돌려줌
+function renderABCases(assessed) {
+  const list = assessed.filter(a => a.relA != null && a.relB != null);
+  if (!list.length) { $('abCard').style.display = 'none'; return null; }
+  $('abCard').style.display = '';
+  const L = CONFIG.DELINQ.LABELS, labels = CONFIG.UW_RULES.map(r => r.label);
+  const stricter = list.filter(a => uwRank(a.status) > uwRank(a.statusA)).sort((x, y) => (x.scoreB - x.scoreA) - (y.scoreB - y.scoreA));
+  const looser = list.filter(a => uwRank(a.status) < uwRank(a.statusA)).sort((x, y) => (y.scoreB - y.scoreA) - (x.scoreB - x.scoreA));
+  const same = list.length - stricter.length - looser.length;
+  const rep = stricter[0] || looser[0] || null;
+  const m = labels.map(a => labels.map(b => list.filter(x => x.statusA === a && x.status === b).length));
+  const moves = [];
+  labels.forEach((a, i) => labels.forEach((b, j) => { if (i !== j && m[i][j]) moves.push(`${uwShort(a)} → ${uwShort(b)} ${fmtInt(m[i][j])}건`); }));
+  const side = (tag, rel, sc, st) => `<div class="ab-side ${tag === 'B' ? 'b' : 'a'}"><div class="ab-tag">모델 ${tag} · ${tag === 'A' ? '연체 미반영' : '연체 반영'}</div>
+    <div class="ab-score">${sc}<small>점</small></div><div class="ab-rel">상대도 ${fmtRel(rel)}</div>${uwBadge(st)}</div>`;
+  const who = a => `${esc(a.app_no)} · ${a.age ?? '-'}세 ${a.gender === 'M' ? '남' : a.gender === 'F' ? '여' : ''} · 신용 ${a.decile}분위 · ${esc(L[a.grade])}`;
+  const vsCard = a => `<div class="ab-who">대표 사례 · ${who(a)}</div><div class="ab-vs">${side('A', a.relA, a.scoreA, a.statusA)}<div class="ab-arrow" aria-hidden="true"></div>${side('B', a.relB, a.scoreB, a.status)}</div>`;
+  const head = !rep ? `<div class="ab-big">연체정보를 넣어도 권고가 바뀐 청약이 없습니다.</div>`
+    : `<div class="ab-big">청약 ${fmtInt(list.length)}건 중 ${stricter.length ? `<em>${fmtInt(stricter.length)}건</em>의 권고가 더 엄격해졌고` : ''}${stricter.length && looser.length ? ', ' : ''}${looser.length ? `<em class="down">${fmtInt(looser.length)}건</em>은 완화됐으며` : ''},<br>나머지 ${fmtInt(same)}건은 그대로입니다.</div>
+      <div class="ab-small">${moves.join(' · ')}${looser.length ? '' : ' · 완화된 건 없음'}</div>
+      <div class="ab-btns"><button type="button" class="btn" id="abShowChanged">바뀐 ${fmtInt(stricter.length + looser.length)}건만 목록에서 보기</button>
+        <button type="button" class="btn ghost" id="abShowRep">대표 사례 상세 보기</button></div>`;
+  // 자세히: 같은 분위·다른 연체 이력 비교, 완화 사례, A→B 변화표
+  let pair = null;
+  for (let d = 10; d >= 1 && !pair; d--) {
+    const g0 = list.find(a => a.decile === d && a.grade === 0), g2 = list.find(a => a.decile === d && a.grade === 2) || list.find(a => a.decile === d && a.grade === 1);
+    if (g0 && g2 && g0.status !== g2.status) pair = [g0, g2];
+  }
+  const pairHtml = !pair ? '' : `<div class="ab-pair"><div class="ab-title">같은 신용 ${pair[0].decile}분위, 연체 이력만 다른 두 고객</div>
+    <div class="ab-who">모델 A에서는 둘 다 ${pair[0].scoreA}점 · '${esc(pair[0].statusA)}'로 같음</div>
+    <div class="ab-vs">${[0, 1].map(i => { const a = pair[i]; return `<div class="ab-side ${i ? 'b' : 'a'}"><div class="ab-tag">${esc(a.app_no)} · '${esc(L[a.grade])}'</div>
+      <div class="ab-score">${a.scoreB}<small>점</small></div><div class="ab-rel">${fmtRel(a.relDecile)} × ${fmtRel(a.relDelinq)} = ${fmtRel(a.relB)}</div>${uwBadge(a.status)}</div>`; }).join('<div class="ab-arrow eq" aria-hidden="true"></div>')}</div>
+    <p class="ab-why">연체 이력을 반영한 모델 B에서만 두 사람이 구분됩니다.</p></div>`;
+  const looserHtml = !looser[0] ? '' : `<div class="ab-pair"><div class="ab-title">연체 이력이 없어 권고가 완화된 사례</div>${vsCard(looser[0])}</div>`;
+  const matrix = `<div class="tbl"><table class="ab-matrix"><thead><tr><th>A 권고 \\ B 권고</th>${labels.map(l => `<th class="num">${esc(uwShort(l))}</th>`).join('')}<th class="num">합계</th></tr></thead><tbody>
+    ${labels.map((a, i) => `<tr><td>${uwBadge(a)}</td>${m[i].map((n, j) => `<td class="num${i === j ? ' diag' : n ? (j > i ? ' up' : ' down') : ''}">${n ? fmtInt(n) : '·'}</td>`).join('')}<td class="num">${fmtInt(m[i].reduce((t, n) => t + n, 0))}</td></tr>`).join('')}
+    </tbody></table></div><p class="note">회색 대각선 = 권고 그대로 · 붉은 칸 = 연체 이력으로 엄격해짐 · 초록 칸 = 완화됨</p>`;
+  $('abCases').innerHTML = `<div class="ab-main"><div>${head}</div><div>${rep ? vsCard(rep) : ''}</div></div>
+    <details class="ab-more"><summary>자세히 보기 · A → B 권고 변화표${pair ? ' · 같은 분위에서 연체 이력만 다른 두 고객' : ''}${looser[0] ? ' · 완화 사례' : ''}</summary>
+      <div class="ab-grid">${pairHtml}${looserHtml}</div><h3 class="ab-h3">A → B 권고 변화표</h3>${matrix}</details>`;
+  if (rep) {
+    $('abShowChanged').onclick = () => { setAppFilter('changed'); $('appCard').scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+    $('abShowRep').onclick = () => { $('appSearch').value = ''; setAppFilter(''); showApp(rep.app_no); $('appCard').scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+  }
+  return rep;
 }
 
 // claude.ai Artifact판(window.__ARTIFACT__)에서는 일반 다운로드가 막혀 있어 downloads 기능으로 저장 확인 창을 띄움
