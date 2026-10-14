@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>심사 스코어 PoC</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --panel: #ffffff; --text: #1f2933; --muted: #6b7280;
+    --line: #e3e6ea; --accent: #2457c5; --accent-soft: #e8eefb;
+    --ok: #1a7f4b; --ok-soft: #e6f4ec; --warn: #b45309; --warn-soft: #fdf3e2;
+    --bad: #b42318; --bad-soft: #fdecea;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; font-size: 14px; }
+  header { background: var(--panel); border-bottom: 1px solid var(--line); padding: 16px 24px; }
+  header h1 { margin: 0; font-size: 18px; }
+  header p { margin: 4px 0 0; color: var(--muted); font-size: 12px; }
+  nav { display: flex; gap: 4px; padding: 0 24px; background: var(--panel); border-bottom: 1px solid var(--line); }
+  nav button { border: 0; background: none; padding: 12px 16px; font: inherit; color: var(--muted);
+    cursor: pointer; border-bottom: 2px solid transparent; }
+  nav button.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+  nav button:disabled { cursor: not-allowed; opacity: .5; }
+  main { padding: 24px; max-width: 1200px; margin: 0 auto; }
+  section.tab { display: none; }
+  section.tab.active { display: block; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 20px; margin-bottom: 16px; }
+  .card h2 { margin: 0 0 12px; font-size: 15px; }
+  .drop { border: 2px dashed var(--line); border-radius: 8px; padding: 28px; text-align: center; color: var(--muted); }
+  .drop.over { border-color: var(--accent); background: var(--accent-soft); }
+  .btn { background: var(--accent); color: #fff; border: 0; border-radius: 6px; padding: 10px 18px;
+    font: inherit; font-weight: 600; cursor: pointer; }
+  .btn:disabled { background: #a9b4c6; cursor: not-allowed; }
+  .btn.ghost { background: var(--panel); color: var(--accent); border: 1px solid var(--accent); }
+  table { border-collapse: collapse; width: 100%; }
+  th, td { border-bottom: 1px solid var(--line); padding: 8px 10px; text-align: left; }
+  th { background: #fafbfc; font-weight: 600; color: var(--muted); font-size: 12px; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: 600; }
+  .badge.ok { background: var(--ok-soft); color: var(--ok); }
+  .badge.warn { background: var(--warn-soft); color: var(--warn); }
+  .badge.bad { background: var(--bad-soft); color: var(--bad); }
+  .badge.info { background: var(--accent-soft); color: var(--accent); }
+  .badge.muted { background: #eef0f3; color: var(--muted); }
+  .kpis { display: flex; gap: 16px; flex-wrap: wrap; }
+  .kpi { flex: 1 1 180px; border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; }
+  .kpi .label { color: var(--muted); font-size: 12px; }
+  .kpi .value { font-size: 22px; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .muted { color: var(--muted); }
+  .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .msg { margin-top: 12px; }
+  .chart { position: relative; }
+  .chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .chart .axis text { fill: var(--muted); font-size: 11px; }
+  .chart .grid line { stroke: var(--line); }
+  .chart .ref { stroke: var(--text); stroke-dasharray: 4 3; stroke-width: 1; }
+  .chart .bar { fill: var(--accent); }
+  .chart .mark { stroke: var(--text); stroke-width: 2; pointer-events: none; }
+  .mono-off .mono-col { display: none; }
+  .chart .hit { fill: transparent; cursor: default; }
+  .chart .bar, .chart .ref, .chart text { pointer-events: none; }
+  .chart .hit:hover + .bar { fill: #183f94; }
+  .tip { position: absolute; pointer-events: none; background: var(--text); color: #fff; font-size: 12px;
+    padding: 6px 8px; border-radius: 4px; white-space: nowrap; transform: translate(-50%, -110%); display: none; }
+  .note { font-size: 12px; color: var(--muted); margin: 8px 0 0; line-height: 1.6; }
+  .lowcred { color: #a0a6ae; }
+  td.lowcred { font-style: italic; }
+  select { font: inherit; padding: 4px 6px; border: 1px solid var(--line); border-radius: 4px; background: var(--panel); color: var(--text); }
+  label { display: inline-flex; gap: 6px; align-items: center; }
+  .two { display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px; }
+  .two > * { min-width: 0; }
+  .tbl { overflow-x: auto; }
+  th, td { white-space: nowrap; }
+  .two.decile { grid-template-columns: 1fr 1.25fr; }
+  .two.apps { grid-template-columns: 1.45fr 1fr; align-items: start; }
+  .two.apps > .card { margin-bottom: 16px; }
+  table.clickable tbody tr { cursor: pointer; }
+  table.clickable tbody tr:hover { background: var(--accent-soft); }
+  table.clickable tbody tr.sel { background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent); }
+  .formula { font-variant-numeric: tabular-nums; background: #fafbfc; border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; margin: 8px 0 12px; }
+  .pager button { min-width: 32px; }
+  @media (max-width: 900px) { .two, .two.apps, .two.decile { grid-template-columns: 1fr; } }
+  @media (max-width: 600px) { main { padding: 16px; } header, nav { padding-left: 16px; padding-right: 16px; }
+    .card { padding: 16px; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>신용정보 기반 심사 스코어 PoC</h1>
+  <p>더미 데이터 전용 · 서버 통신 없음 · 모든 계산은 이 브라우저 안에서만 수행됩니다</p>
+</header>
+<nav>
+  <button data-tab="upload" class="active">① 업로드</button>
+  <button data-tab="analysis" disabled>② 분석·비교</button>
+  <button data-tab="apps" disabled>③ 청약 조회</button>
+</nav>
+<main>
+  <section id="tab-upload" class="tab active">
+    <div class="card">
+      <h2>CSV 파일 선택</h2>
+      <div id="drop" class="drop">
+        <p>CSV 파일을 여기로 끌어다 놓거나</p>
+        <input type="file" id="fileInput" accept=".csv,text/csv" multiple>
+        <p class="muted" style="margin-bottom:0">파일 이름이 아니라 헤더 컬럼으로 종류를 자동 인식합니다.
+          credit_delinq.csv가 없으면 버전 A만 계산합니다.</p>
+      </div>
+    </div>
+    <div class="card">
+      <h2>파일별 인식 여부</h2>
+      <div class="tbl"><table>
+        <thead><tr><th>구분</th><th>필수 여부</th><th>인식된 파일</th><th class="num">행 수</th><th>상태</th></tr></thead>
+        <tbody id="fileStatus"></tbody>
+      </table></div>
+    </div>
+    <div class="card">
+      <h2>매칭 건수</h2>
+      <div class="tbl"><table>
+        <thead><tr><th>항목</th><th class="num">건수</th><th class="num">비율</th></tr></thead>
+        <tbody id="matchStatus"><tr><td colspan="3" class="muted">필수 파일을 올리면 표시됩니다.</td></tr></tbody>
+      </table></div>
+      <div class="row msg">
+        <button id="runBtn" class="btn" disabled>분석 실행</button>
+        <span id="runMsg" class="muted"></span>
+      </div>
+    </div>
+    <div class="card" id="summaryCard" style="display:none">
+      <h2>분석 결과 요약</h2>
+      <div class="kpis" id="summaryKpis"></div>
+    </div>
+  </section>
+
+  <section id="tab-analysis" class="tab">
+    <div class="card">
+      <div class="kpis" id="anaKpis"></div>
+    </div>
+    <div class="card">
+      <div class="row" style="justify-content:space-between;margin-bottom:12px">
+        <h2 style="margin:0">신용 10분위별 상대도 (1 = 우량 ~ 10 = 불량)</h2>
+        <label title="분위가 나빠지는데 상대도가 낮아지는 역전을 인접 분위 병합(PAVA)으로 없앱니다. 이후 연체 보정·분리도·청약 권고 모두 보정값을 씁니다.">
+          <input type="checkbox" id="monoChk"> 단조 보정 적용 (PRD 기준값은 미적용)</label>
+      </div>
+      <div class="two decile">
+        <div class="chart" id="decileChart"></div>
+        <div class="tbl"><table>
+          <thead><tr><th>분위</th><th class="num">계약 수</th><th class="num">위험보험료</th><th class="num">실제손해</th>
+            <th class="num">손해율</th><th class="num">상대도</th><th class="num mono-col">보정 상대도</th><th class="mono-col">병합</th></tr></thead>
+          <tbody id="decileBody"></tbody>
+        </table></div>
+      </div>
+      <p class="note">손해율 = (Σ보험금 + Σ준비금변동) ÷ Σ위험보험료 · 상대도 = 분위 손해율 ÷ 전체 손해율 · 점선은 상대도 1.0(전체 평균)</p>
+    </div>
+    <div class="card" id="dqCard">
+      <h2>연체등급별 상대도</h2>
+      <div class="tbl"><table>
+        <thead><tr><th>등급</th><th>판정 기준</th><th class="num">계약 수</th><th class="num">비중</th>
+          <th class="num">손해율</th><th class="num">단순 상대도</th><th class="num">보정 상대도</th></tr></thead>
+        <tbody id="dqBody"></tbody>
+      </table></div>
+      <p class="note">단순 상대도 = 등급 손해율 ÷ 전체 손해율 · 보정 상대도 = 등급 Σ실제손해 ÷ 등급 Σ(위험보험료 × 전체손해율 × 10분위 상대도).
+        연체자는 신용 분위도 나쁜 경우가 많아, 보정 상대도는 신용평점에 이미 반영된 몫을 뺀 연체 고유 효과입니다.</p>
+    </div>
+    <div class="card" id="sepCard">
+      <h2>분리도 비교 (버전 A: 신용 10분위만 · 버전 B: 10분위 × 연체 보정)</h2>
+      <div class="kpis" id="sepKpis"></div>
+      <div class="tbl" style="margin-top:12px"><table>
+        <thead><tr><th>종합상대도 구간 (10등분)</th><th class="num">A 상대도 범위</th><th class="num">A 손해율</th>
+          <th class="num">B 상대도 범위</th><th class="num">B 손해율</th></tr></thead>
+        <tbody id="sepBody"></tbody>
+      </table></div>
+      <p class="note">분리도 = 계약을 종합상대도 순으로 10등분했을 때 (최악 10% 손해율 ÷ 최우량 10% 손해율). 클수록 우량·불량을 잘 가려냅니다.</p>
+    </div>
+    <div class="card" id="segCard">
+      <h2>세그먼트별 연체 수준에 따른 손해율</h2>
+      <div class="row" style="margin-bottom:12px">
+        <label>기준 <select id="segDim">
+          <option value="coverage">담보</option><option value="sumInsured">가입금액대 (담보 선택)</option>
+          <option value="age">연령대</option><option value="gender">성별</option>
+        </select></label>
+        <label>담보 <select id="segCov"></select></label>
+      </div>
+      <div class="tbl"><table>
+        <thead><tr><th id="segHead">세그먼트</th><th class="num">담보 수</th><th class="num">사고</th><th class="num">손해율</th>
+          <th class="num">정상</th><th class="num">연체</th><th class="num">채무불이행</th>
+          <th class="num">연체 배수</th><th class="num">채무불이행 배수</th></tr></thead>
+        <tbody id="segBody"></tbody>
+      </table></div>
+      <p class="note">정상·연체·채무불이행 열은 등급별 손해율입니다. 배수는 같은 세그먼트 안에서 <b>정상 대비 보정 손해 배수</b>입니다
+        (Σ실제손해 ÷ Σ(위험보험료 × 전체손해율 × 10분위 상대도)를 정상과 비교하므로 신용 분위 차이는 빠집니다).
+        <span class="lowcred">흐린 칸</span>은 사고 <span id="minClaims"></span>건 미만으로 신뢰가 부족합니다.
+        <b>굵은 배수</b>는 1.3 이상이면서 신뢰 가능한 칸입니다.
+        <br>※ '전체 담보'로 보면 고액 담보(일반암·장해 등) 사고 몇 건이 손해율을 좌우해 사고 건수가 많아도 흔들릴 수 있습니다.
+        연령대·성별은 담보를 골라(예: 질병입원) 함께 보는 것을 권장합니다.</p>
+    </div>
+  </section>
+
+  <section id="tab-apps" class="tab">
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <h2 style="margin:0">권고 인수조건 분포 <span class="muted" id="uwBasis" style="font-weight:400;font-size:12px"></span></h2>
+        <button id="exportBtn" class="btn ghost">결과 CSV 내보내기</button>
+      </div>
+      <div class="kpis" id="uwKpis" style="margin-top:12px"></div>
+      <p class="note" id="uwRuleNote"></p>
+    </div>
+    <div class="two apps">
+      <div class="card">
+        <h2>청약 목록</h2>
+        <div class="row" style="margin-bottom:12px">
+          <label>권고 <select id="appFilter"></select></label>
+          <label>청약번호 <input id="appSearch" type="search" placeholder="A2610…" size="12"></label>
+          <span class="muted" id="appCount"></span>
+        </div>
+        <div class="tbl"><table class="clickable">
+          <thead><tr><th>청약번호</th><th>연령·성별</th><th class="num">10분위</th><th>연체등급</th>
+            <th class="num">스코어 A</th><th class="num">스코어 B</th><th>권고 (B)</th></tr></thead>
+          <tbody id="appBody"></tbody>
+        </table></div>
+        <div class="row msg" id="appPager"></div>
+      </div>
+      <div class="card" id="appDetail"><p class="muted">목록에서 청약을 클릭하면 상세 내역이 표시됩니다.</p></div>
+    </div>
+  </section>
+</main>
+
+<script>
+// @calc-begin  (CONFIG ~ 계산 블록: verify.js가 이 구간을 그대로 실행)
+/* =====================================================================
+ * CONFIG: 기준값은 여기서만 수정
+ * ===================================================================== */
+const CONFIG = {
+  // ① 연체등급 판정 컬럼
+  DELINQ: {
+    DEFAULT_COLS: ['default_kcis_cnt', 'default_cb_cnt', 'default_loanbiz_cnt'], // 합계 ≥ 1 → 2 채무불이행
+    DELINQ_COLS: ['cb_delinq_cnt', 'soho_delinq_cnt'],                            // 합계 ≥ 1 → 1 연체
+    LABELS: ['정상', '연체', '채무불이행'],
+  },
+  // ⑤ 권고 인수조건 (종합상대도 상한 미만이면 해당 구간, 마지막 구간은 상한 없음)
+  UW_RULES: [
+    { max: 1.0,      label: '표준인수',      limitPct: 100 },
+    { max: 1.3,      label: '한도축소',      limitPct: 70 },
+    { max: 1.6,      label: '부담보+한도축소', limitPct: 50, exclusion: true }, // exclusion: EXCLUSION_COVERAGES 부담보
+    { max: Infinity, label: '심사역검토',     limitPct: null },
+  ],
+  // '부담보+한도축소' 권고 시 부담보(인수 제외)할 담보. 연체 영향이 큰 입원·수술 담보 (CV06~CV09)
+  // 부담보 담보는 권고 가입금액 0, 나머지 담보는 limitPct 적용
+  EXCLUSION_COVERAGES: ['질병수술', '재해수술', '질병입원', '재해입원'],
+  // ⑥ 분리도 등분 수
+  SEPARATION_BUCKETS: 10,
+  DECILES: 10,
+  // 10분위 상대도 단조 보정(PAVA): 분위가 나빠질수록 상대도가 줄지 않도록 역전된 인접 분위를 병합
+  // ※ PRD 6장 정답값은 보정 없음(false) 기준. 화면 체크박스로 변경 가능
+  MONOTONE_DECILE: false,
+  // 세그먼트 × 연체등급 분석
+  SEGMENT: {
+    AGE_BANDS: [
+      { label: '20대', min: 0, max: 29 }, { label: '30대', min: 30, max: 39 }, { label: '40대', min: 40, max: 49 },
+      { label: '50대', min: 50, max: 59 }, { label: '60대 이상', min: 60, max: 200 },
+    ],
+    MIN_CLAIMS: 30, // 칸의 사고 건수가 이보다 적으면 '신뢰 부족'으로 흐리게 표시
+  },
+};
+
+/* =====================================================================
+ * <calc> 순수 계산 블록: DOM 접근 금지. verify.js가 이 블록을 그대로 실행함
+ * ===================================================================== */
+// 파일 종류 정의
+//  cols = 판별·계산에 필요한 컬럼, extra = 세그먼트 분석용(없어도 동작), num = 숫자로 읽을 컬럼
+const FILE_SPECS = [
+  { key: 'contracts', name: 'contracts.csv', required: true,
+    cols: ['policy_no', 'customer_id'], extra: ['age', 'gender'], num: ['age'] },
+  { key: 'coverages', name: 'contract_coverages.csv', required: false,
+    cols: ['policy_no', 'coverage_code', 'coverage_name', 'sum_insured'], extra: [], num: ['sum_insured'] },
+  { key: 'loss', name: 'loss_experience.csv', required: true,
+    cols: ['policy_no', 'coverage_code', 'risk_premium', 'claim_paid', 'reserve_change'], extra: ['claim_cnt'],
+    num: ['risk_premium', 'claim_paid', 'reserve_change', 'claim_cnt'] },
+  { key: 'credit', name: 'credit_info.csv', required: true,
+    cols: ['customer_id', 'credit_decile'], extra: [], num: ['credit_decile'] },
+  { key: 'delinq', name: 'credit_delinq.csv', required: false,
+    cols: ['customer_id', 'default_kcis_cnt', 'default_cb_cnt', 'default_loanbiz_cnt', 'cb_delinq_cnt', 'soho_delinq_cnt'], extra: [],
+    num: ['default_kcis_cnt', 'default_cb_cnt', 'default_loanbiz_cnt', 'cb_delinq_cnt', 'soho_delinq_cnt'] },
+  { key: 'apps', name: 'applications.csv', required: true,
+    cols: ['app_no', 'customer_id'], extra: ['age', 'gender'], num: ['age'] },
+  { key: 'appCoverages', name: 'application_coverages.csv', required: true,
+    cols: ['app_no', 'coverage_code', 'coverage_name', 'sum_insured'], extra: [], num: ['sum_insured'] },
+];
+
+function stripBom(text) { return text.charCodeAt(0) === 0xFEFF ? text.slice(1) : text; }
+
+// 따옴표가 있는 줄만 RFC4180 규칙으로 처리 (따옴표 안 쉼표, "" 이스케이프)
+function splitLine(line) {
+  if (line.indexOf('"') < 0) return line.split(',');
+  const out = []; let f = '', q = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (q) { if (ch === '"') { if (line[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += ch; }
+    else if (ch === '"') q = true;
+    else if (ch === ',') { out.push(f); f = ''; }
+    else f += ch;
+  }
+  out.push(f);
+  return out;
+}
+
+function readHeader(text) {
+  text = stripBom(text);
+  let end = text.indexOf('\n'); if (end < 0) end = text.length;
+  return splitLine(text.slice(0, end).replace(/\r$/, '')).map(h => h.trim());
+}
+
+// 열(column) 단위 파싱. keep에 든 컬럼만 보관하고, num 컬럼은 숫자(빈 값·오류는 null)로,
+// 나머지는 같은 문자열을 공유(intern)해 메모리를 줄인다. 따옴표 안 줄바꿈은 지원하지 않음(입력 CSV에 없음)
+function parseCSV(text, { keep = null, num = [] } = {}) {
+  text = stripBom(text);
+  const header = readHeader(text);
+  const cols = {}, tIdx = [], tArr = [], tNum = []; // 보관할 열 번호·저장 배열·숫자 여부
+  header.forEach((h, i) => {
+    if (keep && !keep.includes(h)) return;
+    cols[h] = [];
+    tIdx.push(i); tArr.push(cols[h]); tNum.push(num.includes(h));
+  });
+  const nT = tIdx.length;
+  const pool = new Map();
+  const intern = s => { let v = pool.get(s); if (v === undefined) { pool.set(s, s); v = s; } return v; };
+  let pos = text.indexOf('\n'); pos = pos < 0 ? text.length : pos + 1;
+  let length = 0;
+  while (pos < text.length) {
+    let end = text.indexOf('\n', pos); if (end < 0) end = text.length;
+    let line = text.slice(pos, end); pos = end + 1;
+    if (line.charCodeAt(line.length - 1) === 13) line = line.slice(0, -1);
+    if (line.length === 0 || (line.charCodeAt(0) <= 32 && line.trim() === '')) continue;
+    const v = splitLine(line);
+    for (let t = 0; t < nT; t++) {
+      let s = v[tIdx[t]];
+      if (s === undefined) s = '';
+      else if (s.length && (s.charCodeAt(0) <= 32 || s.charCodeAt(s.length - 1) <= 32)) s = s.trim();
+      tArr[t].push(tNum[t] ? toNum(s) : intern(s));
+    }
+    length++;
+  }
+  return { header, length, cols };
+}
+
+// 헤더로 파일 종류 판별: 필수 컬럼을 모두 가진 spec 중 컬럼 수가 가장 많은(가장 구체적인) 것
+function detectFileType(header) {
+  const set = new Set(header);
+  const hits = FILE_SPECS.filter(s => s.cols.every(c => set.has(c)));
+  hits.sort((a, b) => b.cols.length - a.cols.length);
+  return hits.length ? hits[0].key : null;
+}
+
+// 판별 + 필요한 컬럼만 파싱
+function parseFile(text) {
+  const header = readHeader(text);
+  const key = detectFileType(header);
+  if (!key) return { key: null, header };
+  const spec = FILE_SPECS.find(s => s.key === key);
+  return { key, header, ...parseCSV(text, { keep: [...spec.cols, ...spec.extra], num: spec.num }) };
+}
+
+function toNum(v) {
+  const n = Number(v);
+  return v === '' || !Number.isFinite(n) ? null : n;
+}
+
+// 키 컬럼 값 → 행 번호
+function indexCol(table, key) {
+  const m = new Map(), col = table.cols[key];
+  for (let i = 0; i < table.length; i++) m.set(col[i], i);
+  return m;
+}
+
+// files: { contracts, coverages?, loss, credit, delinq?, apps, appCoverages } 각각 parseFile 결과
+// 반환
+//  policies: 증권 단위(담보 실적 합산). PRD 4장 계산은 모두 이 단위
+//  cov: 증권×담보 단위 열 배열 (세그먼트 분석용). pol = policies 인덱스
+function buildDataset(files) {
+  const creditIx = indexCol(files.credit, 'customer_id');
+  const delinqIx = files.delinq ? indexCol(files.delinq, 'customer_id') : null;
+  const hasDelinq = !!delinqIx;
+  const C = files.contracts.cols, CR = files.credit.cols, DQ = files.delinq?.cols;
+  const delinqOf = j => {
+    const o = {};
+    for (const k of [...CONFIG.DELINQ.DEFAULT_COLS, ...CONFIG.DELINQ.DELINQ_COLS]) o[k] = DQ[k][j];
+    return o;
+  };
+
+  const counts = { contracts: files.contracts.length, withLoss: 0, withCredit: 0, withDelinq: 0, badNumber: 0, analyzed: 0,
+    lossRows: files.loss.length, lossRowsUnmatched: 0, lossRowsBad: 0, lossRowsNoSI: 0, coverageRowsUsed: 0,
+    apps: files.apps.length, appsWithCredit: 0, appsWithDelinq: 0, appsWithCoverage: 0, appCoverageRows: files.appCoverages.length };
+
+  // 1) 담보 실적 → 증권별 합산
+  const L = files.loss.cols;
+  const lossAgg = new Map(); // policy_no → [premium, loss, 담보행 시작 목록]
+  const badPolicy = new Set();
+  for (let i = 0; i < files.loss.length; i++) {
+    const p = L.risk_premium[i], paid = L.claim_paid[i], res = L.reserve_change[i];
+    if (p === null || paid === null || res === null) { counts.lossRowsBad++; badPolicy.add(L.policy_no[i]); continue; }
+    let a = lossAgg.get(L.policy_no[i]);
+    if (!a) { a = { premium: 0, loss: 0, rows: [] }; lossAgg.set(L.policy_no[i], a); }
+    a.premium += p; a.loss += paid + res; a.rows.push(i);
+  }
+
+  // 2) 계약 + 신용 + 연체 조인
+  const policies = [];
+  for (let i = 0; i < files.contracts.length; i++) {
+    const pno = C.policy_no[i], agg = lossAgg.get(pno);
+    const ci = creditIx.get(C.customer_id[i]);
+    const di = delinqIx ? delinqIx.get(C.customer_id[i]) : undefined;
+    if (agg) counts.withLoss++;
+    if (ci !== undefined) counts.withCredit++;
+    if (di !== undefined) counts.withDelinq++;
+    if (!agg || ci === undefined) continue;
+    // 버전 B를 계산할 때는 연체정보도 있어야 분석 대상 (A·B를 같은 계약 집합으로 비교)
+    if (hasDelinq && di === undefined) continue;
+    const decile = CR.credit_decile[ci];
+    if (decile === null || badPolicy.has(pno)) { counts.badNumber++; continue; }
+    policies.push({ policy_no: pno, customer_id: C.customer_id[i], decile, premium: agg.premium, loss: agg.loss,
+      delinq: hasDelinq ? delinqOf(di) : null, grade: hasDelinq ? delinqGrade(delinqOf(di)) : null,
+      age: C.age ? C.age[i] : null, gender: C.gender ? C.gender[i] || null : null, _rows: agg.rows });
+  }
+  counts.analyzed = policies.length;
+  const used = new Set(policies.map(p => p.policy_no));
+  for (const pno of lossAgg.keys()) if (!used.has(pno)) counts.lossRowsUnmatched += lossAgg.get(pno).rows.length;
+
+  // 3) 담보 단위 열 배열 (가입금액은 contract_coverages에서)
+  const siIx = new Map(); // policy_no → [[coverage_code, 행 번호], ...] (증권당 담보 14개 이하)
+  if (files.coverages) {
+    const V = files.coverages.cols;
+    for (let i = 0; i < files.coverages.length; i++) {
+      let list = siIx.get(V.policy_no[i]);
+      if (!list) { list = []; siIx.set(V.policy_no[i], list); }
+      list.push([V.coverage_code[i], i]);
+    }
+  }
+  const siRow = (pno, code) => { const hit = siIx.get(pno)?.find(e => e[0] === code); return hit ? hit[1] : undefined; };
+  const nCov = policies.reduce((s, p) => s + p._rows.length, 0);
+  const coverageNames = [], coverageCodes = [], coverageIdx = new Map();
+  const cov = { length: nCov, pol: new Int32Array(nCov), coverage: new Uint16Array(nCov),
+    sumInsured: new Float64Array(nCov).fill(NaN), premium: new Float64Array(nCov), loss: new Float64Array(nCov),
+    claims: new Float64Array(nCov), names: coverageNames, codes: coverageCodes };
+  const hasClaimCnt = !!L.claim_cnt;
+  let k = 0;
+  policies.forEach((p, pi) => {
+    for (const r of p._rows) {
+      const code = L.coverage_code[r];
+      const vi = siRow(p.policy_no, code);
+      const name = vi !== undefined ? files.coverages.cols.coverage_name[vi] : code;
+      let ci = coverageIdx.get(name);
+      if (ci === undefined) { ci = coverageNames.length; coverageNames.push(name); coverageCodes.push(code); coverageIdx.set(name, ci); }
+      cov.pol[k] = pi; cov.coverage[k] = ci;
+      if (vi !== undefined && files.coverages.cols.sum_insured[vi] !== null) cov.sumInsured[k] = files.coverages.cols.sum_insured[vi];
+      else counts.lossRowsNoSI++;
+      cov.premium[k] = L.risk_premium[r]; cov.loss[k] = L.claim_paid[r] + L.reserve_change[r];
+      if (hasClaimCnt) cov.claims[k] = L.claim_cnt[r] || 0;
+      k++;
+    }
+    delete p._rows;
+  });
+  counts.coverageRowsUsed = nCov;
+
+  // 4) 청약 + 담보
+  const A = files.apps.cols, AC = files.appCoverages.cols;
+  const appCov = new Map();
+  for (let i = 0; i < files.appCoverages.length; i++) {
+    let list = appCov.get(AC.app_no[i]);
+    if (!list) { list = []; appCov.set(AC.app_no[i], list); }
+    list.push({ code: AC.coverage_code[i], name: AC.coverage_name[i], sum_insured: AC.sum_insured[i] });
+  }
+  const apps = [];
+  for (let i = 0; i < files.apps.length; i++) {
+    const ci = creditIx.get(A.customer_id[i]);
+    const di = delinqIx ? delinqIx.get(A.customer_id[i]) : undefined;
+    const coverages = appCov.get(A.app_no[i]) || [];
+    if (ci !== undefined) counts.appsWithCredit++;
+    if (di !== undefined) counts.appsWithDelinq++;
+    if (coverages.length) counts.appsWithCoverage++;
+    apps.push({ app_no: A.app_no[i], customer_id: A.customer_id[i],
+      age: A.age ? A.age[i] : null, gender: A.gender ? A.gender[i] || null : null,
+      decile: ci !== undefined ? CR.credit_decile[ci] : null,
+      delinq: di !== undefined ? delinqOf(di) : null, grade: di !== undefined ? delinqGrade(delinqOf(di)) : null, coverages });
+  }
+
+  return { hasDelinq, hasClaimCnt, counts, policies, cov, apps };
+}
+
+// 손해율 = (Σ보험금 + Σ준비금변동) ÷ Σ위험보험료
+function lossRatio(policies) {
+  let p = 0, l = 0;
+  for (const x of policies) { p += x.premium; l += x.loss; }
+  return p > 0 ? l / p : null;
+}
+// ② 10분위 상대도 = 분위 손해율 ÷ 전체 손해율
+// opts.monotone: true면 PAVA 단조 보정한 상대도를 rel에 넣음 (원래 값은 rawRel). 이후 계산은 모두 rel 사용
+function decileTable(policies, { monotone = CONFIG.MONOTONE_DECILE } = {}) {
+  const overall = lossRatio(policies);
+  const prem = new Array(CONFIG.DECILES + 1).fill(0), loss = prem.slice(), n = prem.slice();
+  for (const p of policies) { prem[p.decile] += p.premium; loss[p.decile] += p.loss; n[p.decile]++; }
+  const rows = [];
+  for (let d = 1; d <= CONFIG.DECILES; d++) {
+    const lr = prem[d] > 0 ? loss[d] / prem[d] : null;
+    const rel = lr != null && overall ? lr / overall : null;
+    rows.push({ decile: d, n: n[d], premium: prem[d], loss: loss[d], lr, rawRel: rel, rel, block: String(d) });
+  }
+  if (monotone) {
+    for (const b of monotoneBlocks(rows.filter(r => r.premium > 0))) {
+      const label = b.rows.length > 1 ? `${b.rows[0].decile}~${b.rows[b.rows.length - 1].decile}` : String(b.rows[0].decile);
+      for (const r of b.rows) { r.rel = (b.loss / b.premium) / overall; r.block = label; }
+    }
+  }
+  return { overall, rows, monotone };
+}
+
+// PAVA(Pool Adjacent Violators): 손해율이 앞 묶음보다 낮아지면 합쳐서 묶음 손해율 = Σ실제손해 ÷ Σ위험보험료
+// 위험보험료 가중이므로 전체 Σ(위험보험료 × 묶음 손해율) = Σ실제손해가 보존됨
+function monotoneBlocks(rows) {
+  const blocks = [];
+  for (const r of rows) {
+    blocks.push({ rows: [r], premium: r.premium, loss: r.loss });
+    while (blocks.length > 1) {
+      const b = blocks[blocks.length - 1], a = blocks[blocks.length - 2];
+      if (a.loss / a.premium <= b.loss / b.premium) break;
+      blocks.splice(-2, 2, { rows: [...a.rows, ...b.rows], premium: a.premium + b.premium, loss: a.loss + b.loss });
+    }
+  }
+  return blocks;
+}
+// ① 연체등급: 2 채무불이행 / 1 연체 / 0 정상 (연체정보 없으면 null)
+function delinqGrade(d) {
+  if (!d) return null;
+  const sum = cols => cols.reduce((s, c) => s + (d[c] || 0), 0);
+  if (sum(CONFIG.DELINQ.DEFAULT_COLS) >= 1) return 2;
+  if (sum(CONFIG.DELINQ.DELINQ_COLS) >= 1) return 1;
+  return 0;
+}
+
+// ③ 연체등급별 단순·보정 상대도
+//  단순 = 등급 손해율 ÷ 전체 손해율
+//  보정 = 등급 Σ실제손해 ÷ 등급 Σ(위험보험료 × 전체손해율 × 10분위 상대도)  (신용평점과의 이중반영 제거)
+function delinqTable(policies, dec) {
+  const rows = CONFIG.DELINQ.LABELS.map((label, g) => ({ grade: g, label, n: 0, premium: 0, loss: 0, expected: 0 }));
+  for (const p of policies) {
+    if (p.grade == null) continue;
+    const r = rows[p.grade];
+    r.n++; r.premium += p.premium; r.loss += p.loss;
+    r.expected += p.premium * dec.overall * dec.rows[p.decile - 1].rel;
+  }
+  for (const r of rows) {
+    r.lr = r.premium > 0 ? r.loss / r.premium : null;
+    r.simpleRel = r.lr != null ? r.lr / dec.overall : null;
+    r.adjRel = r.expected > 0 ? r.loss / r.expected : null;
+  }
+  return rows;
+}
+
+// ④ 종합상대도: A = 10분위 상대도, B = 10분위 상대도 × 연체 보정 상대도
+function makeRelFns(dec, dq) {
+  const decRel = d => dec.rows[d - 1].rel;
+  return {
+    A: x => decRel(x.decile),
+    B: dq ? x => decRel(x.decile) * dq[x.grade].adjRel : null,
+  };
+}
+const score = rel => Math.round(100 / rel);
+
+// ⑥ 분리도: 종합상대도 오름차순(동점은 policy_no 순)으로 N등분 → 최악 구간 손해율 ÷ 최우량 구간 손해율
+function separation(policies, relFn, buckets = CONFIG.SEPARATION_BUCKETS) {
+  const order = policies.map(p => ({ p, r: relFn(p) }))
+    .sort((a, b) => a.r - b.r || (a.p.policy_no < b.p.policy_no ? -1 : a.p.policy_no > b.p.policy_no ? 1 : 0));
+  const n = order.length, groups = [];
+  for (let i = 0; i < buckets; i++) {
+    const part = order.slice(Math.floor(i * n / buckets), Math.floor((i + 1) * n / buckets)).map(o => o.p);
+    groups.push({ bucket: i + 1, n: part.length, lr: lossRatio(part),
+      relMin: order[Math.floor(i * n / buckets)].r, relMax: order[Math.floor((i + 1) * n / buckets) - 1].r });
+  }
+  return { ratio: groups[buckets - 1].lr / groups[0].lr, groups };
+}
+
+// ─ 세그먼트 × 연체등급 교차표 (담보 단위) ─
+// dim: 'coverage' | 'gender' | 'age' | 'sumInsured'
+// coverage: 특정 담보만 볼 때 담보 인덱스 (sumInsured는 필수)
+// 칸마다 담보행 수·사고 건수·손해율·보정 A/E(= Σ실제손해 ÷ Σ위험보험료×전체손해율×10분위 상대도)
+// 정상 대비 배수 = 해당 등급 보정 A/E ÷ 정상 보정 A/E (같은 세그먼트 안에서 비교 → 담보·연령 수준 차이 제거)
+function ageBand(age) {
+  if (age == null) return null;
+  const b = CONFIG.SEGMENT.AGE_BANDS.find(b => age >= b.min && age <= b.max);
+  return b ? b.label : null;
+}
+function segmentTable(ds, dec, { dim, coverage = null } = {}) {
+  const { cov, policies } = ds;
+  const keyOf = {
+    coverage: k => ds.cov.names[cov.coverage[k]],
+    gender: k => ({ M: '남', F: '여' }[policies[cov.pol[k]].gender] || null),
+    age: k => ageBand(policies[cov.pol[k]].age),
+    sumInsured: k => Number.isNaN(cov.sumInsured[k]) ? null : cov.sumInsured[k],
+  }[dim];
+  const decRel = dec.rows.map(r => r.rel);
+  const map = new Map();
+  for (let k = 0; k < cov.length; k++) {
+    if (coverage != null && cov.coverage[k] !== coverage) continue;
+    const p = policies[cov.pol[k]];
+    if (p.grade == null) continue;
+    const key = keyOf(k);
+    if (key == null) continue;
+    let seg = map.get(key);
+    if (!seg) {
+      seg = { key, cells: [0, 1, 2].map(() => ({ n: 0, claims: 0, premium: 0, loss: 0, expected: 0 })) };
+      map.set(key, seg);
+    }
+    const c = seg.cells[p.grade];
+    c.n++; c.claims += cov.claims[k]; c.premium += cov.premium[k]; c.loss += cov.loss[k];
+    c.expected += cov.premium[k] * dec.overall * decRel[p.decile - 1];
+  }
+  const order = {
+    coverage: () => ds.cov.names.map((n, i) => [ds.cov.codes[i], n]).sort((a, b) => a[0] < b[0] ? -1 : 1).map(e => e[1]),
+    gender: () => ['남', '여'],
+    age: () => CONFIG.SEGMENT.AGE_BANDS.map(b => b.label),
+    sumInsured: () => [...map.keys()].sort((a, b) => a - b),
+  }[dim]();
+  const segs = order.filter(k => map.has(k)).map(k => map.get(k));
+  for (const s of segs) {
+    for (const c of s.cells) {
+      c.lr = c.premium > 0 ? c.loss / c.premium : null;
+      c.ae = c.expected > 0 ? c.loss / c.expected : null;
+      c.credible = !ds.hasClaimCnt || c.claims >= CONFIG.SEGMENT.MIN_CLAIMS;
+    }
+    const base = s.cells[0].ae;
+    for (const c of s.cells) c.multiple = base > 0 && c.ae != null ? c.ae / base : null;
+    const tot = s.cells.reduce((a, c) => ({ n: a.n + c.n, claims: a.claims + c.claims, premium: a.premium + c.premium, loss: a.loss + c.loss }),
+      { n: 0, claims: 0, premium: 0, loss: 0 });
+    s.total = { ...tot, lr: tot.premium > 0 ? tot.loss / tot.premium : null };
+  }
+  return segs;
+}
+// ⑤ 권고 인수조건: 종합상대도가 구간 상한(max) 미만인 첫 규칙
+function uwRule(rel) { return CONFIG.UW_RULES.find(r => rel < r.max); }
+
+// 청약 심사: 상대도 내역·스코어·권고(B, 연체정보 없으면 A)·담보별 권고 가입금액
+function assessApps(ds, dec, dq) {
+  const excl = new Set(CONFIG.EXCLUSION_COVERAGES);
+  return ds.apps.map(a => {
+    const out = { ...a, relDecile: null, relDelinq: null, relA: null, relB: null, scoreA: null, scoreB: null,
+      basis: null, rule: null, status: null, coverageResults: [] };
+    if (a.decile == null || !dec.rows[a.decile - 1] || dec.rows[a.decile - 1].rel == null) {
+      out.status = '신용정보 없음';
+      out.coverageResults = a.coverages.map(c => ({ ...c, pct: null, recommended: null, note: '평가 불가' }));
+      return out;
+    }
+    out.relDecile = dec.rows[a.decile - 1].rel;
+    out.relA = out.relDecile; out.scoreA = score(out.relA);
+    if (dq && a.grade != null) {
+      out.relDelinq = dq[a.grade].adjRel;
+      out.relB = out.relDecile * out.relDelinq; out.scoreB = score(out.relB);
+    }
+    out.basis = out.relB != null ? 'B' : 'A';
+    out.rule = uwRule(out.basis === 'B' ? out.relB : out.relA);
+    out.status = out.rule.label;
+    out.coverageResults = a.coverages.map(c => {
+      if (out.rule.limitPct == null) return { ...c, pct: null, recommended: null, note: '심사역 판단' };
+      if (out.rule.exclusion && excl.has(c.name)) return { ...c, pct: 0, recommended: 0, note: '부담보' };
+      return { ...c, pct: out.rule.limitPct, recommended: c.sum_insured == null ? null : Math.round(c.sum_insured * out.rule.limitPct / 100),
+        note: out.rule.limitPct < 100 ? '한도축소' : '' };
+    });
+    return out;
+  });
+}
+
+function uwSummary(assessed) {
+  const m = new Map(CONFIG.UW_RULES.map(r => [r.label, 0]));
+  for (const a of assessed) m.set(a.status, (m.get(a.status) || 0) + 1);
+  return m;
+}
+
+// 결과 CSV (청약 × 담보 한 행). 엑셀 한글 깨짐 방지를 위해 BOM 포함
+function csvCell(v) {
+  if (v == null) return '';
+  const s = typeof v === 'number' ? (Number.isInteger(v) ? String(v) : v.toFixed(4)) : String(v);
+  return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+function exportCsv(assessed) {
+  const header = ['app_no', 'customer_id', 'age', 'gender', 'credit_decile', 'delinq_grade', 'delinq_label',
+    'rel_decile', 'rel_delinq_adj', 'rel_A', 'rel_B', 'score_A', 'score_B', 'basis', 'uw_recommendation',
+    'coverage_code', 'coverage_name', 'sum_insured', 'recommended_pct', 'recommended_sum_insured', 'note'];
+  const lines = [header.join(',')];
+  for (const a of assessed) {
+    const base = [a.app_no, a.customer_id, a.age, a.gender, a.decile, a.grade,
+      a.grade == null ? null : CONFIG.DELINQ.LABELS[a.grade], a.relDecile, a.relDelinq, a.relA, a.relB,
+      a.scoreA, a.scoreB, a.basis, a.status];
+    const covs = a.coverageResults.length ? a.coverageResults : [{}];
+    for (const c of covs) lines.push([...base, c.code, c.name, c.sum_insured, c.pct, c.recommended, c.note].map(csvCell).join(','));
+  }
+  return '﻿' + lines.join('\r\n') + '\r\n';
+}
+/* ===================================================================== </calc> */
+// @calc-end
+
+/* =====================================================================
+ * 화면
+ * ===================================================================== */
+const state = { files: {}, dataset: null };
+const $ = id => document.getElementById(id);
+const fmtInt = n => n == null ? '-' : n.toLocaleString('ko-KR');
+const fmtPct = (x, d = 1) => x == null ? '-' : (x * 100).toFixed(d) + '%';
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const tick = () => new Promise(r => setTimeout(r, 0)); // 무거운 계산 전에 화면 갱신 기회 주기
+
+document.querySelectorAll('nav button').forEach(b => b.addEventListener('click', () => {
+  if (b.disabled) return;
+  document.querySelectorAll('nav button').forEach(x => x.classList.toggle('active', x === b));
+  document.querySelectorAll('section.tab').forEach(s => s.classList.toggle('active', s.id === 'tab-' + b.dataset.tab));
+}));
+
+function readFile(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result);
+    r.onerror = () => reject(r.error);
+    r.readAsText(file, 'UTF-8');
+  });
+}
+
+async function handleFiles(fileList) {
+  const unknown = [];
+  $('runBtn').disabled = true;
+  for (const f of fileList) {
+    $('runMsg').textContent = `읽는 중: ${f.name}`;
+    await tick();
+    const parsed = parseFile(await readFile(f));
+    if (!parsed.key) { unknown.push(f.name); continue; }
+    state.files[parsed.key] = { fileName: f.name, ...parsed };
+  }
+  state.dataset = null;
+  $('summaryCard').style.display = 'none';
+  setTabsEnabled(false);
+  renderFileStatus();
+  $('runMsg').textContent = '매칭 계산 중…';
+  await tick();
+  renderMatch();
+  $('runMsg').textContent = unknown.length ? `인식하지 못한 파일: ${unknown.join(', ')}` : '';
+}
+
+function renderFileStatus() {
+  $('fileStatus').innerHTML = FILE_SPECS.map(s => {
+    const f = state.files[s.key];
+    let status;
+    if (f) {
+      const missingExtra = s.extra.filter(c => !f.header.includes(c));
+      status = missingExtra.length
+        ? `<span class="badge warn">인식 · 세그먼트 컬럼 없음(${esc(missingExtra.join(', '))})</span>`
+        : '<span class="badge ok">인식</span>';
+    } else if (s.required) {
+      status = '<span class="badge bad">필요</span>';
+    } else {
+      status = `<span class="badge warn">없음 · ${s.key === 'delinq' ? '버전 A만 계산' : '담보별 가입금액 분석 불가'}</span>`;
+    }
+    return `<tr><td>${s.name}</td><td>${s.required ? '필수' : '선택'}</td>
+      <td>${f ? esc(f.fileName) : '-'}</td><td class="num">${f ? fmtInt(f.length) : '-'}</td><td>${status}</td></tr>`;
+  }).join('');
+}
+
+function setTabsEnabled(on) {
+  document.querySelectorAll('nav button[data-tab="analysis"], nav button[data-tab="apps"]').forEach(b => { b.disabled = !on; });
+}
+
+function requiredReady() {
+  return FILE_SPECS.filter(s => s.required).every(s => state.files[s.key]);
+}
+
+function renderMatch() {
+  if (!requiredReady()) {
+    $('matchStatus').innerHTML = '<tr><td colspan="3" class="muted">필수 파일을 올리면 표시됩니다.</td></tr>';
+    $('runBtn').disabled = true;
+    return;
+  }
+  state.dataset = buildDataset(state.files);
+  const { counts: c, hasDelinq } = state.dataset;
+  const pct = (n, d) => d ? fmtPct(n / d) : '-';
+  const rows = [
+    ['계약 (contracts)', c.contracts, null],
+    ['└ 손해실적 매칭', c.withLoss, c.contracts],
+    ['└ 신용정보 매칭', c.withCredit, c.contracts],
+    ['└ 연체정보 매칭', hasDelinq ? c.withDelinq : null, c.contracts],
+    ['└ 숫자 오류로 제외', c.badNumber, c.contracts],
+    ['<b>분석 대상 계약</b>', c.analyzed, c.contracts],
+    ['담보 실적 행 (loss_experience)', c.lossRows, null],
+    ['└ 분석 대상 담보 행', c.coverageRowsUsed, c.lossRows],
+    ['└ 가입금액 미매칭 (contract_coverages)', c.lossRowsNoSI, c.lossRows],
+    ['└ 숫자 오류', c.lossRowsBad, c.lossRows],
+    ['청약 (applications)', c.apps, null],
+    ['└ 신용정보 매칭', c.appsWithCredit, c.apps],
+    ['└ 연체정보 매칭', hasDelinq ? c.appsWithDelinq : null, c.apps],
+    ['└ 청약 담보 매칭', c.appsWithCoverage, c.apps],
+  ];
+  $('matchStatus').innerHTML = rows.map(([label, n, d]) =>
+    `<tr><td>${label}</td><td class="num">${n == null ? '-' : fmtInt(n)}</td>
+      <td class="num">${n == null || d == null ? '' : pct(n, d)}</td></tr>`).join('');
+  $('runBtn').disabled = c.analyzed === 0;
+}
+
+function kpiHtml(items) {
+  return items.map(([l, v]) => `<div class="kpi"><div class="label">${l}</div><div class="value">${v}</div></div>`).join('');
+}
+
+function runAnalysis() {
+  const ds = state.dataset;
+  const dec = decileTable(ds.policies, { monotone: state.monotone });
+  state.decile = dec;
+  const kpis = kpiHtml([
+    ['분석 계약 수', fmtInt(ds.counts.analyzed) + '건'],
+    ['담보 행 수', fmtInt(ds.cov.length) + '건'],
+    ['전체 손해율', fmtPct(dec.overall)],
+    ['계산 버전', (ds.hasDelinq ? 'A + B (연체 포함)' : 'A만 (연체정보 없음)') + (dec.monotone ? ' · 단조 보정' : '')],
+  ]);
+  $('summaryKpis').innerHTML = kpis;
+  $('anaKpis').innerHTML = kpis;
+  $('summaryCard').style.display = '';
+  renderDecile(dec);
+  renderDelinqAndSeparation(ds, dec);
+  initApps(ds, dec, state.delinq);
+  setTabsEnabled(true);
+  $('runMsg').textContent = '분석 완료 · ② 분석·비교 탭에서 결과를 확인하세요';
+}
+
+state.monotone = CONFIG.MONOTONE_DECILE;
+$('monoChk').checked = state.monotone;
+$('monoChk').addEventListener('change', e => { state.monotone = e.target.checked; runAnalysis(); });
+
+const fmtRel = x => x == null ? '-' : x.toFixed(2);
+const fmtEok = x => x == null ? '-' : (x / 1e8).toLocaleString('ko-KR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '억';
+const fmtWon = x => {
+  if (x == null || Number.isNaN(x)) return '-';
+  if (x >= 1e8) {
+    const eok = Math.floor(x / 1e8), man = Math.round((x % 1e8) / 1e4);
+    return man ? `${eok.toLocaleString('ko-KR')}억 ${man.toLocaleString('ko-KR')}만원` : `${eok.toLocaleString('ko-KR')}억원`;
+  }
+  if (x >= 1e4) return (x / 1e4).toLocaleString('ko-KR') + '만원';
+  return x.toLocaleString('ko-KR') + '원';
+};
+
+function renderDelinqAndSeparation(ds, dec) {
+  ['dqCard', 'segCard'].forEach(id => { $(id).style.display = ds.hasDelinq ? '' : 'none'; });
+  const fns = makeRelFns(dec, null);
+  let dq = null;
+  if (ds.hasDelinq) {
+    dq = delinqTable(ds.policies, dec);
+    const D = CONFIG.DELINQ, total = dq.reduce((s, r) => s + r.n, 0);
+    const rule = [`그 외`, `${D.DELINQ_COLS.join(' + ')} ≥ 1`, `${D.DEFAULT_COLS.join(' + ')} ≥ 1`];
+    $('dqBody').innerHTML = dq.map(r => `<tr><td>${r.grade} ${r.label}</td><td class="muted" style="font-size:12px">${esc(rule[r.grade])}</td>
+      <td class="num">${fmtInt(r.n)}</td><td class="num">${fmtPct(r.n / total)}</td><td class="num">${fmtPct(r.lr)}</td>
+      <td class="num">${fmtRel(r.simpleRel)}</td><td class="num"><b>${fmtRel(r.adjRel)}</b></td></tr>`).join('');
+    fns.B = makeRelFns(dec, dq).B;
+  }
+  state.delinq = dq;
+  const sepA = separation(ds.policies, fns.A), sepB = fns.B ? separation(ds.policies, fns.B) : null;
+  state.sep = { A: sepA, B: sepB };
+  $('sepKpis').innerHTML = kpiHtml([
+    ['분리도 A (10분위)', sepA.ratio.toFixed(2)],
+    ['분리도 B (10분위 × 연체)', sepB ? sepB.ratio.toFixed(2) : '연체정보 없음'],
+    ['개선폭 (B − A)', sepB ? (sepB.ratio - sepA.ratio >= 0 ? '+' : '') + (sepB.ratio - sepA.ratio).toFixed(2) : '-'],
+  ]);
+  const range = g => g.relMin === g.relMax ? fmtRel(g.relMin) : `${fmtRel(g.relMin)}~${fmtRel(g.relMax)}`;
+  $('sepBody').innerHTML = sepA.groups.map((g, i) => {
+    const b = sepB ? sepB.groups[i] : null;
+    const label = i === 0 ? '1 (최우량 10%)' : i === sepA.groups.length - 1 ? `${i + 1} (최악 10%)` : String(i + 1);
+    return `<tr><td>${label}</td><td class="num">${range(g)}</td><td class="num">${fmtPct(g.lr)}</td>
+      <td class="num">${b ? range(b) : '-'}</td><td class="num">${b ? fmtPct(b.lr) : '-'}</td></tr>`;
+  }).join('');
+  if (ds.hasDelinq) initSegment(ds, dec);
+}
+
+function initSegment(ds, dec) {
+  $('minClaims').textContent = CONFIG.SEGMENT.MIN_CLAIMS;
+  const order = ds.cov.names.map((n, i) => [ds.cov.codes[i], n, i]).sort((a, b) => a[0] < b[0] ? -1 : 1);
+  $('segCov').innerHTML = '<option value="">전체 담보</option>' +
+    order.map(([code, name, i]) => `<option value="${i}">${esc(name)}</option>`).join('');
+  const draw = () => {
+    const dim = $('segDim').value;
+    if (dim === 'sumInsured' && $('segCov').value === '') $('segCov').value = String(order[0][2]);
+    $('segCov').querySelector('option[value=""]').disabled = dim === 'sumInsured' || dim === 'coverage';
+    if (dim === 'coverage') $('segCov').value = '';
+    $('segCov').disabled = dim === 'coverage';
+    const coverage = $('segCov').value === '' ? null : Number($('segCov').value);
+    renderSegment(segmentTable(ds, dec, { dim, coverage }), dim, coverage, ds);
+  };
+  $('segDim').onchange = draw;
+  $('segCov').onchange = draw;
+  draw();
+}
+
+function renderSegment(segs, dim, coverage, ds) {
+  const covName = coverage == null ? '' : ds.cov.names[coverage];
+  const isDaily = /입원/.test(covName);
+  $('segHead').textContent = { coverage: '담보', gender: '성별', age: '연령대',
+    sumInsured: `${covName} 가입금액${isDaily ? '(일당)' : ''}` }[dim];
+  const label = s => dim === 'sumInsured' ? fmtWon(s.key) : esc(s.key);
+  const cell = (c, html) => `<td class="num${c.credible ? '' : ' lowcred'}" title="담보 ${fmtInt(c.n)}건 · 사고 ${fmtInt(c.claims)}건">${html}</td>`;
+  const mult = c => c.multiple == null ? '-' : (c.credible && c.multiple >= 1.3 ? `<b>×${c.multiple.toFixed(2)}</b>` : `×${c.multiple.toFixed(2)}`);
+  $('segBody').innerHTML = segs.length ? segs.map(s => `<tr><td>${label(s)}</td>
+      <td class="num">${fmtInt(s.total.n)}</td><td class="num">${fmtInt(s.total.claims)}</td><td class="num">${fmtPct(s.total.lr)}</td>
+      ${s.cells.map(c => cell(c, fmtPct(c.lr, 0))).join('')}
+      ${cell(s.cells[1], mult(s.cells[1]))}${cell(s.cells[2], mult(s.cells[2]))}</tr>`).join('')
+    : '<tr><td colspan="9" class="muted">해당 데이터가 없습니다.</td></tr>';
+}
+
+// ─ 청약 조회 ─
+const UW_BADGE = { '표준인수': 'ok', '한도축소': 'info', '부담보+한도축소': 'warn', '심사역검토': 'bad' };
+const uwBadge = label => `<span class="badge ${UW_BADGE[label] || 'muted'}">${esc(label)}</span>`;
+const PAGE = 50;
+
+function initApps(ds, dec, dq) {
+  const assessed = assessApps(ds, dec, dq);
+  state.apps = { list: assessed, page: 0, selected: null };
+  const sum = uwSummary(assessed), total = assessed.length;
+  const basisB = assessed.some(a => a.basis === 'B');
+  $('uwBasis').textContent = basisB ? '종합상대도 B(10분위 × 연체 보정) 기준' : '연체정보가 없어 종합상대도 A(10분위) 기준';
+  $('uwKpis').innerHTML = [...sum].map(([label, n]) =>
+    `<div class="kpi"><div class="label">${uwBadge(label)}</div><div class="value">${fmtInt(n)}건</div>
+      <div class="muted" style="font-size:12px">${fmtPct(total ? n / total : null)}</div></div>`).join('');
+  const rules = CONFIG.UW_RULES;
+  $('uwRuleNote').innerHTML = rules.map((r, i) => {
+    const lo = i === 0 ? null : rules[i - 1].max;
+    const range = lo == null ? `< ${r.max.toFixed(1)}` : r.max === Infinity ? `≥ ${lo.toFixed(1)}` : `${lo.toFixed(1)} ~ ${r.max.toFixed(1)} 미만`;
+    const act = r.limitPct == null ? '권고 금액 없음' : r.exclusion
+      ? `부담보(${CONFIG.EXCLUSION_COVERAGES.join('·')}) + 나머지 담보 ${r.limitPct}%` : `전 담보 ${r.limitPct}%`;
+    return `<b>${esc(r.label)}</b> ${range}: ${esc(act)}`;
+  }).join(' · ');
+  $('appFilter').innerHTML = '<option value="">전체</option>' +
+    [...sum.keys()].map(l => `<option>${esc(l)}</option>`).join('');
+  $('appFilter').onchange = () => { state.apps.page = 0; renderAppList(); };
+  $('appSearch').oninput = () => { state.apps.page = 0; renderAppList(); };
+  $('exportBtn').onclick = () => downloadCsv(exportCsv(assessed), `uw_result_${new Date().toISOString().slice(0, 10)}.csv`);
+  $('appDetail').innerHTML = '<p class="muted">목록에서 청약을 클릭하면 상세 내역이 표시됩니다.</p>';
+  renderAppList();
+}
+
+function filteredApps() {
+  const f = $('appFilter').value, q = $('appSearch').value.trim().toUpperCase();
+  return state.apps.list.filter(a => (!f || a.status === f) && (!q || a.app_no.toUpperCase().includes(q)));
+}
+
+function renderAppList() {
+  const list = filteredApps(), pages = Math.max(1, Math.ceil(list.length / PAGE));
+  const st = state.apps; st.page = Math.min(st.page, pages - 1);
+  const rows = list.slice(st.page * PAGE, (st.page + 1) * PAGE);
+  $('appCount').textContent = `${fmtInt(list.length)}건`;
+  const L = CONFIG.DELINQ.LABELS;
+  $('appBody').innerHTML = rows.length ? rows.map(a => `<tr data-app="${esc(a.app_no)}" class="${st.selected === a.app_no ? 'sel' : ''}">
+      <td>${esc(a.app_no)}</td><td>${a.age ?? '-'}세 · ${a.gender === 'M' ? '남' : a.gender === 'F' ? '여' : '-'}</td>
+      <td class="num">${a.decile ?? '-'}</td><td>${a.grade == null ? '-' : esc(L[a.grade])}</td>
+      <td class="num">${a.scoreA ?? '-'}</td><td class="num"><b>${a.scoreB ?? '-'}</b></td><td>${uwBadge(a.status)}</td></tr>`).join('')
+    : '<tr><td colspan="7" class="muted">조건에 맞는 청약이 없습니다.</td></tr>';
+  $('appBody').querySelectorAll('tr[data-app]').forEach(tr => tr.addEventListener('click', () => showApp(tr.dataset.app)));
+  $('appPager').className = 'row msg pager';
+  $('appPager').innerHTML = pages > 1
+    ? `<button class="btn ghost" data-p="${st.page - 1}" ${st.page === 0 ? 'disabled' : ''}>‹</button>
+       <span class="muted">${st.page + 1} / ${pages}</span>
+       <button class="btn ghost" data-p="${st.page + 1}" ${st.page >= pages - 1 ? 'disabled' : ''}>›</button>` : '';
+  $('appPager').querySelectorAll('button').forEach(b => b.addEventListener('click', () => { st.page = Number(b.dataset.p); renderAppList(); }));
+}
+
+function showApp(appNo) {
+  const a = state.apps.list.find(x => x.app_no === appNo);
+  state.apps.selected = appNo;
+  $('appBody').querySelectorAll('tr').forEach(tr => tr.classList.toggle('sel', tr.dataset.app === appNo));
+  const L = CONFIG.DELINQ.LABELS;
+  let formula;
+  if (a.relA == null) formula = '신용정보가 없어 상대도를 계산할 수 없습니다.';
+  else if (a.relB != null) formula = `10분위 상대도 <b>${fmtRel(a.relDecile)}</b> (${a.decile}분위) × 연체 보정 상대도 <b>${fmtRel(a.relDelinq)}</b> (${esc(L[a.grade])})
+      = 종합상대도 B <b>${fmtRel(a.relB)}</b><br>스코어 A = 100 ÷ ${fmtRel(a.relA)} = <b>${a.scoreA}</b> · 스코어 B = 100 ÷ ${fmtRel(a.relB)} = <b>${a.scoreB}</b>`;
+  else formula = `10분위 상대도 <b>${fmtRel(a.relDecile)}</b> (${a.decile}분위) = 종합상대도 A · 스코어 A = <b>${a.scoreA}</b> (연체정보 없음)`;
+  const totalSI = a.coverageResults.reduce((s, c) => s + (c.sum_insured || 0), 0);
+  const totalRec = a.coverageResults.every(c => c.recommended == null) ? null
+    : a.coverageResults.reduce((s, c) => s + (c.recommended || 0), 0);
+  const noteBadge = n => n === '부담보' ? '<span class="badge warn">부담보</span>' : n === '한도축소' ? '<span class="badge info">한도축소</span>'
+    : n ? `<span class="badge muted">${esc(n)}</span>` : '<span class="badge ok">인수</span>';
+  $('appDetail').innerHTML = `<h2>${esc(a.app_no)} <span class="muted" style="font-weight:400">${esc(a.customer_id)} · ${a.age ?? '-'}세 · ${a.gender === 'M' ? '남' : a.gender === 'F' ? '여' : '-'}</span></h2>
+    <div>권고 인수조건 (${a.basis ?? '-'}) ${uwBadge(a.status)}</div>
+    <div class="formula">${formula}</div>
+    <div class="tbl"><table>
+      <thead><tr><th>담보</th><th class="num">청약 가입금액</th><th class="num">권고율</th><th class="num">권고 가입금액</th><th>비고</th></tr></thead>
+      <tbody>${a.coverageResults.map(c => `<tr><td>${esc(c.name)}${/입원/.test(c.name) ? ' <span class="muted">(일당)</span>' : ''}</td>
+        <td class="num">${fmtWon(c.sum_insured)}</td><td class="num">${c.pct == null ? '-' : c.pct + '%'}</td>
+        <td class="num"><b>${c.recommended == null ? '-' : fmtWon(c.recommended)}</b></td><td>${noteBadge(c.note)}</td></tr>`).join('')}
+      <tr><td><b>합계</b></td><td class="num">${fmtWon(totalSI)}</td><td></td><td class="num"><b>${totalRec == null ? '심사역 판단' : fmtWon(totalRec)}</b></td><td></td></tr>
+      </tbody>
+    </table></div>
+    <p class="note">입원 담보는 일당 금액이라 합계는 참고용입니다.</p>`;
+  if (window.matchMedia('(max-width: 900px)').matches) $('appDetail').scrollIntoView({ behavior: 'smooth' });
+}
+
+function downloadCsv(text, name) {
+  const url = URL.createObjectURL(new Blob([text], { type: 'text/csv;charset=utf-8' }));
+  const link = document.createElement('a');
+  link.href = url; link.download = name;
+  document.body.appendChild(link); link.click(); link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function renderDecile(dec) {
+  $('decileBody').closest('table').classList.toggle('mono-off', !dec.monotone);
+  $('decileBody').innerHTML = dec.rows.map(r => `<tr><td>${r.decile}분위</td>
+    <td class="num">${fmtInt(r.n)}</td><td class="num" title="${fmtInt(Math.round(r.premium))}원">${fmtEok(r.premium)}</td>
+    <td class="num" title="${fmtInt(Math.round(r.loss))}원">${fmtEok(r.loss)}</td><td class="num">${fmtPct(r.lr)}</td>
+    <td class="num">${dec.monotone ? fmtRel(r.rawRel) : `<b>${fmtRel(r.rel)}</b>`}</td>
+    <td class="num mono-col"><b>${fmtRel(r.rel)}</b></td>
+    <td class="mono-col">${r.block.includes('~') ? `<span class="badge info">${r.block}분위</span>` : ''}</td></tr>`).join('');
+  barChart($('decileChart'), dec.rows.map(r => ({
+    label: String(r.decile), value: r.rel, mark: dec.monotone && Math.abs(r.rel - r.rawRel) > 1e-9 ? r.rawRel : null,
+    tip: `${r.decile}분위 · 상대도 ${fmtRel(r.rel)}${dec.monotone ? ` (보정 전 ${fmtRel(r.rawRel)})` : ''} · 손해율 ${fmtPct(r.lr)} · ${fmtInt(r.n)}건`,
+  })), { ref: 1.0, xTitle: dec.monotone ? '신용 10분위 (막대: 보정 상대도 · 검은 눈금: 보정 전)' : '신용 10분위' });
+}
+
+// 의존성 없는 세로 막대차트 (SVG). 0 기준, ref 값에 점선
+function barChart(el, data, { ref = null, xTitle = '' } = {}) {
+  const W = 480, H = 280, m = { t: 12, r: 8, b: 40, l: 36 };
+  const iw = W - m.l - m.r, ih = H - m.t - m.b;
+  const maxV = Math.max(ref ?? 0, ...data.map(d => Math.max(d.value ?? 0, d.mark ?? 0)));
+  const step = maxV > 2 ? 0.5 : 0.25;
+  const top = Math.ceil(maxV / step) * step || 1;
+  const y = v => m.t + ih - (v / top) * ih;
+  const bw = iw / data.length, gap = Math.max(2, bw * 0.25);
+  let g = '<g class="grid axis">';
+  for (let v = 0; v <= top + 1e-9; v += step) {
+    g += `<line x1="${m.l}" x2="${W - m.r}" y1="${y(v)}" y2="${y(v)}"></line>
+      <text x="${m.l - 6}" y="${y(v) + 4}" text-anchor="end">${v.toFixed(2)}</text>`;
+  }
+  g += '</g>';
+  let bars = '';
+  data.forEach((d, i) => {
+    const x = m.l + i * bw + gap / 2, w = bw - gap, v = d.value ?? 0;
+    const h = Math.max(0, y(0) - y(v)), r = Math.min(4, w / 2, h);
+    // 위쪽 모서리만 둥글게 (바닥은 기준선에 붙임)
+    const path = `M${x},${y(0)} V${y(v) + r} Q${x},${y(v)} ${x + r},${y(v)} H${x + w - r} Q${x + w},${y(v)} ${x + w},${y(v) + r} V${y(0)} Z`;
+    bars += `<rect class="hit" data-i="${i}" x="${m.l + i * bw}" y="${m.t}" width="${bw}" height="${ih}"></rect>
+      <path class="bar" d="${path}"></path>${d.mark == null ? '' :
+        `<line class="mark" x1="${x - 3}" x2="${x + w + 3}" y1="${y(d.mark)}" y2="${y(d.mark)}"></line>`}
+      <text class="axis" x="${x + w / 2}" y="${H - m.b + 16}" text-anchor="middle">${esc(d.label)}</text>`;
+  });
+  const refLine = ref == null ? '' :
+    `<line class="ref" x1="${m.l}" x2="${W - m.r}" y1="${y(ref)}" y2="${y(ref)}"></line>`;
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(xTitle)} 막대차트">
+    ${g}<g class="axis">${bars}</g>${refLine}
+    <text class="axis" x="${m.l + iw / 2}" y="${H - 4}" text-anchor="middle" style="fill:var(--muted);font-size:11px">${esc(xTitle)}</text>
+    </svg><div class="tip"></div>`;
+  const tip = el.querySelector('.tip');
+  el.querySelectorAll('.hit').forEach(h => {
+    h.addEventListener('mousemove', e => {
+      const box = el.getBoundingClientRect(), d = data[+h.dataset.i];
+      tip.textContent = d.tip; tip.style.display = 'block';
+      tip.style.left = (e.clientX - box.left) + 'px'; tip.style.top = (e.clientY - box.top) + 'px';
+    });
+    h.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
+  });
+}
+
+$('fileInput').addEventListener('change', e => handleFiles(e.target.files));
+$('runBtn').addEventListener('click', runAnalysis);
+const drop = $('drop');
+drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('over'); });
+drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('over'); handleFiles(e.dataTransfer.files); });
+renderFileStatus();
+</script>
+</body>
+</html>
