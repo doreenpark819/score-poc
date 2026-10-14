@@ -165,6 +165,10 @@
     border-bottom: 1px solid var(--line); border-top: 3px solid var(--accent); }
   #chatPanel .head b { font-size: 14px; }
   #chatPanel .head button { border: 0; background: none; font-size: 20px; cursor: pointer; color: var(--muted); line-height: 1; }
+  #chatPanel .head .head-btns { display: flex; align-items: center; gap: 6px; }
+  #chatPanel .head button.reset { font: inherit; font-size: 12px; line-height: 1.4; padding: 3px 9px; border: 1px solid var(--line); border-radius: 3px; color: var(--text-2); }
+  #chatPanel .head button.reset:hover:not(:disabled) { border-color: var(--accent); color: var(--accent-strong); }
+  #chatPanel .head button.reset:disabled { opacity: .45; cursor: not-allowed; }
   #chatLog { flex: 1; overflow-y: auto; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
   .msg-u, .msg-a { max-width: 88%; padding: 8px 11px; border-radius: 6px; white-space: pre-wrap; word-break: break-word; line-height: 1.55; }
   .msg-u { align-self: flex-end; background: var(--accent); color: #fff; }
@@ -616,7 +620,8 @@
 <button id="chatFab" class="btn" type="button">AI 도우미 · 용어집</button>
 <div id="chatPanel" role="dialog" aria-label="AI 도우미">
   <div class="head"><b>AI 도우미 <span class="muted" id="chatModel" style="font-weight:400;font-size:12px">무료 Nemotron · 초안</span></b>
-    <button type="button" id="chatClose" aria-label="닫기">×</button></div>
+    <span class="head-btns"><button type="button" id="chatReset" class="reset" title="대화 내용을 지우고 처음 화면으로 돌아갑니다">새 대화</button>
+    <button type="button" id="chatClose" aria-label="닫기">×</button></span></div>
   <div class="chat-tabs" id="chatTabs"><button type="button" data-v="chat" class="active">AI 대화</button><button type="button" data-v="gloss">용어집</button></div>
   <div id="glossView">
     <input type="search" id="glossSearch" placeholder="용어 검색 (예: 분리도, 붓스트랩)">
@@ -2112,7 +2117,7 @@ function chatAdd(cls, text) {
 async function chatSend(text) {
   text = text.trim();
   if (!text || chat.busy) return;
-  chat.busy = true; $('chatSend').disabled = true;
+  chat.busy = true; $('chatSend').disabled = true; $('chatReset').disabled = true;
   $('chatChips')?.remove();
   chatAdd('msg-u', text);
   chat.history.push({ role: 'user', content: text });
@@ -2158,7 +2163,7 @@ async function chatSend(text) {
     out.textContent = `답변을 받지 못했습니다: ${e.message}`;
     chat.history.pop();
   } finally {
-    chat.busy = false; $('chatSend').disabled = false; $('chatInput').focus();
+    chat.busy = false; $('chatSend').disabled = false; $('chatReset').disabled = false; $('chatInput').focus();
   }
 }
 
@@ -2242,7 +2247,21 @@ $('chatForm').addEventListener('submit', e => { e.preventDefault(); const t = $(
 $('chatInput').addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); $('chatForm').requestSubmit(); }
 });
-$('chatChips').querySelectorAll('button').forEach(b => b.addEventListener('click', () => chatSend(b.textContent)));
+// 새 대화: 대화 기록·화면을 처음 상태(안내 문구 + 예시 질문)로 되돌림. 답변을 받는 중에는 비활성
+const CHAT_INITIAL = $('chatLog').innerHTML;
+const bindChips = () => $('chatChips')?.querySelectorAll('button').forEach(b => b.addEventListener('click', () => chatSend(b.textContent)));
+function chatReset() {
+  if (chat.busy) return;
+  chat.history = [];
+  $('chatLog').innerHTML = CHAT_INITIAL;
+  bindChips();
+  $('chatInput').value = '';
+  $('glossSearch').value = '';
+  setChatView(chatAvailable() ? 'chat' : 'gloss');
+  $('chatLog').scrollTop = 0;
+}
+$('chatReset').addEventListener('click', chatReset);
+bindChips();
 if (DEMO_AVAILABLE && (window.__ARTIFACT__?.autoDemo || new URLSearchParams(location.search).has('demo'))) loadDemo();
 // 파일로 연 내부망 사용: AI 대화는 외부 통신이라 끄고 용어집만 제공
 if (!chatAvailable()) {
