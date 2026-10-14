@@ -50,6 +50,15 @@
   .muted { color: var(--muted); }
   .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
   .msg { margin-top: 12px; }
+  .intro p { margin: 0; line-height: 1.7; }
+  .intro ol, .intro ul { margin: 0; padding-left: 20px; line-height: 1.8; }
+  .intro code { background: #eef0f3; padding: 1px 5px; border-radius: 4px; }
+  .notice { border-color: #f0d9b5; background: #fffaf2; }
+  .notice h2 { color: var(--warn); }
+  footer { max-width: 1200px; margin: 0 auto; padding: 8px 24px 28px; font-size: 11px; color: var(--muted); line-height: 1.6; }
+  .demo-only { display: none; }
+  .has-demo .demo-only { display: flex; }
+  .has-demo .card.demo-only { display: block; }
   .chart { position: relative; }
   .chart svg { display: block; width: 100%; height: auto; overflow: visible; }
   .chart .axis text { fill: var(--muted); font-size: 11px; }
@@ -88,15 +97,85 @@
 <body>
 <header>
   <h1>신용정보 기반 심사 스코어 PoC</h1>
-  <p>더미 데이터 전용 · 서버 통신 없음 · 모든 계산은 이 브라우저 안에서만 수행됩니다</p>
+  <p>초안(PoC) · 가상 데이터 기준 · 업로드한 파일은 서버로 전송되지 않고 이 브라우저 안에서만 계산됩니다</p>
 </header>
 <nav>
-  <button data-tab="upload" class="active">① 업로드</button>
+  <button data-tab="intro" class="active">소개</button>
+  <button data-tab="upload">① 업로드</button>
   <button data-tab="analysis" disabled>② 분석·비교</button>
   <button data-tab="apps" disabled>③ 청약 조회</button>
 </nav>
 <main>
-  <section id="tab-upload" class="tab active">
+  <section id="tab-intro" class="tab active">
+    <div class="card intro">
+      <h2>무엇을 하는 도구인가요</h2>
+      <p>신용 10분위와 연체 수준에 따라 건강보험 손해율이 어떻게 달라지는지 분석해 <b>심사 스코어</b>를 만들고,
+        청약 건에 <b>권고 인수조건과 담보별 권고 가입금액</b>을 보여주는 초안입니다.
+        연체정보를 넣지 않은 버전 A(신용 10분위만)와 넣은 버전 B(10분위 × 연체 보정)를 비교합니다.</p>
+      <div class="row demo-only" style="margin-top:12px">
+        <button class="btn demoBtn">데모 데이터로 바로 보기</button>
+        <span class="muted">가상 데이터 약 60MB(전송 약 10MB)를 이 사이트에서 불러와 분석합니다. 직접 올리려면 ① 업로드 탭을 쓰세요.</span>
+      </div>
+    </div>
+    <div class="two">
+      <div class="card intro">
+        <h2>화면 구성</h2>
+        <ol>
+          <li><b>① 업로드</b>: CSV 7개를 올리면 헤더로 종류를 자동 인식하고 매칭 건수를 보여줍니다.</li>
+          <li><b>② 분석·비교</b>: 전체 손해율, 신용 10분위 상대도, 연체등급별 상대도, 분리도 A/B,
+            담보·가입금액대·연령대·성별별 연체 수준 손해율을 봅니다.</li>
+          <li><b>③ 청약 조회</b>: 청약별 스코어, 권고 인수조건, 담보별 권고 가입금액을 보고 CSV로 내보냅니다.</li>
+        </ol>
+      </div>
+      <div class="card intro">
+        <h2>계산 방식</h2>
+        <ul>
+          <li><b>손해율</b> = (Σ보험금 + Σ준비금변동) ÷ Σ위험보험료</li>
+          <li><b>10분위 상대도</b> = 분위 손해율 ÷ 전체 손해율</li>
+          <li><b>연체 보정 상대도</b> = 등급 Σ실제손해 ÷ 등급 Σ(위험보험료 × 전체손해율 × 10분위 상대도) — 신용평점과의 이중반영 제거</li>
+          <li><b>종합상대도</b> A = 10분위 상대도, B = 10분위 상대도 × 연체 보정 상대도 · <b>스코어</b> = 100 ÷ 종합상대도</li>
+          <li><b>권고(B)</b>: &lt;1.0 표준인수 · 1.0~1.3 한도축소(70%) · 1.3~1.6 부담보(입원·수술 4개 담보) + 나머지 50% · ≥1.6 심사역검토</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card intro">
+      <h2>데이터 구성 (가상 데이터 v4, 증권 × 담보 단위)</h2>
+      <div class="tbl"><table>
+        <thead><tr><th>파일</th><th>단위</th><th class="num">건수</th><th>주요 컬럼</th><th>필수</th></tr></thead>
+        <tbody>
+          <tr><td>contracts.csv</td><td>증권</td><td class="num">100,000</td><td>policy_no, customer_id, age, gender</td><td>필수</td></tr>
+          <tr><td>contract_coverages.csv</td><td>증권×담보</td><td class="num">709,730</td><td>policy_no, coverage_code, coverage_name, sum_insured</td><td>선택</td></tr>
+          <tr><td>loss_experience.csv</td><td>증권×담보</td><td class="num">709,730</td><td>policy_no, coverage_code, risk_premium, claim_paid, reserve_change, claim_cnt</td><td>필수</td></tr>
+          <tr><td>credit_info.csv</td><td>고객</td><td class="num">101,000</td><td>customer_id, credit_decile (1 우량 ~ 10 불량)</td><td>필수</td></tr>
+          <tr><td>credit_delinq.csv</td><td>고객</td><td class="num">101,000</td><td>채무불이행 3종(kcis·cb·대부업), 연체 2종(cb·개인사업자) 건수</td><td>선택</td></tr>
+          <tr><td>applications.csv</td><td>청약</td><td class="num">1,000</td><td>app_no, customer_id, age, gender</td><td>필수</td></tr>
+          <tr><td>application_coverages.csv</td><td>청약×담보</td><td class="num">7,161</td><td>app_no, coverage_code, coverage_name, sum_insured</td><td>필수</td></tr>
+        </tbody>
+      </table></div>
+      <p class="note"><b>담보 14개</b>: 일반암, 유사암, 암치료, 뇌혈관질환, 심혈관질환, 질병수술, 재해수술, 질병입원, 재해입원,
+        질병장해, 재해장해, 암외진단, 기타진단, 기타치료 (실손 미포함). 입원 담보 가입금액은 일당입니다.
+        컬럼별 상세와 생성 가정은 저장소의 <code>DATA_SPEC.md</code>에 있습니다.</p>
+    </div>
+    <div class="card intro notice">
+      <h2>유의사항</h2>
+      <ul>
+        <li><b>가상 데이터 · 초안</b>: 화면의 모든 수치는 가상 데이터와 생성 가정에서 나온 값으로, 실제 손해율이나 연체 효과의 근거로 쓸 수 없습니다.</li>
+        <li><b>개인정보·신용정보</b>: 실제 고객 데이터는 신용정보법·개인정보보호법상 수집·이용 목적과 동의 범위를 확인한 뒤에만 쓸 수 있습니다.
+          실제 데이터는 이 공개 주소나 외부 저장소에 올리지 말고, 내부망 PC에서 파일을 직접 열어 사용해야 합니다.</li>
+        <li><b>사내정보</b>: 실제 데이터로 만든 결과물(화면, 내보낸 CSV)은 사내 보안 규정에 따라 외부로 배포할 수 없습니다.</li>
+        <li><b>인수 판단</b>: 신용정보만을 이유로 한 인수 거절·차별은 허용되지 않을 수 있습니다. 실제 적용 전 법무·준법 검토와 감독규정 확인이 필요합니다.
+          권고는 참고용이며 최종 인수 판단은 심사역이 합니다.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="tab-upload" class="tab">
+    <div class="card demo-only">
+      <div class="row" style="justify-content:space-between">
+        <span>파일 없이 시연하려면 같은 사이트에 있는 가상 데이터를 불러올 수 있습니다.</span>
+        <button class="btn ghost demoBtn">데모 데이터 불러오기</button>
+      </div>
+    </div>
     <div class="card">
       <h2>CSV 파일 선택</h2>
       <div id="drop" class="drop">
@@ -222,6 +301,10 @@
     </div>
   </section>
 </main>
+<footer>
+  초안(PoC) · 가상 데이터 기준 수치로 실제 효과 근거 아님 · 실제 개인·신용정보는 이 공개 주소에 올리지 말 것(내부망 전용) ·
+  사내정보 외부 배포 금지 · 신용정보만으로 인수 거절 불가, 실제 적용 전 법무·준법 검토 필요 · 권고는 참고용이며 최종 판단은 심사역
+</footer>
 
 <script>
 // @calc-begin  (CONFIG ~ 계산 블록: verify.js가 이 구간을 그대로 실행)
@@ -1052,6 +1135,49 @@ function barChart(el, data, { ref = null, xTitle = '' } = {}) {
     h.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
   });
 }
+
+// ─ 데모 데이터: 웹(http/https)으로 열었을 때만, 같은 사이트의 가상 데이터 CSV를 불러옴 ─
+// 파일을 직접 연(file://) 내부망 사용에서는 버튼이 숨겨지고 어떤 통신도 하지 않음
+const DEMO_FILES = ['contracts.csv', 'contract_coverages.csv', 'loss_experience.csv', 'credit_info.csv',
+  'credit_delinq.csv', 'applications.csv', 'application_coverages.csv'];
+const DEMO_AVAILABLE = /^https?:$/.test(location.protocol);
+if (DEMO_AVAILABLE) document.body.classList.add('has-demo');
+
+function showTab(name) {
+  const b = document.querySelector(`nav button[data-tab="${name}"]`);
+  if (b && !b.disabled) b.click();
+}
+
+async function loadDemo() {
+  document.querySelectorAll('.demoBtn').forEach(b => { b.disabled = true; });
+  showTab('upload');
+  state.files = {};
+  try {
+    let i = 0;
+    for (const name of DEMO_FILES) {
+      $('runMsg').textContent = `데모 데이터 불러오는 중 (${++i}/${DEMO_FILES.length}): ${name}`;
+      const res = await fetch(name, { cache: 'force-cache' });
+      if (!res.ok) throw new Error(`${name} (${res.status})`);
+      const text = await res.text();
+      await tick();
+      const parsed = parseFile(text);
+      if (parsed.key) state.files[parsed.key] = { fileName: name + ' (데모)', ...parsed };
+    }
+    renderFileStatus();
+    $('runMsg').textContent = '매칭 계산 중…';
+    await tick();
+    renderMatch();
+    if ($('runBtn').disabled) throw new Error('필수 파일이 모두 인식되지 않았습니다');
+    runAnalysis();
+    showTab('analysis');
+  } catch (e) {
+    $('runMsg').textContent = `데모 데이터를 불러오지 못했습니다: ${e.message}. CSV를 직접 올려 주세요.`;
+  } finally {
+    document.querySelectorAll('.demoBtn').forEach(b => { b.disabled = false; });
+  }
+}
+document.querySelectorAll('.demoBtn').forEach(b => b.addEventListener('click', loadDemo));
+if (DEMO_AVAILABLE && new URLSearchParams(location.search).has('demo')) loadDemo();
 
 $('fileInput').addEventListener('change', e => handleFiles(e.target.files));
 $('runBtn').addEventListener('click', runAnalysis);
