@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>심사 스코어 PoC</title>
+<script>
+// 내부망 모드(파일로 열기): 브라우저 보안 정책(CSP)으로 모든 네트워크 요청(fetch·XHR·WebSocket 등)과 폼 전송을 차단
+if (location.protocol === 'file:') document.write('<meta http-equiv="Content-Security-Policy" content="connect-src \'none\'; form-action \'none\'">');
+</script>
 <style>
   /* ── 디자인 토큰: 메인 딥 그린 1색 + 그레이, 고위험·오류만 레드 1색 ── */
   :root {
@@ -437,6 +441,110 @@
   @media (max-width: 900px) { .ab-main { grid-template-columns: 1fr; } .detail-panel { position: static; } }
   @media (max-width: 600px) { .cov-row { grid-template-columns: 76px minmax(0, 1fr) 132px; } .lseg { padding: 8px; } .lseg b { font-size: 17px; } .lseg span { font-size: 11px; } .ladder-rules div { font-size: 10.5px; } }
   @media print { .detail-panel { position: static; } .lseg { cursor: default; } .ab-btns { display: none !important; } }
+  /* 머리글 모드 배지 · 분석 완료 바 */
+  .head-right { display: flex; align-items: center; gap: 14px; }
+  .mode-badge { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--accent-line); background: var(--accent-soft); color: var(--accent-strong);
+    border-radius: 16px; padding: 5px 12px; font-size: 12.5px; font-weight: 700; white-space: nowrap; }
+  .mode-badge::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+  .mode-badge.web { border-color: var(--line); background: var(--gray-soft); color: var(--text-2); }
+  .mode-badge.web::before { background: #9AA3AB; }
+  .done-bar { display: none; grid-template-columns: auto minmax(0, 1fr) auto; gap: 18px; align-items: center; background: var(--panel);
+    border: 1px solid var(--accent-line); border-left: 5px solid var(--accent); border-radius: 6px; padding: 12px 18px; margin-bottom: 14px; }
+  body.analyzed .done-bar { display: grid; }
+  body.analyzed[data-tab="summary"] .done-bar, body.analyzed[data-tab="intro"] .done-bar { display: none; }
+  .db-sec { font-size: 30px; font-weight: 700; color: var(--accent-strong); line-height: 1; font-variant-numeric: tabular-nums; }
+  .db-sec small { font-size: 14px; margin-left: 2px; }
+  .db-what { font-size: 13px; color: var(--text-2); line-height: 1.7; }
+  .db-what b { color: var(--text); }
+  .db-what span { display: block; font-size: 12px; color: var(--muted); }
+  .db-acts { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+  .db-acts .btn { padding: 7px 12px; font-size: 12.5px; }
+  /* 개요: 보안·아키텍처, 기대효과·ROI */
+  .tag-dark { display: inline-block; font-size: 11px; font-weight: 700; color: #fff; background: var(--text); border-radius: 3px; padding: 1px 7px; margin-right: 8px; vertical-align: 2px; }
+  .card-lead { color: var(--text-2); font-size: 13.5px; margin: -4px 0 14px; line-height: 1.7; }
+  .arch { display: grid; grid-template-columns: minmax(0, 1fr) 36px minmax(0, 1.55fr) 36px minmax(0, 1fr); align-items: center; }
+  .arch-box { border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; min-height: 112px; }
+  .arch-box h4 { margin: 0 0 6px; font-size: 13.5px; }
+  .arch-box p { margin: 0; font-size: 12px; color: var(--text-2); line-height: 1.6; }
+  .arch-zone { border: 2px solid var(--accent); border-radius: 10px; padding: 10px 12px 12px; background: var(--accent-soft); }
+  .arch-zone .zl { font-size: 11.5px; font-weight: 700; color: var(--accent-strong); margin-bottom: 8px; }
+  .zsteps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .zsteps div { background: var(--panel); border: 1px solid var(--accent-line); border-radius: 6px; padding: 8px 6px; font-size: 11.5px; text-align: center; color: var(--text-2); }
+  .zsteps b { display: block; font-size: 12.5px; color: var(--text); }
+  .arch-arrow { height: 2px; background: #9AA3AB; position: relative; margin: 0 5px; }
+  .arch-arrow::after { content: ''; position: absolute; right: -1px; top: -4px; border-left: 8px solid #9AA3AB; border-top: 5px solid transparent; border-bottom: 5px solid transparent; }
+  .arch-block { margin-top: 12px; display: flex; gap: 12px; align-items: flex-start; border: 1px dashed var(--risk-line); background: var(--risk-soft);
+    border-radius: 8px; padding: 9px 14px; font-size: 12.5px; color: var(--text-2); line-height: 1.65; }
+  .arch-block .x { color: var(--risk); font-weight: 700; font-size: 16px; line-height: 1.3; }
+  .arch-block b { color: var(--risk); }
+  .facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+  .facts div { border: 1px solid var(--line); border-radius: 6px; padding: 9px 12px; }
+  .facts b { display: block; font-size: 13.5px; }
+  .facts span { font-size: 11.5px; color: var(--text-2); }
+  .effects { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 10px; margin: 6px 0 14px; }
+  .eff { border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; position: relative; }
+  .eff.main { border-color: var(--accent-line); background: var(--accent-soft); }
+  .eff .en { width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 12px; font-weight: 700;
+    display: inline-flex; align-items: center; justify-content: center; margin-bottom: 6px; }
+  .eff > b { display: block; font-size: 14px; line-height: 1.45; }
+  .eff p { margin: 6px 0 0; font-size: 12.5px; color: var(--text-2); line-height: 1.7; }
+  .roi { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+  table.cmp td, table.cmp th { white-space: normal; font-size: 12.5px; vertical-align: top; }
+  table.cmp td.me { background: var(--accent-soft); font-weight: 700; color: var(--accent-strong); }
+  table.cmp td.me span { display: block; font-weight: 400; font-size: 11px; color: var(--text-2); }
+  table.cmp th.me { background: var(--accent); color: #fff; }
+  table.cmp td.warn-t { color: var(--risk); font-weight: 600; }
+  .calc { border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; }
+  .calc-h { font-weight: 700; font-size: 13.5px; margin-bottom: 6px; }
+  .calc-h span { font-weight: 400; color: var(--muted); font-size: 11.5px; margin-left: 4px; }
+  .calc label { display: flex; justify-content: space-between; align-items: center; font-size: 12.5px; padding: 4px 0; color: var(--text-2); }
+  .calc input { width: 110px; text-align: right; font: inherit; padding: 4px 8px; border: 1px solid var(--line); border-radius: 4px; font-variant-numeric: tabular-nums; }
+  .calc-res { margin-top: 8px; border-top: 1px solid var(--line); padding-top: 8px; }
+  .calc-res span { font-size: 12px; color: var(--text-2); }
+  .calc-res b { display: block; font-size: 24px; color: var(--accent-strong); font-variant-numeric: tabular-nums; }
+  .calc-res p { margin: 4px 0 0; font-size: 11.5px; color: var(--muted); line-height: 1.6; }
+  /* 1 데이터: 입력 가이드 · 오류 안내 */
+  .guide-tools { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 14px 0 10px; }
+  .guide-tools .btn { padding: 6px 12px; font-size: 12.5px; }
+  .guide-tools .okc { color: var(--accent-strong); }
+  .fguide { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+  .fg { border: 1px solid var(--line); border-radius: 6px; padding: 9px 11px; font-size: 12px; display: flex; flex-direction: column; gap: 4px; }
+  .fg.ok { border-color: var(--accent-line); background: var(--accent-soft); }
+  .fg-t { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+  .fg-t b { font-size: 12.5px; }
+  .fg .req, .fg .opt { font-size: 10.5px; font-weight: 700; border-radius: 3px; padding: 0 6px; white-space: nowrap; }
+  .fg .req { border: 1px solid var(--accent-line); color: var(--accent-strong); background: var(--panel); }
+  .fg .opt { border: 1px solid var(--line); color: var(--muted); background: var(--panel); }
+  .fg-n { color: var(--muted); font-size: 11px; }
+  .fg-c { line-height: 1.7; }
+  .fg-c code { background: var(--gray-soft); border-radius: 3px; padding: 0 4px; font-size: 11px; }
+  .fg-f { display: flex; justify-content: space-between; gap: 6px; color: var(--muted); font-size: 11px; margin-top: auto; }
+  .fg-s { white-space: nowrap; font-weight: 700; color: var(--accent-strong); }
+  .linkbtn { border: 0; background: none; padding: 0; font: inherit; font-size: 11.5px; font-weight: 700; color: var(--accent-strong); cursor: pointer; text-decoration: underline; }
+  .fprob { margin-top: 12px; border: 1px solid var(--risk-line); border-left: 4px solid var(--risk); border-radius: 6px; padding: 12px 14px; }
+  .fprob.info { border-color: var(--line); border-left-color: #9AA3AB; }
+  .fprob h4 { margin: 0 0 6px; font-size: 13.5px; color: var(--risk); }
+  .fprob.info h4 { color: var(--text); }
+  .fprob ul { margin: 0; padding-left: 18px; font-size: 12.5px; line-height: 1.7; color: var(--text); }
+  .fprob li + li { margin-top: 6px; }
+  .fp-d { color: var(--text-2); } .fp-f { color: var(--accent-strong); }
+  .fp-keep { margin-top: 8px; font-size: 12px; background: var(--head); border-radius: 4px; padding: 7px 10px; color: var(--text-2); }
+  /* 결과 표: 정렬·CSV */
+  .tbl-tools { display: flex; justify-content: flex-end; gap: 12px; align-items: center; font-size: 11.5px; color: var(--muted); margin: 0 0 6px; }
+  th.sortable { cursor: pointer; user-select: none; }
+  th.sortable:hover { color: var(--accent-strong); }
+  th.asc::after, th.desc::after { content: ''; display: inline-block; margin-left: 4px; border-left: 4px solid transparent; border-right: 4px solid transparent; vertical-align: 2px; }
+  th.desc::after { border-top: 5px solid var(--accent-strong); }
+  th.asc::after { border-bottom: 5px solid var(--accent-strong); }
+  @media (max-width: 1000px) { .fguide { grid-template-columns: repeat(2, minmax(0, 1fr)); } .effects { grid-template-columns: 1fr; } .roi { grid-template-columns: 1fr; } }
+  @media (max-width: 760px) {
+    .arch { grid-template-columns: 1fr; } .arch-arrow { height: 18px; width: 2px; margin: 4px auto; }
+    .arch-arrow::after { right: -4px; top: auto; bottom: -1px; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 8px solid #9AA3AB; border-bottom: 0; }
+    .facts { grid-template-columns: 1fr 1fr; } .done-bar { grid-template-columns: 1fr; } .db-acts { justify-content: flex-start; }
+    .head-right { gap: 8px; } .mode-badge { font-size: 11px; padding: 3px 9px; }
+  }
+  @media (max-width: 600px) { .fguide { grid-template-columns: 1fr; } .zsteps { grid-template-columns: 1fr; } }
+  @media print { body:not(.analyzed) .done-bar { display: none !important; } body.analyzed .done-bar { display: grid !important; } .db-acts, .guide-tools, .tbl-tools { display: none !important; } .mode-badge { border: 1px solid #999; } }
   /* 종합 해석 */
   .headline { border-left: 4px solid var(--accent); }
   .headline .h-label { font-size: 12px; font-weight: 700; color: var(--accent-strong); letter-spacing: .04em; }
@@ -540,7 +648,7 @@
       <h1>신용정보 기반 심사 스코어 분석</h1>
       <p>초안(PoC) · 가상 데이터 기준 · 업로드한 파일은 서버로 전송되지 않고 이 브라우저 안에서만 계산됩니다</p>
     </div>
-    <img id="brandLogo" class="brand-logo" alt="" hidden>
+    <div class="head-right"><span class="mode-badge" id="modeBadge"></span><img id="brandLogo" class="brand-logo" alt="" hidden></div>
   </div>
 </header>
 <nav>
@@ -554,6 +662,7 @@
   </div>
 </nav>
 <main>
+  <div class="done-bar" id="doneBar"></div>
   <div class="kpi-strip" id="topKpis" aria-label="핵심 지표"></div>
 
   <section id="tab-intro" class="tab active">
@@ -588,6 +697,61 @@
             <p>새 신청마다 점수(높을수록 안전)를 매기고 가입 조건을 추천해요.</p></div>
         </div>
       </div>
+    </div>
+
+    <div class="card sec-card">
+      <h2><span class="tag-dark">보안</span>데이터는 이 PC 밖으로 나가지 않습니다</h2>
+      <p class="card-lead">사내 시스템에서 내려받은 CSV를 올리면, 검토·분석·리포트까지 모두 <b>이 PC의 브라우저 안에서만</b> 처리합니다. 서버·DB·외부 API를 쓰지 않는 폐쇄형(로컬) 구조입니다.</p>
+      <div class="arch">
+        <div class="arch-box"><h4>① 사내 시스템</h4><p>계약·손해실적·신용정보를<br>사내 권한으로 조회해<br><b>CSV로 내려받기</b></p></div>
+        <div class="arch-arrow" aria-hidden="true"></div>
+        <div class="arch-zone"><div class="zl">② 내 PC 브라우저 (내부망) · 이 안에서만 계산</div>
+          <div class="zsteps"><div><b>자동 검토</b>인코딩·컬럼·오류 점검</div><div><b>분석</b>상관·층화·스코어</div><div><b>리포트</b>요약·차트·권고</div></div></div>
+        <div class="arch-arrow" aria-hidden="true"></div>
+        <div class="arch-box"><h4>③ 결과 보관</h4><p>결과 CSV·검토 리포트·<br>PDF 인쇄본을<br><b>사내 저장소</b>에 보관</p></div>
+      </div>
+      <div class="arch-block"><span class="x" aria-hidden="true">✕</span><span><b>외부 서버 · 클라우드 · 외부 AI API로 전송되는 업로드 데이터 없음.</b>
+        파일로 여는 내부망 모드에서는 브라우저 보안 정책(CSP)으로 네트워크 요청 자체를 차단하고 AI 대화 기능도 꺼집니다.
+        <span class="muted">(AI 도우미는 공개 웹 데모에서만 동작하며, 질문과 집계 요약만 보냅니다)</span></span></div>
+      <div class="facts">
+        <div><b>설치 불필요</b><span>HTML 파일 1개 · 더블클릭으로 실행</span></div>
+        <div><b>서버·DB 없음</b><span>올린 파일은 이 PC 메모리에서만 읽음</span></div>
+        <div><b>외부 라이브러리 0개</b><span>CDN·웹폰트 없이 단독 동작</span></div>
+        <div><b>원본 불변</b><span>올린 CSV는 수정·저장하지 않음</span></div>
+      </div>
+    </div>
+
+    <div class="card effect-card">
+      <h2><span class="tag-dark">기대효과</span>무엇이 좋아지나요</h2>
+      <div class="effects">
+        <div class="eff main"><div class="en">1</div><b>다차원 종합 언더라이팅 고도화 → 손해율 관리</b>
+          <p>신용 10분위에 <b>연체·채무불이행 지표</b>를 더한 다차원 종합 평가로 언더라이팅을 고도화합니다.
+            재정적 고위험 고객을 <b>인수 단계에서 미리</b> 가려내 한도축소·부담보로 위험을 <b>사전에 헤지</b>하고, 손해율을 관리합니다.</p></div>
+        <div class="eff"><div class="en">2</div><b>분석 비용·시간 절감 (ROI)</b>
+          <p>엑셀 수작업이나 통계 패키지, <b>외부 컨설팅 용역</b> 없이 CSV만 올리면 수 초~수십 초 안에 같은 분석이 끝납니다. 용역 예산과 내부 분석 인력을 아낍니다.</p></div>
+        <div class="eff"><div class="en">3</div><b>지속 업데이트 · 사내 자산화</b>
+          <p>분기마다 최신 CSV로 같은 기준을 다시 돌리고, 기준값(권고 구간·부담보 담보·손해 기준)은 사내에서 바로 조정합니다. 외부 재용역 없이 분석 노하우가 사내에 남습니다.</p></div>
+      </div>
+      <div class="roi">
+        <div class="tbl"><table class="cmp">
+          <thead><tr><th>같은 분석을 할 때</th><th>엑셀 수작업</th><th>통계 패키지</th><th>외부 컨설팅</th><th class="me">이 도구</th></tr></thead>
+          <tbody>
+            <tr><td>1회 소요</td><td>수일~수주</td><td>수일 (코드 작성·검증)</td><td>수주~수개월</td><td class="me">수 초~수십 초 <span>(60MB·173만 행 약 10초, 테스트 환경)</span></td></tr>
+            <tr><td>필요 역량</td><td>피벗·수식</td><td>프로그래밍·통계</td><td>외부 전문가</td><td class="me">CSV 업로드만</td></tr>
+            <tr><td>비용</td><td>인건비</td><td>인건비·라이선스</td><td>용역 예산</td><td class="me">추가 비용 없음</td></tr>
+            <tr><td>재분석 (분기·연간)</td><td>처음부터 다시</td><td>코드 재실행·유지보수</td><td>재계약 필요</td><td class="me">새 CSV로 같은 기준 즉시</td></tr>
+            <tr><td>데이터 반출</td><td>없음</td><td>없음</td><td class="warn-t">외부 반출·보안 심사 필요</td><td class="me">없음 (PC 안에서만)</td></tr>
+          </tbody>
+        </table></div>
+        <div class="calc">
+          <div class="calc-h">절감 효과 계산기 <span>값을 바꿔 보세요</span></div>
+          <label>외부 컨설팅 1회 예산 (만원) <input type="number" id="roiBudget" min="0" step="100" value="5000"></label>
+          <label>연간 재분석 횟수 <input type="number" id="roiTimes" min="0" step="1" value="4"></label>
+          <label>내부 수작업 1회 소요 (일) <input type="number" id="roiDays" min="0" step="1" value="10"></label>
+          <div class="calc-res"><span>연간 절감 추정</span><b id="roiOut">-</b><p id="roiNote"></p></div>
+        </div>
+      </div>
+      <p class="note">계산기 기본값은 <b>예시 가정값</b>입니다. 실제 견적·인건비 기준으로 바꿔 입력하세요.</p>
     </div>
 
     <div class="card try">
@@ -695,12 +859,20 @@
       <h2>CSV 파일 선택</h2>
       <div id="drop" class="drop">
         <div class="drop-main">
-          <input type="file" id="fileInput" class="sr-file" accept=".csv,text/csv" multiple>
+          <input type="file" id="fileInput" class="sr-file" accept=".csv,.txt,text/csv" multiple>
           <label for="fileInput" class="btn">CSV 파일 선택</label>
-          <span class="drop-hint">또는 이 영역에 파일을 끌어다 놓으세요 · 7개 파일을 한 번에 선택할 수 있습니다</span>
+          <span class="drop-hint">또는 이 영역에 파일을 끌어다 놓으세요 · 여러 파일을 한 번에 선택할 수 있습니다</span>
         </div>
-        <p class="note">파일 이름이 아니라 헤더 컬럼으로 종류를 자동 인식합니다. credit_delinq.csv가 없으면 모델 A(연체정보 미포함)만 계산합니다.</p>
+        <p class="note">파일 이름은 상관없고 첫 줄(헤더) 컬럼으로 종류를 알아봅니다. 한글 컬럼명(예: 증권번호, 위험보험료)과 EUC-KR·탭 구분 파일도 자동 처리합니다.
+          credit_delinq.csv가 없으면 모델 A(연체정보 미포함)만 계산합니다.</p>
       </div>
+      <div class="guide-tools">
+        <button type="button" class="btn ghost" id="sampleZip">샘플 CSV 7종 받기 (ZIP)</button>
+        <button type="button" class="btn ghost" id="templateZip">빈 양식(헤더만) 받기 (ZIP)</button>
+        <span class="muted" id="guideProgress"></span>
+      </div>
+      <div class="fguide" id="fileGuide"></div>
+      <div id="fileProblems"></div>
     </div>
     <div class="two">
       <div class="card">
@@ -896,6 +1068,7 @@
         <span class="legend-tags"><span class="badge ok">확인됨</span> 오차 범위로 봐도 분명함 <span class="badge warn">주의</span> 일부만 확인·해석 주의 <span class="badge muted">미확인</span> 아직 단정 불가</span></div>
       <div class="findings" id="sumFindings"></div>
     </div>
+    <div class="card effect-sum"><h2>기대효과 <span class="sub">이번 분석 결과 기준</span></h2><ul class="sum-list" id="sumEffect"></ul></div>
     <div class="two">
       <div class="card"><h2>한계점·유의사항</h2><ul class="sum-list" id="sumLimits"></ul></div>
       <div class="card"><h2>다음 단계 제안</h2><ol class="sum-list" id="sumNext"></ol></div>
@@ -1796,16 +1969,26 @@ function readFile(file) {
 }
 
 async function handleFiles(fileList) {
-  const unknown = [];
+  const t0 = performance.now(), problems = [], seen = new Set();
   $('runBtn').disabled = true;
   for (const f of fileList) {
     $('runMsg').textContent = `읽는 중: ${f.name}`;
     await tick();
-    const decoded = decodeBytes(await readFile(f));
-    const parsed = parseFile(decoded.text, { encoding: decoded.encoding });
-    if (!parsed.key) { unknown.push(f.name); continue; }
-    state.files[parsed.key] = { fileName: f.name, ...parsed };
+    try {
+      const buf = await readFile(f);
+      const sniff = sniffProblem(f.name, buf);
+      if (sniff) { problems.push(sniff); continue; }
+      const decoded = decodeBytes(buf);
+      const parsed = parseFile(decoded.text, { encoding: decoded.encoding });
+      if (!parsed.key) { problems.push(diagnoseUnknown(f.name, parsed)); continue; }
+      if (seen.has(parsed.key)) problems.push({ level: 'info', file: f.name, title: `같은 종류(${FILE_LABELS[parsed.key]}) 파일을 두 개 올렸습니다`, fix: '나중에 읽은 이 파일을 씁니다.' });
+      seen.add(parsed.key);
+      state.files[parsed.key] = { fileName: f.name, bytes: f.size, ...parsed };
+    } catch (e) {
+      problems.push({ level: 'error', file: f.name, title: '파일을 읽는 중 문제가 생겼습니다', detail: String(e?.message || e), fix: 'CSV(쉼표·탭 구분) 형식인지 확인해 주세요. 다른 파일은 그대로 처리됩니다.' });
+    }
   }
+  state.fileProblems = problems;
   state.dataset = null;
   $('summaryCard').style.display = 'none';
   setTabsEnabled(false);
@@ -1813,7 +1996,10 @@ async function handleFiles(fileList) {
   $('runMsg').textContent = '자동 검토·매칭 계산 중…';
   await tick();
   refreshData();
-  $('runMsg').textContent = unknown.length ? `인식하지 못한 파일: ${unknown.join(', ')}` : '';
+  state.timing = { prep: (performance.now() - t0) / 1000, label: '읽기·검토·매칭' };
+  renderFileProblems();
+  const nErr = problems.filter(p => p.level === 'error').length;
+  $('runMsg').textContent = nErr ? `분석에 쓸 수 없는 파일 ${nErr}개 — 위 안내를 확인해 주세요` : '';
 }
 
 // 원본(state.files) → 자동 검토·정제(state.cleanFiles) → 매칭(state.dataset) → 규모 진단
@@ -1869,6 +2055,7 @@ function renderFileStatus() {
     return `<tr><td>${s.name}</td><td>${s.required ? '필수' : '선택'}</td>
       <td>${f ? esc(f.fileName) : '-'}</td><td class="num">${f ? fmtInt(f.length) : '-'}</td><td>${status}</td></tr>`;
   }).join('');
+  if (fileGuideReady) renderFileGuide();
 }
 
 function setTabsEnabled(on) {
@@ -1917,6 +2104,7 @@ function kpiHtml(items) {
 }
 
 function runAnalysis() {
+  const tA = performance.now();
   const ds = applyLossBasis(state.dataset, state.basis);
   state.ads = ds;
   const dec = decileTable(ds.policies, { monotone: state.monotone });
@@ -1939,6 +2127,8 @@ function runAnalysis() {
   setTabsEnabled(true);
   renderSummary();
   renderTry();
+  state.timing = { ...(state.timing || {}), analysis: (performance.now() - tA) / 1000, extra: 0 };
+  renderDoneBar();
   $('runMsg').textContent = '분석 완료 · 2 상관분석 → 3 층화검증 → 4 스코어 결과 → 5 종합 해석 탭에서 확인하세요';
   runUncertainty(ds, dec);
 }
@@ -2096,7 +2286,24 @@ function renderSummary() {
     <div class="f-where">자세히: ${esc(f.where)}</div></div>`).join('');
   $('sumLimits').innerHTML = limits.map(l => `<li>${l}</li>`).join('');
   $('sumNext').innerHTML = next.map(l => `<li>${l}</li>`).join('');
+  renderEffectSummary();
   renderPrdCheck();
+}
+// 기대효과(종합 해석): 다차원 언더라이팅으로 사전 관리하는 청약 규모, 분석 시간, 지속 업데이트
+function renderEffectSummary() {
+  const items = [], apps = state.apps?.list || [], t = state.timing;
+  const scored = apps.filter(a => a.relA != null), managed = scored.filter(a => a.status !== '표준인수');
+  const up = scored.filter(a => a.basis === 'B' && a.statusA && uwRank(a.status) > uwRank(a.statusA)).length;
+  if (scored.length) items.push(`<b>다차원 종합 언더라이팅 고도화 → 손해율 관리</b>: 신용 10분위에 연체·채무불이행 지표를 더해 청약 ${fmtInt(scored.length)}건 중
+    <b>${fmtInt(managed.length)}건(${fmtPct(managed.length / scored.length)})</b>을 한도축소·부담보·심사역검토로 인수 단계에서 사전 관리합니다.`
+    + (up ? ` 이 가운데 <b>${fmtInt(up)}건</b>은 연체정보를 더해 새로 걸러낸 재정적 고위험 건으로, 위험을 사전에 헤지할 수 있는 대상입니다.` : ''));
+  if (t && t.analysis != null) {
+    const files = Object.values(state.files), rows = files.reduce((s, f) => s + (f.length || 0), 0);
+    items.push(`<b>분석 비용·시간 절감</b>: 이번 분석은 CSV ${files.length}개 · ${fmtInt(rows)}행을 <b>${((t.prep || 0) + t.analysis + (t.extra || 0)).toFixed(1)}초</b>에 끝냈습니다(이 PC 기준).
+      엑셀 수작업·외부 컨설팅으로 수일~수주 걸리는 분석을 추가 비용 없이 반복할 수 있습니다.`);
+  }
+  items.push('<b>지속 업데이트 · 사내 자산화</b>: 분기마다 최신 CSV로 같은 기준을 다시 돌려 결과를 비교하고, 권고 구간·부담보 담보 등 기준값은 사내에서 조정합니다. 외부 재용역 없이 분석 노하우가 사내에 남습니다.');
+  $('sumEffect').innerHTML = items.map(l => `<li>${l}</li>`).join('');
 }
 function badgeOf(t) { return `<span class="badge ${TAG[t][0]}">${TAG[t][1]}</span>`; }
 
@@ -2150,7 +2357,7 @@ function renderPrdCheck() {
 // 신뢰구간·교차 검증 분리도는 몇 초 걸리므로 기본 결과를 먼저 그린 뒤 채운다 (설정이 바뀌면 이전 계산 결과는 버림)
 let uncertaintyRun = 0;
 async function runUncertainty(ds, dec) {
-  const id = ++uncertaintyRun;
+  const id = ++uncertaintyRun, tU = performance.now();
   document.querySelectorAll('.bootN').forEach(e => { e.textContent = CONFIG.CI.BOOT; });
   $('ciStatus').textContent = '95% 구간 계산 중…';
   $('sepCvNote').textContent = '교차 검증 분리도 계산 중…';
@@ -2167,7 +2374,9 @@ async function runUncertainty(ds, dec) {
   if (id !== uncertaintyRun) return;
   state.cv = cv;
   renderSeparationKpis();
+  if (state.timing) state.timing.extra = (performance.now() - tU) / 1000;
   renderSummary();
+  renderDoneBar();
 }
 
 function renderBasisNote(ds) {
@@ -2493,11 +2702,11 @@ async function downloadCsv(text, name) {
   if (window.__ARTIFACT__) {
     const downloads = window.claude ? await window.claude.use('downloads') : null;
     if (!downloads) { $('appCount').textContent = '이 화면에서는 파일 저장을 지원하지 않습니다'; return; }
-    try { await downloads.save({ filename: name, data: new Blob([text]) }); }
+    try { await downloads.save({ filename: name, data: text instanceof Blob ? text : new Blob([text]) }); }
     catch (e) { if (e?.code !== 'declined') $('appCount').textContent = `저장하지 못했습니다 (${e?.code || '오류'})`; }
     return;
   }
-  const url = URL.createObjectURL(new Blob([text], { type: 'text/csv;charset=utf-8' }));
+  const url = URL.createObjectURL(text instanceof Blob ? text : new Blob([text], { type: 'text/csv;charset=utf-8' }));
   const link = document.createElement('a');
   link.href = url; link.download = name;
   document.body.appendChild(link); link.click(); link.remove();
@@ -2631,6 +2840,223 @@ document.querySelectorAll('.gcard').forEach(c => c.addEventListener('click', () 
 $('goUpload').addEventListener('click', () => { showTab('upload'); window.scrollTo({ top: 0 }); });
 renderTry(); renderGuide();
 
+// ─ 입력 가이드 · 샘플 CSV · 친절한 오류 안내 (모두 브라우저 안에서 처리, 통신 없음) ─
+const FILE_LABELS = { contracts: '계약', coverages: '계약 담보 가입금액', loss: '손해실적 (증권×담보)', credit: '신용정보',
+  delinq: '연체정보', apps: '청약', appCoverages: '청약 담보' };
+const FILE_NOTES = { coverages: '없으면 가입금액대 분석만 빠짐', delinq: '없으면 모델 A(신용 분위만)만 계산', loss: '선택: claim_cnt(사고 건수)',
+  credit: 'credit_decile: 1 우량 ~ 10 불량', contracts: '선택: age, gender (세그먼트용)', apps: '선택: age, gender', appCoverages: '입원 담보 가입금액은 일당' };
+const colKo = c => (CONFIG.COLUMN_ALIASES[c] || [])[0] || '';
+const normCol = s => String(s).toLowerCase().replace(/[\s_\-()·.]/g, '');
+
+function renderFileGuide() {
+  const req = FILE_SPECS.filter(s => s.required), opt = FILE_SPECS.filter(s => !s.required);
+  const has = s => !!state.files[s.key];
+  $('fileGuide').innerHTML = FILE_SPECS.map(s => `<div class="fg${has(s) ? ' ok' : ''}"><div class="fg-t"><b>${esc(FILE_LABELS[s.key])}</b>
+      <span class="${s.required ? 'req' : 'opt'}">${s.required ? '필수' : '선택'}</span></div>
+    <div class="fg-n">${esc(s.name)}</div>
+    <div class="fg-c">${s.cols.map(c => `<code title="${esc(colKo(c))}">${esc(c)}</code>`).join(' ')}</div>
+    <div class="fg-f"><span>${esc(FILE_NOTES[s.key] || '')}</span><span class="fg-s">${has(s) ? '인식됨' : `<button type="button" class="linkbtn" data-sample="${s.key}">샘플</button>`}</span></div></div>`).join('');
+  $('fileGuide').querySelectorAll('[data-sample]').forEach(b => b.addEventListener('click', () => {
+    const spec = FILE_SPECS.find(s => s.key === b.dataset.sample);
+    downloadCsv(makeSamples()[spec.name], 'sample_' + spec.name);
+  }));
+  const nr = req.filter(has).length, no = opt.filter(has).length, left = req.filter(s => !has(s));
+  $('guideProgress').innerHTML = `<b class="${left.length ? '' : 'okc'}">필수 ${nr} / ${req.length}</b> · 선택 ${no} / ${opt.length} · `
+    + (left.length ? `남은 필수: ${left.map(s => esc(FILE_LABELS[s.key])).join(', ')}` : '분석할 수 있습니다');
+}
+
+// 엑셀·빈 파일처럼 CSV로 읽기 전에 알 수 있는 문제
+function sniffProblem(name, buf) {
+  const u = new Uint8Array(buf, 0, Math.min(4, buf.byteLength));
+  if (!buf.byteLength) return { level: 'error', file: name, title: '빈 파일입니다', fix: '내용이 들어 있는 CSV인지 확인해 주세요.' };
+  if ((u[0] === 0x50 && u[1] === 0x4B) || (u[0] === 0xD0 && u[1] === 0xCF) || /\.xlsx?$/i.test(name))
+    return { level: 'error', file: name, title: '엑셀 파일입니다 (CSV가 아님)', fix: "엑셀에서 [다른 이름으로 저장 → 'CSV UTF-8(쉼표로 분리)' 또는 'CSV(쉼표로 분리)']로 저장해 올려 주세요." };
+  return null;
+}
+
+// 종류를 알아보지 못한 파일: 가장 비슷한 파일 종류와 빠진 필수 컬럼, 비슷한 이름의 컬럼을 알려줌
+function diagnoseUnknown(name, parsed) {
+  const raw = parsed.rawHeader || [], header = parsed.header || [];
+  if (!raw.length || raw.every(h => !String(h).trim()))
+    return { level: 'error', file: name, title: '첫 줄에서 컬럼명을 찾지 못했습니다', fix: '첫 줄이 컬럼명(헤더)인지, 쉼표·탭으로 구분된 CSV인지 확인해 주세요.' };
+  const set = new Set(header);
+  let best = null;
+  for (const s of FILE_SPECS) {
+    const hit = s.cols.filter(c => set.has(c)).length, score = hit / s.cols.length;
+    if (!best || score > best.score) best = { spec: s, hit, score };
+  }
+  if (!best.hit) return { level: 'error', file: name, title: '어떤 파일인지 알아보지 못했습니다',
+    detail: `첫 줄 컬럼: ${raw.slice(0, 6).join(', ')}${raw.length > 6 ? ' …' : ''}`, fix: '위 입력 가이드의 필수 컬럼이 들어 있는지 확인해 주세요. 사내 컬럼명이 다르면 CONFIG.COLUMN_ALIASES에 별칭을 추가할 수 있습니다.' };
+  const missing = best.spec.cols.filter(c => !set.has(c));
+  const known = new Set(FILE_SPECS.flatMap(s => [...s.cols, ...s.extra]));
+  const unused = raw.filter((h, i) => !known.has(header[i]));
+  const similar = [];
+  for (const c of missing) {
+    const al = [c, ...(CONFIG.COLUMN_ALIASES[c] || [])].map(normCol);
+    const hit = unused.find(h => { const n = normCol(h); return n.length >= 2 && al.some(a => a.includes(n) || n.includes(a)); });
+    if (hit) similar.push(`'${hit}' → ${c}${colKo(c) ? `(${colKo(c)})` : ''}?`);
+  }
+  return { level: 'error', file: name,
+    title: `'${FILE_LABELS[best.spec.key]}' 파일로 보이지만 필수 컬럼 ${missing.map(c => `${c}${colKo(c) ? `(${colKo(c)})` : ''}`).join(', ')}이(가) 없습니다`,
+    detail: similar.length ? `비슷한 이름의 컬럼: ${similar.join(' · ')}` : '',
+    fix: similar.length ? '같은 뜻이면 CSV의 헤더 이름을 바꿔 다시 올려 주세요.' : '컬럼을 추가하거나, 사내 컬럼명이 다르면 CONFIG.COLUMN_ALIASES에 별칭을 추가해 주세요.' };
+}
+
+function renderFileProblems() {
+  const ps = state.fileProblems || [], errs = ps.filter(p => p.level === 'error');
+  if (!ps.length) { $('fileProblems').innerHTML = ''; return; }
+  const kept = Object.keys(state.files).length;
+  $('fileProblems').innerHTML = `<div class="fprob${errs.length ? '' : ' info'}">
+    <h4>${errs.length ? `올린 파일 중 ${errs.length}개를 분석에 쓸 수 없습니다 — 앱은 멈추지 않으니 아래만 고치면 됩니다` : '참고할 내용이 있습니다'}</h4>
+    <ul>${ps.map(p => `<li><b>${esc(p.file)}</b> → ${esc(p.title)}${p.detail ? `<br><span class="fp-d">${esc(p.detail)}</span>` : ''}<br><span class="fp-f">${esc(p.fix)}</span></li>`).join('')}</ul>
+    ${kept ? `<div class="fp-keep">이미 인식된 파일 ${kept}개는 그대로 유지됩니다. 고친 파일만 다시 올리면 됩니다.</div>` : ''}</div>`;
+}
+
+// 샘플 CSV: 서로 연결되는 작은 가상 데이터(계약 300건·청약 20건). 시드 고정이라 받을 때마다 같음
+function makeSamples() {
+  let seed = 20261015;
+  const rnd = () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+  const pick = a => a[Math.floor(rnd() * a.length)];
+  const COV = [['CV01', '일반암', [1e7, 2e7, 3e7]], ['CV02', '유사암', [1e6, 2e6, 3e6]], ['CV03', '암치료', [5e6, 1e7]], ['CV04', '뇌혈관질환', [5e6, 1e7, 2e7]],
+    ['CV05', '심혈관질환', [5e6, 1e7, 2e7]], ['CV06', '질병수술', [3e5, 5e5, 1e6]], ['CV07', '재해수술', [3e5, 5e5, 1e6]], ['CV08', '질병입원', [2e4, 3e4, 5e4]],
+    ['CV09', '재해입원', [2e4, 3e4, 5e4]], ['CV10', '질병장해', [1e7, 3e7]], ['CV11', '재해장해', [1e7, 3e7]], ['CV12', '암외진단', [1e6, 3e6]],
+    ['CV13', '기타진단', [1e5, 3e5]], ['CV14', '기타치료', [1e5, 3e5]]];
+  const pad = (n, w) => String(n).padStart(w, '0');
+  const rows = { contracts: [], coverages: [], loss: [], credit: [], delinq: [], apps: [], appCoverages: [] };
+  const cust = [];
+  const addCustomer = id => {
+    const decile = 1 + Math.floor(rnd() * 10), g = rnd(), grade = g < 0.03 ? 2 : g < 0.11 ? 1 : 0;
+    rows.credit.push([id, decile]);
+    rows.delinq.push([id, grade === 2 ? 1 : 0, 0, 0, grade === 1 ? 1 : 0, 0]);
+    return { id, decile, grade };
+  };
+  for (let i = 1; i <= 300; i++) {
+    const c = addCustomer('C' + pad(i, 6)), p = 'P' + pad(i, 6), age = 20 + Math.floor(rnd() * 50), gender = rnd() < 0.5 ? 'M' : 'F';
+    rows.contracts.push([p, c.id, age, gender]);
+    const mine = [...COV].sort(() => rnd() - 0.5).slice(0, 4);
+    for (const [code, name, sis] of mine) {
+      const si = pick(sis), prem = Math.max(100, Math.round(si * 0.0004 / 10) * 10);
+      const risk = 0.18 * (0.6 + c.decile * 0.09) * (c.grade === 2 ? 1.5 : c.grade === 1 ? 1.25 : 1);
+      const cnt = rnd() < risk ? 1 : 0, paid = cnt ? Math.round(prem * (2 + rnd() * 6) / 10) * 10 : 0;
+      rows.coverages.push([p, code, name, si]);
+      rows.loss.push([p, code, prem, paid, Math.round(prem * 0.02), cnt]);
+    }
+  }
+  for (let i = 1; i <= 20; i++) {
+    const c = addCustomer('N' + pad(i, 6)), a = 'A' + pad(i, 6);
+    rows.apps.push([a, c.id, 20 + Math.floor(rnd() * 50), rnd() < 0.5 ? 'M' : 'F']);
+    for (const [code, name, sis] of [...COV].sort(() => rnd() - 0.5).slice(0, 4)) rows.appCoverages.push([a, code, name, pick(sis)]);
+  }
+  const out = {};
+  for (const s of FILE_SPECS) out[s.name] = '﻿' + [[...s.cols, ...s.extra], ...rows[s.key]].map(r => r.map(csvCell).join(',')).join('\r\n') + '\r\n';
+  return out;
+}
+const makeTemplates = () => Object.fromEntries(FILE_SPECS.map(s => [s.name, '﻿' + [...s.cols, ...s.extra].join(',') + '\r\n']));
+
+// 압축 없는(Store) ZIP 만들기: 외부 라이브러리 없이 여러 CSV를 한 파일로 받기 위함
+const CRC_TABLE = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function crc32(u8) { let c = 0xFFFFFFFF; for (let i = 0; i < u8.length; i++) c = CRC_TABLE[(c ^ u8[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+function makeZip(files) {
+  const enc = new TextEncoder(), parts = [], central = [];
+  let offset = 0;
+  for (const [fname, text] of Object.entries(files)) {
+    const name = enc.encode(fname), data = enc.encode(text), crc = crc32(data);
+    const lh = new DataView(new ArrayBuffer(30));
+    [[0, 0x04034b50, 4], [4, 20, 2], [6, 0x0800, 2], [8, 0, 2], [10, 0, 2], [12, 0x21, 2], [14, crc, 4], [18, data.length, 4], [22, data.length, 4], [26, name.length, 2], [28, 0, 2]]
+      .forEach(([o, v, n]) => n === 4 ? lh.setUint32(o, v, true) : lh.setUint16(o, v, true));
+    parts.push(new Uint8Array(lh.buffer), name, data);
+    const ch = new DataView(new ArrayBuffer(46));
+    [[0, 0x02014b50, 4], [4, 20, 2], [6, 20, 2], [8, 0x0800, 2], [10, 0, 2], [12, 0, 2], [14, 0x21, 2], [16, crc, 4], [20, data.length, 4], [24, data.length, 4],
+      [28, name.length, 2], [30, 0, 2], [32, 0, 2], [34, 0, 2], [36, 0, 2], [38, 0, 4], [42, offset, 4]]
+      .forEach(([o, v, n]) => n === 4 ? ch.setUint32(o, v, true) : ch.setUint16(o, v, true));
+    central.push(new Uint8Array(ch.buffer), name);
+    offset += 30 + name.length + data.length;
+  }
+  const size = central.reduce((s, a) => s + a.length, 0), end = new DataView(new ArrayBuffer(22));
+  end.setUint32(0, 0x06054b50, true); end.setUint16(8, Object.keys(files).length, true); end.setUint16(10, Object.keys(files).length, true);
+  end.setUint32(12, size, true); end.setUint32(16, offset, true);
+  return new Blob([...parts, ...central, new Uint8Array(end.buffer)], { type: 'application/zip' });
+}
+$('sampleZip').addEventListener('click', () => downloadCsv(makeZip(makeSamples()), 'score_poc_sample_csv.zip'));
+$('templateZip').addEventListener('click', () => downloadCsv(makeZip(makeTemplates()), 'score_poc_template_csv.zip'));
+
+// ─ 분석 완료 요약 바: 처리 규모·시간·내려받기를 한곳에 ─
+function renderDoneBar() {
+  const ds = state.ads, t = state.timing || {};
+  if (!ds || !state.apps) return;
+  const files = Object.values(state.files), rows = files.reduce((s, f) => s + (f.length || 0), 0);
+  const mb = files.reduce((s, f) => s + (f.bytes || 0), 0) / 1e6;
+  const prep = t.prep || 0, ana = (t.analysis || 0) + (t.extra || 0), rv = reviewRows();
+  const nErr = rv.filter(r => r.level === 'error').length, nWarn = rv.filter(r => r.level === 'warn').length;
+  $('doneBar').innerHTML = `<div class="db-sec">${(prep + ana).toFixed(1)}<small>초</small></div>
+    <div class="db-what"><b>CSV ${files.length}개 · ${fmtInt(rows)}행${mb ? ` (${mb >= 1 ? mb.toFixed(0) + 'MB' : Math.max(1, Math.round(mb * 1000)) + 'KB'})` : ''}</b>을 자동 검토·매칭하고
+      <b>계약 ${fmtInt(ds.counts.analyzed)}건 · 담보 ${fmtInt(ds.cov.length)}행</b>을 분석해 <b>청약 ${fmtInt(state.apps.list.length)}건</b>의 스코어와 권고를 만들었습니다.
+      <span>${esc(t.label || '읽기·검토·매칭')} ${prep.toFixed(1)}초 + 분석 ${ana.toFixed(1)}초 (이 PC 기준) · 오류 ${nErr}건 · 경고 ${nWarn}건 ·
+        ${DEMO_AVAILABLE ? '업로드 데이터 외부 전송 0건' : '외부 전송 0건 (네트워크 차단)'}</span></div>
+    <div class="db-acts"><button type="button" class="btn" id="dbExport">결과 CSV</button>
+      <button type="button" class="btn ghost" id="dbReview">검토 리포트 CSV</button><button type="button" class="btn ghost" id="dbPrint">요약 리포트 PDF</button></div>`;
+  $('dbExport').onclick = () => $('exportBtn').click();
+  $('dbReview').onclick = () => $('reviewExport').click();
+  $('dbPrint').onclick = () => window.print();
+}
+
+// ─ 결과 표: 머리글을 누르면 정렬, 표마다 CSV로 받기 ─
+const cellNum = s => { const m = String(s).replace(/,/g, '').match(/[-−]?\d+(\.\d+)?/); return m ? parseFloat(m[0].replace('−', '-')) : NaN; };
+const visible = el => getComputedStyle(el).display !== 'none';
+function tableToCsv(table) {
+  const lines = [];
+  const head = [...table.tHead.rows[0].cells].filter(visible).map(c => c.innerText.replace(/\s+/g, ' ').trim());
+  lines.push(head.map(csvCell).join(','));
+  for (const tr of table.tBodies[0].rows) lines.push([...tr.cells].filter(visible).map(c => csvCell(c.innerText.replace(/\s+/g, ' ').trim())).join(','));
+  return '﻿' + lines.join('\r\n') + '\r\n';
+}
+function enhanceTable(tbodyId, fileName) {
+  const tbody = $(tbodyId), table = tbody.closest('table'), wrap = table.closest('.tbl');
+  const tools = document.createElement('div');
+  tools.className = 'tbl-tools no-print';
+  tools.innerHTML = `<span>머리글을 누르면 정렬됩니다</span><button type="button" class="linkbtn">이 표 CSV로 받기</button>`;
+  wrap.parentNode.insertBefore(tools, wrap);
+  tools.querySelector('button').addEventListener('click', () => downloadCsv(tableToCsv(table), `${fileName}_${new Date().toISOString().slice(0, 10)}.csv`));
+  let sorting = false;
+  new MutationObserver(() => { if (!sorting) table.querySelectorAll('th').forEach(th => th.classList.remove('asc', 'desc')); }).observe(tbody, { childList: true });
+  table.tHead.querySelectorAll('th').forEach(th => {
+    th.classList.add('sortable');
+    th.addEventListener('click', () => {
+      const idx = [...th.parentNode.cells].indexOf(th), dir = th.classList.contains('desc') ? 'asc' : 'desc';
+      const rows = [...tbody.rows].filter(r => r.cells.length > idx);
+      if (rows.length < 2) return;
+      const nums = rows.map(r => cellNum(r.cells[idx].innerText)), numeric = nums.filter(Number.isFinite).length >= rows.length / 2;
+      const order = rows.map((r, i) => i).sort((a, b) => {
+        const x = numeric ? (Number.isFinite(nums[a]) ? nums[a] : -Infinity) : rows[a].cells[idx].innerText;
+        const y = numeric ? (Number.isFinite(nums[b]) ? nums[b] : -Infinity) : rows[b].cells[idx].innerText;
+        const c = numeric ? x - y : String(x).localeCompare(String(y), 'ko');
+        return dir === 'asc' ? c : -c;
+      });
+      sorting = true;
+      order.forEach(i => tbody.appendChild(rows[i]));
+      table.querySelectorAll('th').forEach(h => h.classList.remove('asc', 'desc'));
+      th.classList.add(dir);
+      setTimeout(() => { sorting = false; }, 0);
+    });
+  });
+}
+enhanceTable('decileBody', '10분위_상대도');
+enhanceTable('dqBody', '연체등급_상대도');
+enhanceTable('sepBody', '모델AB_구간별_손해율');
+enhanceTable('segBody', '세그먼트별_연체_손해율');
+
+// ─ 기대효과: 절감 효과 계산기 (기본값은 예시 가정값) ─
+function renderRoi() {
+  const v = id => Math.max(0, Number($(id).value) || 0);
+  const budget = v('roiBudget'), times = v('roiTimes'), days = v('roiDays');
+  $('roiOut').textContent = `${fmtWon(budget * times * 1e4)} · ${fmtInt(days * times)}일`;
+  $('roiNote').textContent = `외부 용역 ${fmtInt(times)}회분 예산(${fmtWon(budget * 1e4)} × ${fmtInt(times)})과 내부 분석 ${fmtInt(days * times)}일을 이 도구의 반복 분석으로 대체한다고 가정한 값입니다.`;
+}
+['roiBudget', 'roiTimes', 'roiDays'].forEach(id => $(id).addEventListener('input', renderRoi));
+renderRoi();
+var fileGuideReady = true; // 이 블록의 상수가 준비된 뒤에만 renderFileStatus에서 가이드를 갱신 (var라 선언 전 접근해도 오류 없음)
+renderFileGuide();
+
 // ─ 데모 데이터: 웹(http/https)으로 열었을 때만, 같은 사이트의 가상 데이터 CSV를 불러옴 ─
 // 파일을 직접 연(file://) 내부망 사용에서는 버튼이 숨겨지고 어떤 통신도 하지 않음
 const DEMO_FILES = ['contracts.csv', 'contract_coverages.csv', 'loss_experience.csv', 'credit_info.csv',
@@ -2647,6 +3073,8 @@ async function loadDemo() {
   document.querySelectorAll('.demoBtn').forEach(b => { b.disabled = true; });
   showTab('upload');
   state.files = {};
+  const t0 = performance.now();
+  state.fileProblems = []; renderFileProblems();
   try {
     let i = 0;
     for (const name of DEMO_FILES) {
@@ -2663,12 +3091,13 @@ async function loadDemo() {
       }
       await tick();
       const parsed = parseFile(text);
-      if (parsed.key) state.files[parsed.key] = { fileName: name + ' (데모)', ...parsed };
+      if (parsed.key) state.files[parsed.key] = { fileName: name + ' (데모)', bytes: new Blob([text]).size, ...parsed };
     }
     renderFileStatus();
     $('runMsg').textContent = '자동 검토·매칭 계산 중…';
     await tick();
     refreshData();
+    state.timing = { prep: (performance.now() - t0) / 1000, label: '불러오기·검토·매칭' };
     if ($('runBtn').disabled) throw new Error('필수 파일이 모두 인식되지 않았습니다');
     runAnalysis();
     showTab('analysis');
@@ -2849,6 +3278,7 @@ const GLOSSARY = [
   ['한도축소 · 권고율', '인수', '청약 가입금액의 일부만 인수하도록 권고하는 것. 권고율 70%면 청약 금액의 70%가 권고 가입금액입니다.', '4 스코어 결과'],
   ['부담보', '인수', '특정 담보를 보장에서 빼고 인수하는 것. 이 화면은 연체 영향이 큰 질병수술·재해수술·질병입원·재해입원 4개 담보에 부담보를 권고합니다.', '4 스코어 결과'],
   ['심사역검토', '인수', '종합상대도 1.6 이상으로 위험이 커서 자동 권고 금액을 내지 않고 심사역이 직접 판단하도록 넘기는 건입니다.', '4 스코어 결과'],
+  ['내부망 모드 · CSP', '보안', '이 HTML 파일을 PC에서 직접 열면 내부망 모드가 됩니다. 브라우저 보안 정책(CSP, Content Security Policy)으로 외부 네트워크 요청을 막아, 올린 데이터가 PC 밖으로 나갈 수 없습니다. AI 대화도 꺼집니다.', '머리글 오른쪽 배지 · 개요'],
   ['청약번호 · 고객번호', '데이터', '청약번호(app_no)는 청약 한 건, 고객번호(customer_id)는 청약한 고객을 가리키는 키. 고객번호로 신용·연체 정보를 찾아 붙입니다.', '4 스코어 결과'],
 ];
 
@@ -2911,6 +3341,10 @@ if (!chatAvailable()) {
   const t = document.querySelector('#chatTabs button[data-v="chat"]');
   t.disabled = true; t.title = 'AI 대화는 웹 데모에서만 쓸 수 있습니다'; t.style.opacity = '.45'; t.style.cursor = 'not-allowed';
 }
+// 머리글 모드 배지: 파일로 열면 내부망 모드(네트워크 차단), 웹 주소로 열면 웹 데모 모드
+$('modeBadge').textContent = DEMO_AVAILABLE ? '웹 데모 모드 · 가상 데이터' : '내부망 모드 · 외부 통신 차단';
+$('modeBadge').classList.toggle('web', DEMO_AVAILABLE);
+$('modeBadge').title = DEMO_AVAILABLE ? '공개 웹 데모입니다. 실제 데이터는 내부망 PC에서 파일로 열어 사용하세요.' : '이 화면은 브라우저 보안 정책(CSP)으로 외부 네트워크 요청을 차단합니다. 올린 데이터는 이 PC 밖으로 나가지 않습니다.';
 if (window.__ARTIFACT__) {
   $('chatModel').textContent = 'Claude · 초안';
   $('chatFoot').textContent = '질문과 현재 화면의 집계 요약(개별 계약 행 제외)이 Claude로 전송되며, 보는 사람의 Claude 사용량을 씁니다. '
@@ -2918,7 +3352,10 @@ if (window.__ARTIFACT__) {
 }
 
 $('fileInput').addEventListener('change', e => handleFiles(e.target.files));
-$('runBtn').addEventListener('click', runAnalysis);
+$('runBtn').addEventListener('click', () => {
+  try { runAnalysis(); }
+  catch (e) { $('runMsg').textContent = `분석 중 문제가 생겼습니다: ${e?.message || e}. 1 데이터 탭의 자동 검토 결과(오류·경고)를 확인해 주세요.`; console.error(e); }
+});
 const drop = $('drop');
 drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('over'); });
 drop.addEventListener('dragleave', () => drop.classList.remove('over'));
