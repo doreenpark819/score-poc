@@ -628,6 +628,23 @@ if (location.protocol === 'file:') document.write('<meta http-equiv="Content-Sec
   details.expert > summary h2 { font-size: 15px; }
   details.expert .sep-one { font-size: 13px; color: var(--text-2); margin: 6px 0 0 18px; line-height: 1.65; }
   details.expert[open] .sep-one { margin-bottom: 4px; }
+  .seg-detail-h span { font-weight: 400; color: var(--muted); font-size: 12px; margin-left: 6px; }
+  .seg-dims { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
+  .seg-dims button { border: 2px solid var(--line); background: var(--panel); border-radius: 8px; padding: 10px 12px; text-align: left; font: inherit; cursor: pointer;
+    transition: border-color .15s, box-shadow .15s, transform .15s; }
+  .seg-dims button b { display: block; font-size: 15px; color: var(--text); }
+  .seg-dims button span { font-size: 11.5px; color: var(--muted); }
+  .seg-dims button:hover { border-color: var(--accent-line); transform: translateY(-1px); }
+  .seg-dims button.on { border-color: var(--accent); background: var(--accent-soft); box-shadow: 0 3px 10px rgba(0,133,124,.15); }
+  .seg-dims button.on b { color: var(--accent-strong); }
+  .sr-only { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .seg-cov-l { flex-wrap: wrap; }
+  .uw-ref { margin: 10px 0 0; font-size: 12.5px; color: var(--text-2); background: #FFF7E0; border: 1px solid #E9C46A; border-radius: 6px; padding: 8px 12px; line-height: 1.6; }
+  .uw-ref b { color: #8A5A00; }
+  table.dq-mini { margin-top: 4px; font-size: 13px; }
+  table.dq-mini th, table.dq-mini td { padding: 6px 8px; }
+  table.dq-mini tr.tot td { background: var(--accent-soft); }
+  @media (max-width: 760px) { .seg-dims { grid-template-columns: 1fr 1fr; } }
   /* 스코어 결과: 권고 기준 설명 */
   .uw-explain { margin-top: 14px; border-top: 1px solid var(--line-soft); padding-top: 12px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
   .uw-explain > div { background: var(--head); border-radius: 6px; padding: 10px 12px; font-size: 12.5px; color: var(--text-2); line-height: 1.7; }
@@ -694,7 +711,8 @@ if (location.protocol === 'file:') document.write('<meta http-equiv="Content-Sec
   .headline p { margin: 6px 0 0; font-size: 17px; font-weight: 600; line-height: 1.65; }
   .legend-tags { font-size: 11.5px; color: var(--muted); display: inline-flex; gap: 6px; align-items: center; flex-wrap: wrap; }
   .legend-tags .badge { margin-left: 6px; }
-  .findings { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .findings { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .finding { min-width: 0; }
   .finding { border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; }
   .finding .f-head { display: flex; gap: 8px; align-items: center; font-size: 14.5px; }
   .finding .f-result { margin-top: 8px; font-variant-numeric: tabular-nums; line-height: 1.7; }
@@ -814,7 +832,7 @@ if (location.protocol === 'file:') document.write('<meta http-equiv="Content-Sec
       <h2 class="hero-title">신용 상태로 <span class="hl">‘보험금이 많이 나갈 고객’</span>을 미리 알아보는 도구</h2>
       <p class="hero-desc">이 도구는, 피보험자의 <b>신용 상태와 연체 이력</b>에 따라
         건강보험 <b>보험금이 평균보다 얼마나 더 나가는지</b>를 과거 데이터로 확인합니다.
-        그 결과로 새로 들어온 가입 신청(청약)마다 <b>점수와 가입 조건</b>을 추천합니다.</p>
+        그 결과로 새로 들어온 청약마다 <b>점수와 가입 조건</b>을 추천합니다.</p>
       <p class="hero-sub">최종 결정은 사람(심사역)이 하고, 이 도구는 참고 의견을 줍니다.</p>
       <div class="row hero-cta">
         <span class="cta-wrap demo-inline"><button class="btn demoBtn cta-pulse">데모 데이터로 바로 보기</button><span class="cta-hint">처음이라면 여기부터 눌러 보세요</span></span>
@@ -836,8 +854,8 @@ if (location.protocol === 'file:') document.write('<meta http-equiv="Content-Sec
         <div class="farrow" aria-hidden="true"></div>
         <div class="fstep" style="--i:2">
           <svg viewBox="0 0 40 40" aria-hidden="true"><rect x="8" y="5" width="24" height="30" rx="2"/><path d="M13 14l3 3 5-6M13 25h14M13 30h9"/></svg>
-          <div><div class="fnum">3 · 추천하기</div><b>새 가입 신청에 적용해요</b>
-            <p>새 신청마다 점수(높을수록 안전)를 매기고 가입 조건을 추천해요.</p></div>
+          <div><div class="fnum">3 · 추천하기</div><b>새 청약에 적용해요</b>
+            <p>새 청약마다 점수(높을수록 안전)를 매기고 가입 조건을 추천해요.</p></div>
         </div>
       </div>
     </div>
@@ -876,7 +894,7 @@ if (location.protocol === 'file:') document.write('<meta http-equiv="Content-Sec
     </div>
 
     <div class="card try">
-      <div class="card-head"><h2>직접 해보기 <span class="sub">이런 고객이 신청하면 어떻게 될까요?</span></h2>
+      <div class="card-head"><h2>직접 해보기 <span class="sub">이런 고객이 청약하면 어떻게 될까요?</span></h2>
         <span class="muted" style="font-size:12px" id="trySource"></span></div>
       <div class="try-grid">
         <div class="try-controls">
@@ -917,8 +935,8 @@ if (location.protocol === 'file:') document.write('<meta http-equiv="Content-Sec
           <span class="gd">신용 분위·연체 이력별로 보험금이 평균의 몇 배인지 그래프와 표로 보여줘요.</span></button>
         <button type="button" class="gcard" data-go="strat" data-short="담보·금액·나이·성별로 나눠 연체 효과의 일관성 확인"><span class="gnum">3</span><b>층화검증</b><span class="gq">연체 이력이 있으면 어느 담보에서든 손해가 커질까?</span>
           <span class="gd">담보·가입금액대·나이·성별로 나눠 연체 효과가 일관된지 확인하고, 연체 정보를 넣은 모델이 더 잘 가려내는지도 검증해요.</span></button>
-        <button type="button" class="gcard" data-go="apps" data-short="추천 기준 → 결과 → 연체 효과 → 신청별 이유·금액"><span class="gnum">4</span><b>스코어 결과</b><span class="gq">새 신청마다 어떤 조건을 추천할까?</span>
-          <span class="gd">추천 기준과 결과, 연체 정보로 바뀐 건, 신청마다 추천 이유와 담보별 금액을 차례로 보여줘요.</span></button>
+        <button type="button" class="gcard" data-go="apps" data-short="추천 기준 → 결과 → 연체 효과 → 청약별 이유·금액"><span class="gnum">4</span><b>스코어 결과</b><span class="gq">새 청약마다 어떤 조건을 추천할까?</span>
+          <span class="gd">추천 기준과 결과, 연체 정보로 바뀐 건, 청약마다 추천 이유와 담보별 금액을 차례로 보여줘요.</span></button>
         <button type="button" class="gcard" data-go="summary" data-short="결과의 의미·한계·다음 할 일을 쉬운 말로 정리"><span class="gnum">5</span><b>종합 해석</b><span class="gq">그래서 결론은? 믿을 만한가?</span>
           <span class="gd">결과의 의미와 한계, 다음에 할 일을 쉬운 말로 정리해요.</span></button>
       </div>
@@ -1095,13 +1113,19 @@ if (location.protocol === 'file:') document.write('<meta http-equiv="Content-Sec
     <div class="card seg-hl" id="segCard">
       <h2><span class="tag-acc">소결</span>세그먼트별 연체 수준에 따른 손해율 <span class="sub">스코어로 넘어가기 전 핵심 결과</span></h2>
       <div class="seg-key" id="segKey"></div>
-      <div class="seg-detail-h">세그먼트별 상세</div>
+      <div class="seg-detail-h">4가지 기준으로 나눠 보기 <span>기준을 바꿔 보세요 — 연체 효과가 어느 기준에서도 나타나는지가 핵심입니다</span></div>
+      <div class="seg-dims" id="segDims" role="tablist" aria-label="세그먼트 기준">
+        <button type="button" data-dim="coverage" class="on"><b>담보별</b><span>14개 담보</span></button>
+        <button type="button" data-dim="sumInsured"><b>가입금액대별</b><span>담보를 골라 금액 구간별</span></button>
+        <button type="button" data-dim="age"><b>연령대별</b><span>20대 ~ 60대 이상</span></button>
+        <button type="button" data-dim="gender"><b>성별</b><span>남 · 여</span></button>
+      </div>
       <div class="row" style="margin-bottom:12px">
-        <label>기준 <select id="segDim">
+        <label class="sr-only">기준 <select id="segDim">
           <option value="coverage">담보</option><option value="sumInsured">가입금액대 (담보 선택)</option>
           <option value="age">연령대</option><option value="gender">성별</option>
         </select></label>
-        <label>담보 <select id="segCov"></select></label>
+        <label class="seg-cov-l">담보 선택 <select id="segCov"></select> <span class="muted" style="font-size:12px">(가입금액대는 담보를 골라야 하고, 연령대·성별도 담보를 고르면 더 정확합니다)</span></label>
       </div>
       <div class="tbl"><table>
         <thead><tr><th id="segHead">세그먼트</th><th class="num">담보 수</th><th class="num">사고</th><th class="num">손해율</th>
@@ -1155,7 +1179,7 @@ if (location.protocol === 'file:') document.write('<meta http-equiv="Content-Sec
         <span class="tap-hint"><span class="tap-dot" aria-hidden="true"></span><b>막대를 눌러 보세요</b> 그 권고의 청약만 아래 목록에 표시됩니다</span></div>
       <div class="ladder" id="uwLadder"></div>
       <div class="ladder ladder-rules" id="uwRules"></div>
-      <p class="note uw-ref">권고는 참고용이며 최종 판단은 심사역이 합니다.</p>
+      <p class="uw-ref"><b>기준치는 PoC용 임의값입니다.</b> 권고 구간(1.0·1.3·1.6), 한도 비율(70%·50%), 부담보 대상 담보는 참고용이며, 실제 정책 결정 시 회사 기준에 맞게 바꿀 수 있습니다.</p>
       <div class="uw-explain" id="uwExplain"></div>
     </div>
     <div class="card" id="abCard" style="display:none">
@@ -1199,8 +1223,8 @@ if (location.protocol === 'file:') document.write('<meta http-equiv="Content-Sec
       <div class="findings" id="sumFindings"></div>
     </div>
     <div class="two">
-      <div class="card"><h2>한계점·유의사항</h2><ul class="sum-list" id="sumLimits"></ul></div>
-      <div class="card"><h2>다음 단계 제안</h2><ol class="sum-list" id="sumNext"></ol></div>
+      <details class="card calc-details"><summary><h2>한계점·유의사항 <span class="sub" id="sumLimitsCnt"></span></h2></summary><ul class="sum-list" id="sumLimits"></ul></details>
+      <details class="card calc-details"><summary><h2>다음 단계 제안 <span class="sub" id="sumNextCnt"></span></h2></summary><ol class="sum-list" id="sumNext"></ol></details>
     </div>
     <details class="card calc-details" id="prdCheckCard">
       <summary><h2>기획서(PRD) 정답값 검증 <span class="sub">PRD 6장 기대값과 이 화면의 계산값 비교 · 눌러서 펼치기</span></h2> <span id="prdCheckSum"></span></summary>
@@ -2347,7 +2371,13 @@ function renderSummary() {
       ${m && cm ? `그래서 둘을 '연체 이상'으로 합쳐 보면 ${pctUp(m.adjRel)}(오차 범위 ${pctUp(cm.lo)} ~ ${pctUp(cm.hi)})${cm.lo > 1 ? '로 효과가 확인됩니다' : '입니다'}. ` : ''}
       '추가 확인 필요'는 효과가 없다는 뜻이 아니라, 실데이터처럼 표본이 늘면 확인될 수 있다는 뜻입니다. 둘을 나눈 결과는 3 층화검증에서 담보별로 확인합니다.` : '';
     const tag = cm ? verdictOf(cm) === 'more' ? 'warn' : verdictOf(cm) : !ci ? 'wait' : verdictOf(c1);
-    findings.push({ tag, title: '연체 이력은 신용등급과 별개로 손해를 더 높입니다', result: lines.join('<br>'), short: lines[0], note,
+    const trow = (label, n, rel, c, cls = '') => { const v = verdictOf(c);
+      return `<tr class="${cls}"><td>${label}</td><td class="num">${fmtInt(n)}</td><td class="num"><b>${pctUp(rel)}</b></td><td class="num">${c ? `${pctUp(c.lo)} ~ ${pctUp(c.hi)}` : '…'}</td>
+        <td>${c ? badgeOf(v) : ''}${v === 'more' && rel > 1 ? ' <span class="more-t">효과 방향은 같으나 대상이 적어 오차 범위가 넓음</span>' : ''}</td></tr>`; };
+    const table = `<div class="tbl"><table class="dq-mini"><thead><tr><th>구분</th><th class="num">계약 수</th><th class="num">같은 신용등급 대비 손해</th><th class="num">오차 범위(95%)</th><th>판정</th></tr></thead><tbody>
+      ${m ? trow('<b>연체 이상</b> (연체+채무불이행)', m.n, m.adjRel, cm, 'tot') : ''}
+      ${dq.filter(r => r.grade > 0).map(r => trow(`└ ${esc(r.label)}`, r.n, r.adjRel, ci?.adjRel?.[r.grade])).join('')}</tbody></table></div>`;
+    findings.push({ tag, title: '연체 이력은 신용등급과 별개로 손해를 더 높입니다', result: table, short: lines[0], note,
       meaning: '신용평점에 이미 반영된 몫을 빼고도 연체 고객의 손해가 더 큰지를 본 것입니다(보정 상대도). ' + note,
       where: '2 상관분석 · 연체등급별 상대도' });
     if (weak2) next.push(`채무불이행은 대상이 적어 오차 범위가 넓습니다. 실데이터(기간 확대)로 표본을 늘려 연체와 따로 효과를 다시 확인합니다.`);
@@ -2432,6 +2462,8 @@ function renderSummary() {
     <div class="f-where">자세히: ${esc(f.where)}</div></div>`).join('');
   $('sumLimits').innerHTML = limits.map(l => `<li>${l}</li>`).join('');
   $('sumNext').innerHTML = next.map(l => `<li>${l}</li>`).join('');
+  $('sumLimitsCnt').textContent = `${limits.length}가지 · 눌러서 보기`;
+  $('sumNextCnt').textContent = `${next.length}가지 · 눌러서 보기`;
   renderPrdCheck();
 }
 // 2 상관분석 · 3 층화검증 탭 맨 위 '결론 먼저': 종합 해석의 핵심 발견 중 그 탭에 해당하는 것만 쉬운 말로
@@ -2685,7 +2717,8 @@ function initSegment(ds, dec) {
     const coverage = $('segCov').value === '' ? null : Number($('segCov').value);
     renderSegment(segmentTable(ds, dec, { dim, coverage }), dim, coverage, ds);
   };
-  $('segDim').onchange = draw;
+  $('segDim').onchange = () => { document.querySelectorAll('#segDims button').forEach(b => b.classList.toggle('on', b.dataset.dim === $('segDim').value)); draw(); };
+  document.querySelectorAll('#segDims button').forEach(b => { b.onclick = () => { $('segDim').value = b.dataset.dim; $('segDim').onchange(); }; });
   $('segCov').onchange = draw;
   draw();
 }
@@ -2719,7 +2752,7 @@ function uwRange(i) {
 function uwAction(rule) {
   return rule.limitPct == null ? '자동 권고 없음 · 심사역 판단' : rule.exclusion
     ? `${CONFIG.EXCLUSION_COVERAGES.map(n => n.replace(/(질병|재해)/, '')).filter((v, i, a) => a.indexOf(v) === i).join('·')} 담보 제외 + 나머지 ${rule.limitPct}%`
-    : rule.limitPct === 100 ? '신청한 그대로 · 전 담보 100%' : `전 담보 ${rule.limitPct}%`;
+    : rule.limitPct === 100 ? '청약한 그대로 · 전 담보 100%' : `전 담보 ${rule.limitPct}%`;
 }
 
 function initApps(ds, dec, dq) {
@@ -2991,7 +3024,7 @@ function barChart(el, data, { ref = null, xTitle = '', yTitle = '', fmt = fmtRel
 // ─ 개요 '직접 해보기': 신용 분위·연체 이력을 고르면 예상 보험금 수준·점수·권고를 보여줌 ─
 // 분석 전에는 가상 데이터 예시값, 분석 후에는 현재 분석 결과(상대도)를 씀. 권고 구간은 CONFIG.UW_RULES 그대로
 const TRY_EXAMPLE = { dec: [0.62, 0.67, 0.71, 0.84, 0.82, 0.86, 1.10, 1.00, 1.47, 1.96], dq: [0.96, 1.14, 1.23] };
-const TRY_PLAIN = { '표준인수': '신청한 그대로 가입할 수 있어요.', '한도축소': '가입 금액을 70%로 줄여서 가입하도록 추천해요.',
+const TRY_PLAIN = { '표준인수': '청약한 그대로 가입할 수 있어요.', '한도축소': '가입 금액을 70%로 줄여서 가입하도록 추천해요.',
   '부담보+한도축소': '입원·수술 보장은 빼고, 나머지 보장은 금액을 50%로 줄여 가입하도록 추천해요.',
   '심사역검토': '위험이 커서 자동 추천 없이 담당 심사역이 직접 검토해요.' };
 const tryState = { d: 5, g: 0, animated: false };
