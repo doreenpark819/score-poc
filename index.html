@@ -634,6 +634,60 @@ if (location.protocol === 'file:') document.write('<meta http-equiv="Content-Sec
   .uw-explain b.h { display: block; color: var(--text); font-size: 13px; margin-bottom: 2px; }
   .uw-explain code { background: var(--panel); border: 1px solid var(--line); border-radius: 3px; padding: 0 4px; font-size: 11px; }
   @media (max-width: 900px) { .uw-explain { grid-template-columns: 1fr; } }
+  /* 스텝 리본: 짙은 바탕 + 금색 진행 막대, 질문 → 답(조각별 시차) → 다음 버튼 순서로 등장 */
+  .tab:not(#tab-intro) .sec-head { display: none; }
+  .rib { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 22px; align-items: center; margin-bottom: 16px;
+    background: linear-gradient(90deg, #1F2A2E, #26393D); color: #fff; border-radius: 10px; padding: 16px 22px; box-shadow: 0 10px 26px rgba(0,0,0,.16); }
+  .rib-prog { display: flex; flex-direction: column; gap: 7px; }
+  .rib-prog .t { font-size: 11px; letter-spacing: .12em; color: #D4A64A; font-weight: 800; white-space: nowrap; }
+  .rib-prog .bar { display: flex; gap: 4px; }
+  .rib-prog .bar i { width: 28px; height: 6px; border-radius: 3px; background: rgba(255,255,255,.16); }
+  .rib-prog .bar i.d { background: #D4A64A; }
+  .rib-prog .bar i.c { background: #fff; box-shadow: 0 0 0 2px #D4A64A; }
+  .rib-q { font-size: 19px; font-weight: 800; letter-spacing: -.01em; }
+  .rib-q::before { content: 'Q. '; color: #D4A64A; }
+  .rib-a { font-size: 14.5px; color: #D8E4E2; margin-top: 5px; line-height: 1.6; }
+  .rib-a .lead { color: #7FD1C8; font-weight: 800; }
+  .rib-a b { color: #fff; font-weight: 800; }
+  .rib-next { border: 0; background: #D4A64A; color: #1F2A2E; border-radius: 22px; padding: 10px 16px; font: inherit; font-weight: 800; font-size: 13px;
+    white-space: nowrap; cursor: pointer; box-shadow: 0 4px 12px rgba(212,166,74,.35); transition: transform .15s; }
+  .rib-next:hover { transform: translateX(3px); }
+  .rib.play .rib-prog { animation: ribIn .45s ease both; }
+  .rib.play .rib-prog .bar i.c { animation: ribGlow 1.4s ease .3s both; }
+  .rib.play .rib-q { animation: ribIn .55s ease .15s both; }
+  .rib.play .rib-a .lead { display: inline-block; animation: ribIn .4s ease .75s both; }
+  .rib.play .rib-a .ch { display: inline-block; animation: ribIn .45s ease both; animation-delay: calc(.95s + var(--k) * .42s); }
+  .rib.play .rib-next { animation: ribIn .45s ease 2.3s both, ribPulse 1.8s ease 2.8s 2; }
+  @keyframes ribIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  @keyframes ribGlow { 0% { box-shadow: 0 0 0 0 rgba(212,166,74,.9); } 100% { box-shadow: 0 0 0 2px #D4A64A; } }
+  @keyframes ribPulse { 0%, 100% { box-shadow: 0 4px 12px rgba(212,166,74,.35); } 50% { box-shadow: 0 0 0 6px rgba(212,166,74,.25); } }
+  .nextcard { margin-top: 8px; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 18px; align-items: center; background: var(--panel);
+    border: 1px solid #E8D3A4; border-radius: 10px; padding: 16px 20px; box-shadow: 0 6px 18px rgba(184,134,43,.12); }
+  .nextcard .n { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #D4A64A, #B8862B); color: #fff; font-weight: 900; font-size: 18px;
+    display: flex; align-items: center; justify-content: center; }
+  .nextcard .t { font-size: 12px; color: #A0731F; font-weight: 800; letter-spacing: .04em; }
+  .nextcard .h { font-size: 17px; font-weight: 800; }
+  .nextcard .s { font-size: 13px; color: var(--text-2); }
+  .nextcard .btn { padding: 11px 18px; font-size: 14px; white-space: nowrap; }
+  body:not(.analyzed) #tab-upload .nextcard { display: none; }
+  /* 종합 해석 마무리 제안 */
+  .final-cta { border: 2px solid #D4A64A; background: linear-gradient(180deg, #FFFCF4, #fff); padding: 22px 24px; }
+  .fc-eyebrow { display: inline-block; font-size: 11.5px; font-weight: 800; color: #fff; background: #B8862B; border-radius: 3px; padding: 2px 8px; letter-spacing: .06em; }
+  .final-cta h2 { font-size: 20px !important; margin: 8px 0 6px !important; }
+  .fc-lead { margin: 0 0 14px; color: var(--text-2); font-size: 14px; line-height: 1.7; }
+  .fc-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; counter-reset: fc; }
+  .fc-steps li { counter-increment: fc; background: var(--panel); border: 1px solid #E8D3A4; border-radius: 8px; padding: 12px 14px; font-size: 12.5px; color: var(--text-2); line-height: 1.6; }
+  .fc-steps li::before { content: counter(fc); display: inline-flex; width: 24px; height: 24px; border-radius: 50%; background: #B8862B; color: #fff; font-weight: 800;
+    font-size: 12px; align-items: center; justify-content: center; margin-bottom: 6px; }
+  .fc-steps b { display: block; font-size: 14px; color: var(--text); margin-bottom: 2px; }
+  .fc-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+  @media (max-width: 900px) {
+    .rib { grid-template-columns: 1fr; gap: 10px; } .rib-next { justify-self: start; } .nextcard { grid-template-columns: auto minmax(0, 1fr); } .nextcard .btn { grid-column: 1 / -1; }
+    .fc-steps { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 600px) { .fc-steps { grid-template-columns: 1fr; } .rib-q { font-size: 16px; } }
+  @media (prefers-reduced-motion: reduce) { .rib.play * { animation: none !important; } }
+  @media print { .tab .sec-head { display: flex !important; } .rib, .nextcard, .fc-actions { display: none !important; } .final-cta { break-inside: avoid; } }
   /* 종합 해석 */
   .headline { border-left: 4px solid var(--accent); }
   .headline .h-label { font-size: 12px; font-weight: 700; color: var(--accent-strong); letter-spacing: .04em; }
@@ -1144,7 +1198,6 @@ if (location.protocol === 'file:') document.write('<meta http-equiv="Content-Sec
         <span class="legend-tags"><span class="badge ok">확인됨</span> 오차 범위로 봐도 분명함 <span class="badge warn">주의</span> 일부만 확인·해석 주의 <span class="badge muted">미확인</span> 아직 단정 불가</span></div>
       <div class="findings" id="sumFindings"></div>
     </div>
-    <div class="card effect-sum"><h2>기대효과 <span class="sub">이번 분석 결과 기준</span></h2><ul class="sum-list" id="sumEffect"></ul></div>
     <div class="two">
       <div class="card"><h2>한계점·유의사항</h2><ul class="sum-list" id="sumLimits"></ul></div>
       <div class="card"><h2>다음 단계 제안</h2><ol class="sum-list" id="sumNext"></ol></div>
@@ -1159,6 +1212,18 @@ if (location.protocol === 'file:') document.write('<meta http-equiv="Content-Sec
         PRD 기대값은 앱과 별개로 계산한 독립 정답값(tools/expected_v4.json)에서 왔습니다. 가상 데이터 v4 · 원손해 · 단조 보정 미적용일 때만 비교합니다.</p>
     </details>
     <p class="note">이 해석은 화면의 수치를 정해진 규칙으로 문장화한 것입니다(AI 미사용, 외부 전송 없음). 용어 풀이는 오른쪽 아래 용어집을 참고하세요. 최종 판단은 심사역과 담당 부서가 합니다.</p>
+    <div class="card final-cta" id="finalCta">
+      <span class="fc-eyebrow">제안</span>
+      <h2>이제 사내 내부망에서, 건강보험 실데이터로 분석해 보세요</h2>
+      <p class="fc-lead">가상 데이터로 확인한 가능성을 실데이터로 증명할 차례입니다. 준비물은 <b>이 HTML 파일 하나</b>와 <b>사내 데이터 CSV</b>뿐이며, 데이터는 PC 밖으로 나가지 않습니다.</p>
+      <ol class="fc-steps">
+        <li><b>내부망 PC에 파일 복사</b>설치·서버 불필요<br>외부 통신은 자동 차단</li>
+        <li><b>건강보험 실데이터를 CSV로 추출</b>계약·손해실적·신용·연체 등 7종<br>입력 가이드·빈 양식 제공 · 개인·신용정보 이용 범위 확인</li>
+        <li><b>올리고 바로 분석</b>수 초~수십 초 안에 같은 분석<br>결과 CSV·요약 PDF로 보고</li>
+        <li><b>검증 후 파일럿</b>표본이 적던 채무불이행 등 재확인<br>권고 기준 조정 · 법무·준법 검토</li>
+      </ol>
+      <div class="fc-actions"><button type="button" class="btn" id="fcGoData">1 데이터에서 CSV 올리기</button><button type="button" class="btn ghost" id="fcTemplate">빈 양식(헤더만) 받기</button></div>
+    </div>
   </section>
 </main>
 <button id="chatFab" class="btn" type="button">AI 도우미 · 용어집</button>
@@ -2282,7 +2347,7 @@ function renderSummary() {
       ${m && cm ? `그래서 둘을 '연체 이상'으로 합쳐 보면 ${pctUp(m.adjRel)}(오차 범위 ${pctUp(cm.lo)} ~ ${pctUp(cm.hi)})${cm.lo > 1 ? '로 효과가 확인됩니다' : '입니다'}. ` : ''}
       '추가 확인 필요'는 효과가 없다는 뜻이 아니라, 실데이터처럼 표본이 늘면 확인될 수 있다는 뜻입니다. 둘을 나눈 결과는 3 층화검증에서 담보별로 확인합니다.` : '';
     const tag = cm ? verdictOf(cm) === 'more' ? 'warn' : verdictOf(cm) : !ci ? 'wait' : verdictOf(c1);
-    findings.push({ tag, title: '연체 이력은 신용등급과 별개로 손해를 더 높입니다', result: lines.join('<br>'), note,
+    findings.push({ tag, title: '연체 이력은 신용등급과 별개로 손해를 더 높입니다', result: lines.join('<br>'), short: lines[0], note,
       meaning: '신용평점에 이미 반영된 몫을 빼고도 연체 고객의 손해가 더 큰지를 본 것입니다(보정 상대도). ' + note,
       where: '2 상관분석 · 연체등급별 상대도' });
     if (weak2) next.push(`채무불이행은 대상이 적어 오차 범위가 넓습니다. 실데이터(기간 확대)로 표본을 늘려 연체와 따로 효과를 다시 확인합니다.`);
@@ -2334,6 +2399,7 @@ function renderSummary() {
   }
 
   renderTabInsights(findings);
+  if (typeof renderRibbons === 'function') renderRibbons();
 
   // 한계점 (공통 + 데이터 기반)
   limits.unshift(isDemo ? '<b>가상 데이터</b>: 지금 수치는 생성 가정에서 나온 값이라 실제 손해율이나 연체 효과의 근거로 쓸 수 없습니다.'
@@ -2366,31 +2432,14 @@ function renderSummary() {
     <div class="f-where">자세히: ${esc(f.where)}</div></div>`).join('');
   $('sumLimits').innerHTML = limits.map(l => `<li>${l}</li>`).join('');
   $('sumNext').innerHTML = next.map(l => `<li>${l}</li>`).join('');
-  renderEffectSummary();
   renderPrdCheck();
-}
-// 기대효과(종합 해석): 다차원 언더라이팅으로 사전 관리하는 청약 규모, 분석 시간, 지속 업데이트
-function renderEffectSummary() {
-  const items = [], apps = state.apps?.list || [], t = state.timing;
-  const scored = apps.filter(a => a.relA != null), managed = scored.filter(a => a.status !== '표준인수');
-  const up = scored.filter(a => a.basis === 'B' && a.statusA && uwRank(a.status) > uwRank(a.statusA)).length;
-  if (scored.length) items.push(`<b>다차원 종합 언더라이팅 고도화 → 손해율 관리</b>: 신용 10분위에 연체·채무불이행 지표를 더해 청약 ${fmtInt(scored.length)}건 중
-    <b>${fmtInt(managed.length)}건(${fmtPct(managed.length / scored.length)})</b>을 한도축소·부담보·심사역검토로 인수 단계에서 사전 관리합니다.`
-    + (up ? ` 이 가운데 <b>${fmtInt(up)}건</b>은 연체정보를 더해 새로 걸러낸 재정적 고위험 건으로, 위험을 사전에 헤지할 수 있는 대상입니다.` : ''));
-  if (t && t.analysis != null) {
-    const files = Object.values(state.files), rows = files.reduce((s, f) => s + (f.length || 0), 0);
-    items.push(`<b>분석 비용·시간 절감</b>: 이번 분석은 CSV ${files.length}개 · ${fmtInt(rows)}행을 <b>${((t.prep || 0) + t.analysis + (t.extra || 0)).toFixed(1)}초</b>에 끝냈습니다(이 PC 기준).
-      엑셀 수작업·외부 컨설팅으로 수일~수주 걸리는 분석을 추가 비용 없이 반복할 수 있습니다.`);
-  }
-  items.push('<b>지속 업데이트 · 사내 자산화</b>: 분기마다 최신 CSV로 같은 기준을 다시 돌려 결과를 비교하고, 권고 구간·부담보 담보 등 기준값은 사내에서 조정합니다. 외부 재용역 없이 분석 노하우가 사내에 남습니다.');
-  $('sumEffect').innerHTML = items.map(l => `<li>${l}</li>`).join('');
 }
 // 2 상관분석 · 3 층화검증 탭 맨 위 '결론 먼저': 종합 해석의 핵심 발견 중 그 탭에 해당하는 것만 쉬운 말로
 function renderTabInsights(findings) {
   const fill = (id, key) => {
     const fs = findings.filter(f => f.where.startsWith(key)).sort((a, b) => /세그먼트/.test(b.where) - /세그먼트/.test(a.where)); // 층화검증은 세그먼트(소결) 먼저
     $(id).style.display = fs.length ? '' : 'none';
-    $(id).querySelector('ul').innerHTML = fs.map(f => `<li>${badgeOf(f.tag)}<div><div class="it">${f.title}${f.hint ? ` <span class="ihint">(${esc(f.hint)})</span>` : ''}</div><div class="ir">${f.result}</div>${f.note ? `<div class="inote">${f.note}</div>` : ''}</div></li>`).join('');
+    $(id).querySelector('ul').innerHTML = fs.map(f => `<li>${badgeOf(f.tag)}<div><div class="it">${f.title}${f.hint ? ` <span class="ihint">(${esc(f.hint)})</span>` : ''}</div><div class="ir">${f.short || f.result}</div></div></li>`).join('');
   };
   fill('insAnalysis', '2 상관분석');
   fill('insStrat', '3 층화검증');
@@ -2995,16 +3044,83 @@ document.querySelectorAll('.gcard').forEach(c => c.addEventListener('click', () 
   showTab(c.dataset.go); window.scrollTo({ top: 0, behavior: 'smooth' });
 }));
 $('goUpload').addEventListener('click', () => { showTab('upload'); window.scrollTo({ top: 0 }); });
-// 각 탭 머리 오른쪽에 개요 '화면 구성' 카드와 같은 질문·설명을 표시 (문장은 한곳에서만 관리)
-document.querySelectorAll('.gcard').forEach(c => {
-  const head = document.querySelector(`#tab-${c.dataset.go} .sec-head`);
-  if (!head) return;
-  const q = document.createElement('div');
-  q.className = 'tab-q';
-  q.innerHTML = `<span class="q">${c.querySelector('.gq').textContent}</span><span class="d">${c.dataset.short}</span>`;
-  head.appendChild(q);
-});
 renderTry(); renderGuide();
+
+// ─ 스텝 리본(탭 맨 위) + 다음 단계 카드(탭 맨 아래): 질문 → 답이 시차를 두고 차례로 나타나 끝까지 이어 보도록 안내 ─
+const STEP_TABS = ['upload', 'analysis', 'strat', 'apps', 'summary'];
+const NEXT_LABEL = { upload: '신용이 나쁘면 보험금이 더 나갈까?', analysis: '연체 효과가 담보별로도 같을까?', strat: '그래서 어떤 조건을 추천할까?',
+  apps: '결론은? 믿을 만한가?', summary: '실데이터 적용 방법' };
+const gcardOf = t => document.querySelector(`.gcard[data-go="${t}"]`);
+function ribbonAnswer(tab) {
+  const ds = state.ads, dec = state.decile;
+  if (!ds || !dec || !state.apps) return tab === 'upload' ? ['CSV 7종을 올리면', '자동으로 점검·정리하고', '파일끼리 연결합니다'] : ['분석을 실행하면', '여기에 답이 나옵니다'];
+  const rows = dec.rows, sum = (rs, k) => rs.reduce((s, r) => s + r[k], 0);
+  const lrOf = rs => sum(rs, 'loss') / sum(rs, 'premium');
+  const lift = (lrOf(rows.filter(r => r.decile >= 9)) / lrOf(rows.filter(r => r.decile <= 2))).toFixed(1);
+  const list = state.apps.list, total = list.length, s = uwSummary(list);
+  const up = list.filter(a => a.basis === 'B' && a.statusA && uwRank(a.status) > uwRank(a.statusA)).length;
+  if (tab === 'upload') {
+    const rv = reviewRows();
+    return [`네. CSV ${Object.keys(state.files).length}개를 읽어`, `계약 <b>${fmtInt(ds.counts.analyzed)}건</b>을 분석에 연결했고,`,
+      `오류 <b>${rv.filter(r => r.level === 'error').length}건</b> · 경고 ${rv.filter(r => r.level === 'warn').length}건입니다`];
+  }
+  if (tab === 'analysis') {
+    const m = state.dqMerged?.[1];
+    return ['네.', `신용 하위(9·10분위)는 상위보다 보험금이 <b>약 ${lift}배</b>${m ? ',' : ''}`, ...(m ? [`연체 이력이 있으면 같은 신용등급 대비 <b>${pctUp(m.adjRel)}</b>`] : [])];
+  }
+  if (tab === 'strat') {
+    if (!ds.hasDelinq) return ['연체정보 파일이 없어', '담보별 연체 효과는 계산하지 않았습니다'];
+    const segs = segmentTable(ds, dec, { dim: 'coverage' }).filter(x => x.cells[1].credible && x.cells[1].multiple != null);
+    return ['네.', `사고가 충분한 ${segs.length}개 담보 중 <b>${segs.filter(x => x.cells[1].multiple > 1).length}개</b>에서`, '연체 고객의 손해가 더 큽니다'];
+  }
+  if (tab === 'apps') return [`${fmtInt(total)}건 중 표준인수 <b>${fmtInt(s.get('표준인수') || 0)}건</b>,`, `심사역검토 <b>${fmtInt(s.get('심사역검토') || 0)}건</b>${up ? ',' : ''}`,
+    ...(up ? [`연체 반영으로 <b>${fmtInt(up)}건</b> 권고 강화`] : [])];
+  return ['신용·연체 정보만으로', `손해율 차이를 <b>약 ${lift}배</b>까지 가려냈습니다.`, '이제 내부망 실데이터로 검증할 차례입니다'];
+}
+function buildRibbons() {
+  STEP_TABS.forEach((t, i) => {
+    const sec = $('tab-' + t), head = sec.querySelector('.sec-head'), g = gcardOf(t), nextT = STEP_TABS[i + 1];
+    const rib = document.createElement('div');
+    rib.className = 'rib'; rib.id = 'rib-' + t;
+    rib.innerHTML = `<div class="rib-prog"><span class="t">STEP ${i + 1} / 5 · ${esc(g.querySelector('b').textContent)}</span>
+        <div class="bar">${STEP_TABS.map((_, k) => `<i class="${k < i ? 'd' : k === i ? 'c' : ''}"></i>`).join('')}</div></div>
+      <div class="rib-qa"><div class="rib-q">${esc(g.querySelector('.gq').textContent)}</div><div class="rib-a"></div></div>
+      <button type="button" class="rib-next">${nextT ? `다음: ${esc(NEXT_LABEL[t])} →` : `${esc(NEXT_LABEL[t])} ↓`}</button>`;
+    head.after(rib);
+    rib.querySelector('.rib-next').addEventListener('click', () => goNext(t));
+    if (nextT) {
+      const ng = gcardOf(nextT), card = document.createElement('div');
+      card.className = 'nextcard';
+      card.innerHTML = `<span class="n">${i + 2}</span><div><div class="t">다음 단계 · ${esc(ng.querySelector('b').textContent)}</div>
+        <div class="h">${esc(ng.querySelector('.gq').textContent)}</div><div class="s">${esc(ng.dataset.short)}</div></div>
+        <button type="button" class="btn">이어서 보기 →</button>`;
+      card.querySelector('button').addEventListener('click', () => goNext(t));
+      sec.appendChild(card);
+    }
+  });
+}
+function goNext(t) {
+  const nextT = STEP_TABS[STEP_TABS.indexOf(t) + 1];
+  if (!nextT) { $('finalCta').scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
+  const b = document.querySelector(`nav button[data-tab="${nextT}"]`);
+  if (b.disabled) { $('runMsg').textContent = '먼저 [분석 실행]을 눌러 주세요'; $('runBtn').focus(); return; }
+  showTab(nextT); window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+// 답 문장을 조각으로 나눠 시차를 두고 차례로 표시(PPT 애니메이션처럼). 같은 내용이면 다시 그리지 않음
+function renderRibbons() {
+  for (const t of STEP_TABS) {
+    const el = document.querySelector(`#rib-${t} .rib-a`), html = ribbonAnswer(t).map((c, k) => `<span class="ch" style="--k:${k}">${c}</span>`).join(' ');
+    if (el.dataset.html !== html) { el.dataset.html = html; el.innerHTML = '<span class="lead">A.</span> ' + html; }
+  }
+}
+function playRibbon(t) {
+  const rib = $('rib-' + t);
+  if (!rib) return;
+  rib.classList.remove('play'); void rib.offsetWidth; rib.classList.add('play');
+}
+buildRibbons();
+renderRibbons();
+document.querySelectorAll('nav button').forEach(b => b.addEventListener('click', () => { if (!b.disabled) playRibbon(b.dataset.tab); }));
 
 // ─ 입력 가이드 · 샘플 CSV · 친절한 오류 안내 (모두 브라우저 안에서 처리, 통신 없음) ─
 const FILE_LABELS = { contracts: '계약', coverages: '계약 담보 가입금액', loss: '손해실적 (증권×담보)', credit: '신용정보',
@@ -3143,6 +3259,8 @@ function makeZip(files) {
   end.setUint32(12, size, true); end.setUint32(16, offset, true);
   return new Blob([...parts, ...central, new Uint8Array(end.buffer)], { type: 'application/zip' });
 }
+$('fcGoData').addEventListener('click', () => { showTab('upload'); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+$('fcTemplate').addEventListener('click', () => $('templateZip').click());
 $('sampleZip').addEventListener('click', () => downloadCsv(makeZip(makeSamples()), 'score_poc_sample_csv.zip'));
 $('templateZip').addEventListener('click', () => downloadCsv(makeZip(makeTemplates()), 'score_poc_template_csv.zip'));
 
