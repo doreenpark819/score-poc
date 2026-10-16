@@ -584,6 +584,12 @@ if (location.protocol === 'file:') document.write('<meta http-equiv="Content-Sec
   .ins-foot { margin: 10px 0 0; padding-top: 8px; border-top: 1px dashed var(--line); font-size: 12px; color: var(--text-2); line-height: 1.65; }
   .ins-foot b { color: var(--text); }
   .ihint { font-size: 11.5px; font-weight: 400; color: var(--accent-strong); }
+  .inote { margin-top: 6px; font-size: 12.5px; color: var(--text); background: var(--head); border-radius: 4px; padding: 7px 10px; line-height: 1.7; }
+  .more-t { font-size: 11.5px; color: var(--text-2); }
+  .sub-l { display: inline-block; min-width: 54px; font-size: 11.5px; color: var(--muted); }
+  .merge-opt { font-size: 12.5px; color: var(--text-2); }
+  .merge-note { background: var(--accent-soft); border-radius: 4px; padding: 7px 10px; color: var(--text-2); }
+  .merge-note:empty { display: none; }
   /* 층화검증 소결(세그먼트) 강조 */
   .seg-hl { border: 2px solid var(--accent); box-shadow: 0 2px 10px rgba(0,133,124,.08); }
   .seg-hl > h2 { font-size: 17px; }
@@ -998,7 +1004,8 @@ if (location.protocol === 'file:') document.write('<meta http-equiv="Content-Sec
         <span class="heat-legend">손해율 칸 배경 <i style="background:rgba(180,35,42,.07)"></i><i style="background:rgba(180,35,42,.15)"></i><i style="background:rgba(180,35,42,.26)"></i> 전체 평균보다 높을수록 진함</span></p>
     </div>
     <div class="card" id="dqCard">
-      <h2>연체등급별 상대도</h2>
+      <div class="card-head"><h2>연체등급별 상대도</h2>
+        <label class="merge-opt" title="채무불이행은 대상이 적어 오차 범위가 넓으므로 연체와 합쳐 '연체 이상' 한 등급으로 봅니다"><input type="checkbox" id="dqMerge" checked> 연체·채무불이행 합쳐 보기 (연체 이상)</label></div>
       <div class="tbl"><table>
         <thead><tr><th>등급</th><th>판정 기준</th><th class="num">계약 수</th><th class="num">비중</th>
           <th class="num">손해율</th><th class="num">단순 상대도</th><th class="num">보정 상대도</th><th class="num">보정 95% 구간</th></tr></thead>
@@ -1006,7 +1013,8 @@ if (location.protocol === 'file:') document.write('<meta http-equiv="Content-Sec
       </table></div>
       <p class="note">단순 상대도 = 등급 손해율 ÷ 전체 손해율 · 보정 상대도 = 등급 Σ실제손해 ÷ 등급 Σ(위험보험료 × 전체손해율 × 10분위 상대도).
         연체자는 신용 분위도 나쁜 경우가 많아, 보정 상대도는 신용평점에 이미 반영된 몫을 뺀 연체 고유 효과입니다.
-        95% 구간이 1을 포함하면 그 등급의 연체 효과는 통계적으로 확인되지 않은 것입니다.</p>
+        95% 구간이 1을 포함하면 '추가 확인 필요'로 표시합니다(효과가 없다는 뜻이 아니라, 대상이 적어 아직 단정할 수 없다는 뜻).</p>
+      <p class="note merge-note" id="dqMergeNote"></p>
     </div>
   </section>
 
@@ -2208,7 +2216,7 @@ function renderTopKpis(ds, dec) {
 }
 
 // ─ 5 종합 해석: 화면의 결과를 쉬운 말로 정리 (규칙 기반, 외부 통신 없음). 95% 구간·교차 검증이 끝나면 다시 그림 ─
-const TAG = { ok: ['ok', '확인됨'], warn: ['warn', '주의'], no: ['muted', '미확인'], ref: ['info', '참고'], wait: ['muted', '계산 중'] };
+const TAG = { ok: ['ok', '확인됨'], warn: ['warn', '주의'], no: ['muted', '미확인'], more: ['muted', '추가 확인 필요'], ref: ['info', '참고'], wait: ['muted', '계산 중'] };
 // 받침 유무로 조사 고르기 (예: josa('채무불이행', '은', '는') → '채무불이행은')
 const josa = (w, a, b) => { const c = w.charCodeAt(w.length - 1) - 0xAC00; return w + (c >= 0 && c <= 11171 && c % 28 ? a : b); };
 const pctUp = x => x == null ? '-' : `${x >= 1 ? '+' : '−'}${Math.abs((x - 1) * 100).toFixed(0)}%`;
@@ -2244,24 +2252,25 @@ function renderSummary() {
     next.push("분위 역전이 우연인지 보려면 2 상관분석의 '10분위 단조 보정'을 켜고 결과가 얼마나 달라지는지 비교합니다.");
   }
 
-  // 3) 연체 고유 효과
+  // 3) 연체 고유 효과: '연체 이상'(연체+채무불이행)으로 합친 결과를 먼저, 나눠 본 결과를 함께
   if (dq) {
-    const lines = [], verdict = [];
-    for (const r of dq) if (r.grade > 0) {
-      const c = ci?.adjRel?.[r.grade];
-      const v = !c ? 'wait' : c.lo > 1 ? 'ok' : c.hi < 1 ? 'warn' : 'no';
-      verdict.push(v);
-      lines.push(`<b>${esc(r.label)}</b>(${fmtInt(r.n)}건): 같은 신용등급 대비 손해 ${pctUp(r.adjRel)}`
-        + (c ? ` (오차 범위 ${pctUp(c.lo)} ~ ${pctUp(c.hi)}) ${badgeOf(v)}` : ''));
-    }
-    const allOk = verdict.every(v => v === 'ok'), someOk = verdict.some(v => v === 'ok');
-    const weak = dq.filter(r => r.grade > 0 && ci?.adjRel?.[r.grade] && ci.adjRel[r.grade].lo <= 1 && ci.adjRel[r.grade].hi >= 1);
-    findings.push({ tag: !ci ? 'wait' : allOk ? 'ok' : someOk ? 'warn' : 'no', title: '연체 이력은 신용등급과 별개로 손해를 더 높입니다',
-      result: lines.join('<br>'),
-      meaning: '신용평점에 이미 반영된 몫을 빼고도 연체 고객의 손해가 더 큰지를 본 것입니다(보정 상대도).'
-        + (weak.length ? ` ${josa(weak.map(r => r.label).join('·'), '은', '는')} 오차 범위가 0%를 포함해 '효과가 있다'고 단정할 수 없습니다. 효과가 없다는 뜻이 아니라, 대상 건수가 적어 아직 증명하지 못했다는 뜻입니다.` : ''),
+    const verdictOf = c => !c ? 'wait' : c.lo > 1 ? 'ok' : c.hi < 1 ? 'warn' : 'more';
+    const line = (label, n, rel, c, extra = '') => `<b>${label}</b>(${extra}${fmtInt(n)}건): 같은 신용등급 대비 손해 ${pctUp(rel)}`
+      + (c ? ` (오차 범위 ${pctUp(c.lo)} ~ ${pctUp(c.hi)}) ${badgeOf(verdictOf(c))}${verdictOf(c) === 'more' && rel > 1 ? ' <span class="more-t">효과 방향은 같으나 대상이 적어 오차 범위가 넓음</span>' : ''}` : '');
+    const m = state.dqMerged?.[1], cm = state.ciMerged?.adjRel?.[1];
+    const sep = dq.filter(r => r.grade > 0).map(r => line(esc(r.label), r.n, r.adjRel, ci?.adjRel?.[r.grade]));
+    const lines = [m ? line('연체 이상', m.n, m.adjRel, cm, '연체+채무불이행 ') : null, `<span class="sub-l">나눠 보면</span> ${sep.join('<br><span class="sub-l"></span> ')}`].filter(Boolean);
+    const d1 = dq[1], c1 = ci?.adjRel?.[1], d2 = dq[2], c2 = ci?.adjRel?.[2];
+    const weak2 = c2 && c2.lo <= 1 && c2.hi >= 1;
+    const note = c1 && c2 ? `연체 이력은 신용등급과 별개로 손해를 약 ${Math.round((d1.adjRel - 1) * 100)}% 높이는 것이 ${c1.lo > 1 ? '통계적으로 확인됐습니다' : '추정되지만 아직 확인되지 않았습니다'}.
+      채무불이행은 효과가 ${d2.adjRel > d1.adjRel ? '더 크게' : ''} 추정되지만(${pctUp(d2.adjRel)})${weak2 ? `, 대상이 ${fmtInt(d2.n)}건으로 적어 오차 범위가 넓습니다` : ''}.
+      ${m && cm ? `그래서 둘을 '연체 이상'으로 합쳐 보면 ${pctUp(m.adjRel)}(오차 범위 ${pctUp(cm.lo)} ~ ${pctUp(cm.hi)})${cm.lo > 1 ? '로 효과가 확인됩니다' : '입니다'}. ` : ''}
+      '추가 확인 필요'는 효과가 없다는 뜻이 아니라, 실데이터처럼 표본이 늘면 확인될 수 있다는 뜻입니다. 둘을 나눈 결과는 3 층화검증에서 담보별로 확인합니다.` : '';
+    const tag = cm ? verdictOf(cm) === 'more' ? 'warn' : verdictOf(cm) : !ci ? 'wait' : verdictOf(c1);
+    findings.push({ tag, title: '연체 이력은 신용등급과 별개로 손해를 더 높입니다', result: lines.join('<br>'), note,
+      meaning: '신용평점에 이미 반영된 몫을 빼고도 연체 고객의 손해가 더 큰지를 본 것입니다(보정 상대도). ' + note,
       where: '2 상관분석 · 연체등급별 상대도' });
-    if (weak.length) next.push(`${josa(weak.map(r => r.label).join('·'), '을', '를')} 연체와 합쳐 '연체 이상' 한 등급으로 보거나, 데이터 기간을 늘려 오차 범위를 좁힌 뒤 다시 판단합니다.`);
+    if (weak2) next.push(`채무불이행은 대상이 적어 오차 범위가 넓습니다. 실데이터(기간 확대)로 표본을 늘려 연체와 따로 효과를 다시 확인합니다.`);
   }
 
   // 4) 모델 A vs B
@@ -2366,7 +2375,7 @@ function renderTabInsights(findings) {
   const fill = (id, key) => {
     const fs = findings.filter(f => f.where.startsWith(key)).sort((a, b) => /세그먼트/.test(b.where) - /세그먼트/.test(a.where)); // 층화검증은 세그먼트(소결) 먼저
     $(id).style.display = fs.length ? '' : 'none';
-    $(id).querySelector('ul').innerHTML = fs.map(f => `<li>${badgeOf(f.tag)}<div><div class="it">${f.title}${f.hint ? ` <span class="ihint">(${esc(f.hint)})</span>` : ''}</div><div class="ir">${f.result}</div></div></li>`).join('');
+    $(id).querySelector('ul').innerHTML = fs.map(f => `<li>${badgeOf(f.tag)}<div><div class="it">${f.title}${f.hint ? ` <span class="ihint">(${esc(f.hint)})</span>` : ''}</div><div class="ir">${f.result}</div>${f.note ? `<div class="inote">${f.note}</div>` : ''}</div></li>`).join('');
   };
   fill('insAnalysis', '2 상관분석');
   fill('insStrat', '3 층화검증');
@@ -2433,7 +2442,13 @@ async function runUncertainty(ds, dec) {
   state.ci = ci;
   $('ciStatus').textContent = `95% 구간: 증권 붓스트랩 ${ci.B}회`;
   renderDecile(dec, ci);
-  if (state.delinq) renderDelinqRows(state.delinq, ci);
+  if (state.delinq) {
+    await tick();
+    const ciM = bootstrapCI(mergedPolicies(ds.policies), { monotone: dec.monotone });
+    if (id !== uncertaintyRun) return;
+    state.ciMerged = ciM;
+    renderDelinqRows(state.delinq, ci);
+  }
   renderSummary();
   await tick();
   const cv = separationCV(ds.policies, { monotone: dec.monotone });
@@ -2483,6 +2498,7 @@ function renderDelinqAndSeparation(ds, dec) {
     const D = CONFIG.DELINQ, total = dq.reduce((s, r) => s + r.n, 0);
     const rule = [`그 외`, `${D.DELINQ_COLS.join(' + ')} ≥ 1`, `${D.DEFAULT_COLS.join(' + ')} ≥ 1`];
     state.dqRule = rule; state.dqTotal = total;
+    state.dqMerged = delinqTable(mergedPolicies(ds.policies), dec); state.ciMerged = null;
     renderDelinqRows(dq, null);
     fns.B = makeRelFns(dec, dq).B;
   }
@@ -2507,11 +2523,23 @@ function renderDelinqAndSeparation(ds, dec) {
 const ciText = c => c && c.lo != null ? `${fmtRel(c.lo)}~${fmtRel(c.hi)}` : '…';
 const signedRel = x => (x >= 0 ? '+' : '') + x.toFixed(2);
 
+// 채무불이행(2)을 연체(1)로 합친 증권 목록 (표시용 분석. 원본 객체는 바꾸지 않음)
+const mergedPolicies = ps => ps.map(p => p.grade === 2 ? { ...p, grade: 1 } : p);
+$('dqMerge').addEventListener('change', () => { if (state.delinq) { renderDelinqRows(state.delinq, state.ci); renderSummary(); } });
+
 function renderDelinqRows(dq, ci) {
+  // 합쳐 보기(기본): 채무불이행을 연체에 합친 '연체 이상' 2단계로 표시. 점수 계산(4탭)은 기획서대로 3단계를 그대로 씀
+  const merged = $('dqMerge').checked && state.dqMerged, n2 = dq[2]?.n ?? 0;
+  if (merged) { dq = state.dqMerged.slice(0, 2); ci = state.ciMerged || null; }
+  const D = CONFIG.DELINQ;
+  $('dqMergeNote').innerHTML = merged ? `<b>합쳐 보기 중</b>: 채무불이행(${fmtInt(n2)}건)은 대상이 적어 오차 범위가 넓으므로 연체와 합쳐 '연체 이상'으로 봅니다.
+    둘을 나눠 본 결과는 체크를 풀거나 3 층화검증의 세그먼트 표(정상·연체·채무불이행)에서 확인하세요. 4 스코어 결과의 점수는 기획서 기준대로 정상·연체·채무불이행 3단계 보정값을 씁니다.` : '';
   $('dqBody').innerHTML = dq.map(r => {
     const c = ci?.adjRel?.[r.grade];
-    const flag = c && c.lo != null && c.lo <= 1 && c.hi >= 1 ? ' <span class="badge muted" title="95% 구간이 1을 포함">효과 미확인</span>' : '';
-    return `<tr><td>${r.grade} ${r.label}</td><td class="muted" style="font-size:12px">${esc(state.dqRule[r.grade])}</td>
+    const flag = c && c.lo != null && c.lo <= 1 && c.hi >= 1 ? ` <span class="badge muted" title="95% 구간이 1을 포함">${r.adjRel > 1 ? '추가 확인 필요' : '효과 없음 가능'}</span>` : '';
+    const label = merged && r.grade === 1 ? '연체 이상 (연체+채무불이행)' : r.label;
+    const rule = merged && r.grade === 1 ? `${[...D.DELINQ_COLS, ...D.DEFAULT_COLS].join(' + ')} ≥ 1` : state.dqRule[r.grade];
+    return `<tr><td>${r.grade} ${esc(label)}</td><td class="muted" style="font-size:12px">${esc(rule)}</td>
       <td class="num">${fmtInt(r.n)}</td><td class="num">${fmtPct(r.n / state.dqTotal)}</td><td class="num"${heat(r.lr, state.decile?.overall)}>${fmtPct(r.lr)}</td>
       <td class="num">${fmtRel(r.simpleRel)}</td><td class="num"><b>${fmtRel(r.adjRel)}</b></td>
       <td class="num">${ci ? ciText(c) : '…'}${flag}</td></tr>`;
@@ -3386,7 +3414,7 @@ const GLOSSARY = [
   ['과적합 (같은 데이터 기준)', '검증', '모델을 만든 데이터로 다시 채점하면 우연히 손해가 높았던 칸까지 맞힌 것처럼 보여 성능이 부풀려지는 현상. 그래서 같은 데이터 기준 분리도는 참고로만 봅니다.', '3 층화검증'],
   ['95% 구간 (신뢰구간)', '통계', '데이터를 다시 뽑아도 값이 대체로 이 범위 안에 있을 것이라는 범위. 구간이 넓으면 불확실성이 크고, 두 구간이 겹치면 차이가 우연일 수 있습니다.', '2 상관분석 · 차트의 세로 선'],
   ['붓스트랩', '통계', '가진 데이터에서 증권을 무작위로 다시 뽑는(중복 허용) 일을 여러 번(이 화면은 200회) 반복해 값이 얼마나 흔들리는지 재는 방법. 95% 구간을 만드는 데 씁니다.', '2 상관분석'],
-  ['효과 미확인', '통계', '보정 상대도의 95% 구간이 1을 포함한다는 표시. 그 등급의 연체 효과가 \'없다\'가 아니라, 이 데이터 규모로는 \'있다고 확신할 수 없다\'는 뜻입니다.', '2 상관분석 · 연체등급별 상대도'],
+  ['추가 확인 필요 (효과 미확인)', '통계', '보정 상대도의 95% 구간이 1을 포함한다는 표시. 그 등급의 연체 효과가 \'없다\'가 아니라, 이 데이터 규모로는 \'있다고 확신할 수 없다\'는 뜻입니다.', '2 상관분석 · 연체등급별 상대도'],
   ['신뢰도 · 완전신뢰 기준 (1,082건)', '통계', '손해율을 믿을 만한지는 계약 수보다 사고 건수가 정합니다. 사고 1,082건 이상이면 손해율이 실제 값의 ±5% 안에 들 확률이 90%라는 보험수리 기준(완전신뢰)입니다.', '1 데이터 · 자동 검토(규모 진단)'],
   ['흐린 칸 (신뢰 부족)', '통계', '세그먼트 표에서 사고가 30건 미만인 칸. 손해율이 우연에 크게 흔들리므로 판단에 쓰지 않는 것이 좋습니다.', '3 층화검증 · 세그먼트 표'],
   ['단조 보정 (PAVA)', '보정', '분위가 나빠지는데 상대도가 오히려 낮아지는 역전을, 인접 분위를 합쳐 평균 내는 방식으로 없애는 것. 총손해는 그대로 보존됩니다.', '2 상관분석 · 분석 설정'],
