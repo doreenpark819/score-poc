@@ -604,6 +604,10 @@ if (location.protocol === 'file:') document.write('<meta http-equiv="Content-Sec
   .sk-bridge .btn { padding: 6px 12px; font-size: 12.5px; white-space: nowrap; }
   .seg-detail-h { font-size: 13px; font-weight: 700; color: var(--text-2); margin: 16px 0 8px; padding-top: 12px; border-top: 1px solid var(--line-soft); }
   @media (max-width: 900px) { .sk-tiles { grid-template-columns: 1fr 1fr; } .sk.wide { grid-column: 1 / -1; } .sk-bridge { grid-template-columns: 1fr; } .sk-bridge > span { display: none; } }
+  .data-dep { background: var(--head); border: 0; border-radius: 4px; padding: 8px 10px; margin-top: 8px; }
+  details.expert > summary h2 { font-size: 15px; }
+  details.expert .sep-one { font-size: 13px; color: var(--text-2); margin: 6px 0 0 18px; line-height: 1.65; }
+  details.expert[open] .sep-one { margin-bottom: 4px; }
   /* 스코어 결과: 권고 기준 설명 */
   .uw-explain { margin-top: 14px; border-top: 1px solid var(--line-soft); padding-top: 12px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
   .uw-explain > div { background: var(--head); border-radius: 6px; padding: 10px 12px; font-size: 12.5px; color: var(--text-2); line-height: 1.7; }
@@ -837,8 +841,8 @@ if (location.protocol === 'file:') document.write('<meta http-equiv="Content-Sec
           <span class="gd">CSV 파일을 넣으면 자동으로 점검·정리하고, 파일끼리 잘 연결됐는지 보여줘요.</span></button>
         <button type="button" class="gcard" data-go="analysis"><span class="gnum">2</span><b>상관분석</b><span class="gq">신용이 나쁘면 정말 보험금이 더 나갈까?</span>
           <span class="gd">신용 분위·연체 이력별로 보험금이 평균의 몇 배인지 그래프와 표로 보여줘요.</span></button>
-        <button type="button" class="gcard" data-go="strat"><span class="gnum">3</span><b>층화검증</b><span class="gq">연체 정보를 더하면 더 잘 가려낼까?</span>
-          <span class="gd">연체 정보를 뺀 모델과 넣은 모델을 나란히 비교하고, 담보·나이·성별로 나눠도 같은지 확인해요.</span></button>
+        <button type="button" class="gcard" data-go="strat"><span class="gnum">3</span><b>층화검증</b><span class="gq">연체 이력이 있으면 어느 담보에서든 손해가 커질까?</span>
+          <span class="gd">담보·가입금액대·나이·성별로 나눠 연체 효과가 일관된지 확인하고, 연체 정보를 넣은 모델이 더 잘 가려내는지도 검증해요.</span></button>
         <button type="button" class="gcard" data-go="apps"><span class="gnum">4</span><b>스코어 결과</b><span class="gq">새 신청마다 어떤 조건을 추천할까?</span>
           <span class="gd">추천 기준과 결과, 연체 정보로 바뀐 건, 신청마다 추천 이유와 담보별 금액을 차례로 보여줘요.</span></button>
         <button type="button" class="gcard" data-go="summary"><span class="gnum">5</span><b>종합 해석</b><span class="gq">그래서 결론은? 믿을 만한가?</span>
@@ -1007,37 +1011,11 @@ if (location.protocol === 'file:') document.write('<meta http-equiv="Content-Sec
   </section>
 
   <section id="tab-strat" class="tab">
-    <div class="sec-head"><span class="no">STEP 3</span><h2>층화검증</h2><p>연체정보 미포함(A) vs 포함(B) 모델 비교 · 세그먼트별 일관성</p></div>
+    <div class="sec-head"><span class="no">STEP 3</span><h2>층화검증</h2><p>담보·가입금액대·연령대·성별로 나눠 본 연체 효과 · 전문가용 모델 A/B 검증</p></div>
     <div class="card insight" id="insStrat" style="display:none"><div class="h-label">결론 먼저</div><ul></ul>
-      <p class="ins-foot"><b>리프트</b>란? 고객을 위험한 순서로 줄 세웠을 때 <b>가장 나쁜 10%의 손해율이 가장 좋은 10%의 몇 배인지</b>입니다. 클수록 좋은 고객과 나쁜 고객을 잘 가려내는 모델이며, 여기서는 처음 보는 데이터로 잰 값(교차 검증)을 씁니다.</p></div>
-    <div class="card" id="sepCard">
-      <h2>모델 비교: 연체정보 미포함(A) vs 포함(B)</h2>
-      <div class="cmp-banner">
-        <div class="cmp-side a">
-          <div class="tag">MODEL A</div><div class="name">연체정보 미포함 · 신용 10분위만</div>
-          <div class="lift" id="sepLiftA">-</div><div class="cap" id="sepCapA">리프트(분리도) · 교차 검증</div>
-        </div>
-        <div class="cmp-delta" id="sepKpis"></div>
-        <div class="cmp-side b">
-          <div class="tag">MODEL B</div><div class="name">연체정보 포함 · 10분위 × 연체 보정</div>
-          <div class="lift" id="sepLiftB">-</div><div class="cap" id="sepCapB">리프트(분리도) · 교차 검증</div>
-        </div>
-      </div>
-      <div class="liftbars" id="sepLiftBars"></div>
-      <p class="note" id="sepCvNote"></p>
-      <div class="cmp-charts">
-        <div><h3>모델 A <span class="h-sub">종합상대도 10등분 구간별 손해율</span></h3><div class="chart gray" id="sepChartA"></div></div>
-        <div><h3>모델 B <span class="h-sub">종합상대도 10등분 구간별 손해율</span></h3><div class="chart" id="sepChartB"></div></div>
-      </div>
-      <div class="tbl" style="margin-top:16px"><table>
-        <thead><tr><th>종합상대도 구간 (10등분, 같은 데이터 기준)</th><th class="num">계약 수</th><th class="num">A 상대도 범위</th><th class="num">A 손해율</th>
-          <th class="num">B 상대도 범위</th><th class="num">B 손해율</th><th class="num">손해율 차이 (B − A)</th></tr></thead>
-        <tbody id="sepBody"></tbody>
-      </table></div>
-      <p class="note"><b>교차 검증</b>: 증권을 무작위로 반씩 나눠 한쪽으로 상대도를 추정하고 다른 쪽에서 잽니다. 같은 데이터로 정렬·채점하면
-        우연히 손해가 높았던 칸이 '최악'으로 뽑혀 분리도가 부풀려지므로(가상 데이터 검증에서 약 8~10%), 교차 검증 값을 주 지표로 봅니다.
-        막대 위 숫자는 손해율, 아래 숫자는 계약 수, 점선은 전체 손해율입니다.</p>
-    </div>
+      <p class="ins-foot"><b>리프트</b>란? 고객을 위험한 순서로 줄 세웠을 때 <b>가장 나쁜 10%의 손해율이 가장 좋은 10%의 몇 배인지</b>입니다. 클수록 좋은 고객과 나쁜 고객을 잘 가려내는 모델이며, 여기서는 처음 보는 데이터로 잰 값(교차 검증)을 씁니다.</p>
+      <p class="ins-foot data-dep"><b>※ 데이터에 따라 달라질 수 있습니다</b>: 연체정보의 효과가 얼마나 뚜렷한지는 넣는 데이터(관찰 기간·계약 규모·연체 정의)에 따라 달라집니다.
+        채무불이행은 더 불량하지만 대상이 적어 결과가 흔들리기 쉽고, 상대적으로 덜 불량한 <b>연체 이력도 이번 결과처럼 유의미할 수 있으므로</b> 실데이터로 다시 확인하세요.</p></div>
     <div class="card seg-hl" id="segCard">
       <h2><span class="tag-acc">소결</span>세그먼트별 연체 수준에 따른 손해율 <span class="sub">스코어로 넘어가기 전 핵심 결과</span></h2>
       <div class="seg-key" id="segKey"></div>
@@ -1063,6 +1041,35 @@ if (location.protocol === 'file:') document.write('<meta http-equiv="Content-Sec
         <br>※ '전체 담보'로 보면 고액 담보(일반암·장해 등) 사고 몇 건이 손해율을 좌우해 사고 건수가 많아도 흔들릴 수 있습니다.
         연령대·성별은 담보를 골라(예: 질병입원) 함께 보는 것을 권장합니다.</p>
     </div>
+    <details class="card calc-details expert" id="sepCard">
+      <summary><h2>자세히 보기: 연체정보 추가 효과의 통계 검증 <span class="sub">전문가용 · 모델 A(연체 미포함) vs B(포함)</span></h2>
+        <div class="sep-one" id="sepOneLine">교차 검증 계산 중…</div></summary>
+      <div class="cmp-banner">
+        <div class="cmp-side a">
+          <div class="tag">MODEL A</div><div class="name">연체정보 미포함 · 신용 10분위만</div>
+          <div class="lift" id="sepLiftA">-</div><div class="cap" id="sepCapA">리프트(분리도) · 교차 검증</div>
+        </div>
+        <div class="cmp-delta" id="sepKpis"></div>
+        <div class="cmp-side b">
+          <div class="tag">MODEL B</div><div class="name">연체정보 포함 · 10분위 × 연체 보정</div>
+          <div class="lift" id="sepLiftB">-</div><div class="cap" id="sepCapB">리프트(분리도) · 교차 검증</div>
+        </div>
+      </div>
+      <div class="liftbars" id="sepLiftBars"></div>
+      <p class="note" id="sepCvNote"></p>
+      <div class="cmp-charts">
+        <div><h3>모델 A <span class="h-sub">종합상대도 10등분 구간별 손해율</span></h3><div class="chart gray" id="sepChartA"></div></div>
+        <div><h3>모델 B <span class="h-sub">종합상대도 10등분 구간별 손해율</span></h3><div class="chart" id="sepChartB"></div></div>
+      </div>
+      <div class="tbl" style="margin-top:16px"><table>
+        <thead><tr><th>종합상대도 구간 (10등분, 같은 데이터 기준)</th><th class="num">계약 수</th><th class="num">A 상대도 범위</th><th class="num">A 손해율</th>
+          <th class="num">B 상대도 범위</th><th class="num">B 손해율</th><th class="num">손해율 차이 (B − A)</th></tr></thead>
+        <tbody id="sepBody"></tbody>
+      </table></div>
+      <p class="note"><b>교차 검증</b>: 증권을 무작위로 반씩 나눠 한쪽으로 상대도를 추정하고 다른 쪽에서 잽니다. 같은 데이터로 정렬·채점하면
+        우연히 손해가 높았던 칸이 '최악'으로 뽑혀 분리도가 부풀려지므로(가상 데이터 검증에서 약 8~10%), 교차 검증 값을 주 지표로 봅니다.
+        막대 위 숫자는 손해율, 아래 숫자는 계약 수, 점선은 전체 손해율입니다.</p>
+    </details>
   </section>
 
   <section id="tab-apps" class="tab">
@@ -2265,6 +2272,7 @@ function renderSummary() {
       const solid = d > 0 && cv.BgtA >= 0.8;
       findings.push({ tag: d <= 0 ? 'no' : solid ? 'ok' : 'warn',
         title: d > 0 ? '연체정보를 더하면 고객 구분력이 조금 좋아집니다' : '연체정보를 더해도 구분력이 좋아지지 않았습니다',
+        hint: "맨 아래 '전문가용 통계 검증'에서 자세히",
         result: `리프트 ${cv.A.toFixed(2)}배(A) → ${cv.B.toFixed(2)}배(B), ${signedRel(d)} (${d >= 0 ? '+' : ''}${(d / cv.A * 100).toFixed(1)}%) · ${cv.repeats}번 반복 검증 중 ${wins}번 B가 앞섬`,
         meaning: '리프트는 가장 나쁜 10% 고객의 손해율이 가장 좋은 10%의 몇 배인지입니다. 클수록 좋은 고객과 나쁜 고객을 잘 가려냅니다. '
           + (solid ? '반복 검증에서도 꾸준히 B가 앞서 개선 효과가 안정적입니다.'
@@ -2356,7 +2364,7 @@ function renderEffectSummary() {
 // 2 상관분석 · 3 층화검증 탭 맨 위 '결론 먼저': 종합 해석의 핵심 발견 중 그 탭에 해당하는 것만 쉬운 말로
 function renderTabInsights(findings) {
   const fill = (id, key) => {
-    const fs = findings.filter(f => f.where.startsWith(key));
+    const fs = findings.filter(f => f.where.startsWith(key)).sort((a, b) => /세그먼트/.test(b.where) - /세그먼트/.test(a.where)); // 층화검증은 세그먼트(소결) 먼저
     $(id).style.display = fs.length ? '' : 'none';
     $(id).querySelector('ul').innerHTML = fs.map(f => `<li>${badgeOf(f.tag)}<div><div class="it">${f.title}${f.hint ? ` <span class="ihint">(${esc(f.hint)})</span>` : ''}</div><div class="ir">${f.result}</div></div></li>`).join('');
   };
@@ -2513,6 +2521,10 @@ function renderDelinqRows(dq, ci) {
 // 분리도(리프트): 교차 검증을 주 지표로, 같은 데이터 기준은 참고로. A(연체 미포함)와 B(포함)를 좌우로 비교
 function renderSeparationKpis() {
   const { A: sepA, B: sepB } = state.sep, cv = state.cv;
+  $('sepOneLine').innerHTML = !sepB ? '연체정보 파일이 없어 모델 A만 계산했습니다.' : !cv ? '교차 검증 계산 중…'
+    : `연체정보를 넣으면 구분력(리프트)이 <b>${cv.A.toFixed(2)}배 → ${cv.B.toFixed(2)}배</b>(${signedRel(cv.B - cv.A)})로 바뀌고, ${cv.repeats}번 반복 검증 중 ${Math.round(cv.BgtA * cv.repeats)}번 B가 앞섰습니다.`
+      + (cv.BgtA >= 0.8 && cv.B > cv.A ? ' 개선 효과가 안정적입니다.' : ' 이 데이터 규모로는 개선이 확실하지 않으며, 넣는 데이터에 따라 더 뚜렷해질 수 있습니다.')
+      + ' <span class="muted">눌러서 펼치기</span>';
   const vA = cv ? cv.A : null, vB = cv ? cv.B : null;
   $('sepLiftA').innerHTML = cv ? `${vA.toFixed(2)}<small class="muted" style="font-size:14px">배</small>` : '계산 중…';
   $('sepLiftB').innerHTML = !sepB ? '<span class="muted" style="font-size:16px">연체정보 없음</span>'
