@@ -488,7 +488,7 @@ if (location.protocol === 'file:') document.write('<meta http-equiv="Content-Sec
     display: inline-flex; align-items: center; justify-content: center; margin-bottom: 6px; }
   .eff > b { display: block; font-size: 14px; line-height: 1.45; }
   .eff p { margin: 6px 0 0; font-size: 12.5px; color: var(--text-2); line-height: 1.7; }
-  .roi { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+  .roi { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: start; }
   table.cmp td, table.cmp th { white-space: normal; font-size: 12.5px; vertical-align: top; }
   table.cmp td.me { background: var(--accent-soft); font-weight: 700; color: var(--accent-strong); }
   table.cmp td.me span { display: block; font-weight: 400; font-size: 11px; color: var(--text-2); }
@@ -545,6 +545,47 @@ if (location.protocol === 'file:') document.write('<meta http-equiv="Content-Sec
   }
   @media (max-width: 600px) { .fguide { grid-template-columns: 1fr; } .zsteps { grid-template-columns: 1fr; } }
   @media print { body:not(.analyzed) .done-bar { display: none !important; } body.analyzed .done-bar { display: grid !important; } .db-acts, .guide-tools, .tbl-tools { display: none !important; } .mode-badge { border: 1px solid #999; } }
+  /* 개요 CTA: 처음 보는 사람이 데모(내부망에선 CSV 시작)를 누르도록 은은한 파동 + 안내 */
+  .cta-wrap { display: none; align-items: center; gap: 10px; }
+  .has-demo .cta-wrap { display: inline-flex; }
+  .cta-hint { font-size: 12.5px; font-weight: 700; color: var(--accent-strong); display: inline-flex; align-items: center; gap: 6px; animation: nudge 1.6s ease-in-out infinite; }
+  .cta-hint::before { content: ''; width: 0; height: 0; border-top: 5px solid transparent; border-bottom: 5px solid transparent; border-right: 7px solid var(--accent-strong); }
+  .cta-pulse, body:not(.has-demo) #goUpload { position: relative; animation: ring 1.8s ease-out infinite; }
+  .cta-pulse { padding: 11px 22px; font-size: 15px; }
+  body:not(.has-demo) #goUpload { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 700; }
+  body.analyzed .cta-pulse, body.analyzed #goUpload, body.analyzed .cta-hint { animation: none; }
+  body.analyzed .cta-hint { display: none; }
+  @keyframes ring { 0% { box-shadow: 0 0 0 0 rgba(0,133,124,.45); } 70% { box-shadow: 0 0 0 12px rgba(0,133,124,0); } 100% { box-shadow: 0 0 0 0 rgba(0,133,124,0); } }
+  @keyframes nudge { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-5px); } }
+  @media (prefers-reduced-motion: reduce) { .cta-pulse, #goUpload, .cta-hint { animation: none !important; } }
+  /* 개요 마지막: 보안 + 유의사항 한 칸 */
+  .sec-divider { border-top: 1px solid var(--line); margin: 18px 0 14px; }
+  .sec-card .notice-h { font-size: 15px; }
+  .sec-card ul { margin: 0; padding-left: 20px; line-height: 1.8; font-size: 13px; color: var(--text-2); }
+  .sec-card ul b { color: var(--text); }
+  /* 각 탭 머리 오른쪽: 이 화면이 답하는 질문 (개요 '화면 구성'과 같은 문장) */
+  .tab-q { margin-left: auto; text-align: right; max-width: 52%; align-self: flex-end; }
+  .tab-q .q { display: block; font-size: 13.5px; font-weight: 700; color: var(--accent-strong); }
+  .tab-q .q::before { content: 'Q. '; color: var(--muted); }
+  .tab-q .d { display: block; font-size: 11.5px; color: var(--muted); line-height: 1.5; }
+  @media (max-width: 760px) { .tab-q { margin-left: 0; text-align: left; max-width: 100%; } }
+  /* 2·3 탭 맨 위: 결론 먼저 (두괄식) */
+  body.analyzed[data-tab="analysis"] .kpi-strip, body.analyzed[data-tab="strat"] .kpi-strip,
+  body.analyzed[data-tab="analysis"] .done-bar, body.analyzed[data-tab="strat"] .done-bar { display: none; }
+  .insight { border-left: 4px solid var(--accent); }
+  .insight .h-label { font-size: 12px; font-weight: 700; color: var(--accent-strong); letter-spacing: .04em; margin-bottom: 8px; }
+  .insight ul { list-style: none; margin: 0; padding: 0; }
+  .insight li { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 10px; align-items: baseline; padding: 7px 0; border-top: 1px solid var(--line-soft); }
+  .insight li:first-child { border-top: 0; padding-top: 0; }
+  .insight li .badge { justify-self: start; }
+  .insight .it { font-weight: 700; font-size: 14px; }
+  .insight .ir { font-size: 12.5px; color: var(--text-2); line-height: 1.65; margin-top: 2px; }
+  /* 스코어 결과: 권고 기준 설명 */
+  .uw-explain { margin-top: 14px; border-top: 1px solid var(--line-soft); padding-top: 12px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .uw-explain > div { background: var(--head); border-radius: 6px; padding: 10px 12px; font-size: 12.5px; color: var(--text-2); line-height: 1.7; }
+  .uw-explain b.h { display: block; color: var(--text); font-size: 13px; margin-bottom: 2px; }
+  .uw-explain code { background: var(--panel); border: 1px solid var(--line); border-radius: 3px; padding: 0 4px; font-size: 11px; }
+  @media (max-width: 900px) { .uw-explain { grid-template-columns: 1fr; } }
   /* 종합 해석 */
   .headline { border-left: 4px solid var(--accent); }
   .headline .h-label { font-size: 12px; font-weight: 700; color: var(--accent-strong); letter-spacing: .04em; }
@@ -669,12 +710,12 @@ if (location.protocol === 'file:') document.write('<meta http-equiv="Content-Sec
     <div class="card hero">
       <div class="eyebrow-s">한눈에 보기</div>
       <h2 class="hero-title">신용 상태로 <span class="hl">‘보험금이 많이 나갈 고객’</span>을 미리 알아보는 도구</h2>
-      <p class="hero-desc">자동차보험에서 사고 이력이 있으면 보험료가 달라지듯, 이 도구는 <b>신용 상태와 연체 이력</b>에 따라
+      <p class="hero-desc">이 도구는, 피보험자의 <b>신용 상태와 연체 이력</b>에 따라
         건강보험 <b>보험금이 평균보다 얼마나 더 나가는지</b>를 과거 데이터로 확인합니다.
         그 결과로 새로 들어온 가입 신청(청약)마다 <b>점수와 가입 조건</b>을 추천합니다.</p>
       <p class="hero-sub">최종 결정은 사람(심사역)이 하고, 이 도구는 참고 의견을 줍니다.</p>
       <div class="row hero-cta">
-        <button class="btn demoBtn demo-inline">데모 데이터로 바로 보기</button>
+        <span class="cta-wrap demo-inline"><button class="btn demoBtn cta-pulse">데모 데이터로 바로 보기</button><span class="cta-hint">처음이라면 여기부터 눌러 보세요</span></span>
         <button class="btn ghost" type="button" id="goUpload">내 CSV 파일로 시작하기</button>
         <span class="muted demo-inline-note">데모는 가상 데이터(전송 약 10MB)를 불러와 바로 분석합니다.</span>
       </div>
@@ -696,28 +737,6 @@ if (location.protocol === 'file:') document.write('<meta http-equiv="Content-Sec
           <div><div class="fnum">3 · 추천하기</div><b>새 가입 신청에 적용해요</b>
             <p>새 신청마다 점수(높을수록 안전)를 매기고 가입 조건을 추천해요.</p></div>
         </div>
-      </div>
-    </div>
-
-    <div class="card sec-card">
-      <h2><span class="tag-dark">보안</span>데이터는 이 PC 밖으로 나가지 않습니다</h2>
-      <p class="card-lead">사내 시스템에서 내려받은 CSV를 올리면, 검토·분석·리포트까지 모두 <b>이 PC의 브라우저 안에서만</b> 처리합니다. 서버·DB·외부 API를 쓰지 않는 폐쇄형(로컬) 구조입니다.</p>
-      <div class="arch">
-        <div class="arch-box"><h4>① 사내 시스템</h4><p>계약·손해실적·신용정보를<br>사내 권한으로 조회해<br><b>CSV로 내려받기</b></p></div>
-        <div class="arch-arrow" aria-hidden="true"></div>
-        <div class="arch-zone"><div class="zl">② 내 PC 브라우저 (내부망) · 이 안에서만 계산</div>
-          <div class="zsteps"><div><b>자동 검토</b>인코딩·컬럼·오류 점검</div><div><b>분석</b>상관·층화·스코어</div><div><b>리포트</b>요약·차트·권고</div></div></div>
-        <div class="arch-arrow" aria-hidden="true"></div>
-        <div class="arch-box"><h4>③ 결과 보관</h4><p>결과 CSV·검토 리포트·<br>PDF 인쇄본을<br><b>사내 저장소</b>에 보관</p></div>
-      </div>
-      <div class="arch-block"><span class="x" aria-hidden="true">✕</span><span><b>외부 서버 · 클라우드 · 외부 AI API로 전송되는 업로드 데이터 없음.</b>
-        파일로 여는 내부망 모드에서는 브라우저 보안 정책(CSP)으로 네트워크 요청 자체를 차단하고 AI 대화 기능도 꺼집니다.
-        <span class="muted">(AI 도우미는 공개 웹 데모에서만 동작하며, 질문과 집계 요약만 보냅니다)</span></span></div>
-      <div class="facts">
-        <div><b>설치 불필요</b><span>HTML 파일 1개 · 더블클릭으로 실행</span></div>
-        <div><b>서버·DB 없음</b><span>올린 파일은 이 PC 메모리에서만 읽음</span></div>
-        <div><b>외부 라이브러리 0개</b><span>CDN·웹폰트 없이 단독 동작</span></div>
-        <div><b>원본 불변</b><span>올린 CSV는 수정·저장하지 않음</span></div>
       </div>
     </div>
 
@@ -816,26 +835,22 @@ if (location.protocol === 'file:') document.write('<meta http-equiv="Content-Sec
         <li><b>검증·보정</b>: 분리도는 교차 검증 값이 주 지표, 상대도에 95% 구간(붓스트랩) 표시, 손해 기준(원손해·대형사고 상한·빈도)과 단조 보정 선택 가능</li>
       </ul>
     </details>
-    <div class="card intro">
-      <h2>데이터 구성 (가상 데이터 v4, 증권 × 담보 단위)</h2>
-      <div class="tbl"><table>
-        <thead><tr><th>파일</th><th>단위</th><th class="num">건수</th><th>주요 컬럼</th><th>필수</th></tr></thead>
-        <tbody>
-          <tr><td>contracts.csv</td><td>증권</td><td class="num">100,000</td><td>policy_no, customer_id, age, gender</td><td>필수</td></tr>
-          <tr><td>contract_coverages.csv</td><td>증권×담보</td><td class="num">709,730</td><td>policy_no, coverage_code, coverage_name, sum_insured</td><td>선택</td></tr>
-          <tr><td>loss_experience.csv</td><td>증권×담보</td><td class="num">709,730</td><td>policy_no, coverage_code, risk_premium, claim_paid, reserve_change, claim_cnt</td><td>필수</td></tr>
-          <tr><td>credit_info.csv</td><td>고객</td><td class="num">101,000</td><td>customer_id, credit_decile (1 우량 ~ 10 불량)</td><td>필수</td></tr>
-          <tr><td>credit_delinq.csv</td><td>고객</td><td class="num">101,000</td><td>채무불이행 3종(kcis·cb·대부업), 연체 2종(cb·개인사업자) 건수</td><td>선택</td></tr>
-          <tr><td>applications.csv</td><td>청약</td><td class="num">1,000</td><td>app_no, customer_id, age, gender</td><td>필수</td></tr>
-          <tr><td>application_coverages.csv</td><td>청약×담보</td><td class="num">7,161</td><td>app_no, coverage_code, coverage_name, sum_insured</td><td>필수</td></tr>
-        </tbody>
-      </table></div>
-      <p class="note"><b>담보 14개</b>: 일반암, 유사암, 암치료, 뇌혈관질환, 심혈관질환, 질병수술, 재해수술, 질병입원, 재해입원,
-        질병장해, 재해장해, 암외진단, 기타진단, 기타치료 (실손 미포함). 입원 담보 가입금액은 일당입니다.
-        컬럼별 상세와 생성 가정은 저장소의 <code>DATA_SPEC.md</code>에 있습니다.</p>
-    </div>
-    <div class="card intro notice">
-      <h2>유의사항</h2>
+    <div class="card sec-card">
+      <h2><span class="tag-dark">보안</span>데이터는 이 PC 밖으로 나가지 않습니다</h2>
+      <p class="card-lead">사내 시스템에서 내려받은 CSV를 올리면, 검토·분석·리포트까지 모두 <b>이 PC의 브라우저 안에서만</b> 처리합니다. 서버·DB·외부 API를 쓰지 않는 폐쇄형(로컬) 구조입니다.</p>
+      <div class="arch">
+        <div class="arch-box"><h4>① 사내 시스템</h4><p>계약·손해실적·신용정보를<br>사내 권한으로 조회해<br><b>CSV로 내려받기</b></p></div>
+        <div class="arch-arrow" aria-hidden="true"></div>
+        <div class="arch-zone"><div class="zl">② 내 PC 브라우저 (내부망) · 이 안에서만 계산</div>
+          <div class="zsteps"><div><b>자동 검토</b>인코딩·컬럼·오류 점검</div><div><b>분석</b>상관·층화·스코어</div><div><b>리포트</b>요약·차트·권고</div></div></div>
+        <div class="arch-arrow" aria-hidden="true"></div>
+        <div class="arch-box"><h4>③ 결과 보관</h4><p>결과 CSV·검토 리포트·<br>PDF 인쇄본을<br><b>사내 저장소</b>에 보관</p></div>
+      </div>
+      <div class="arch-block"><span class="x" aria-hidden="true">✕</span><span><b>외부 서버 · 클라우드 · 외부 AI API로 전송되는 업로드 데이터 없음.</b>
+        파일로 여는 내부망 모드에서는 브라우저 보안 정책(CSP)으로 네트워크 요청 자체를 차단하고 AI 대화 기능도 꺼집니다.
+        <span class="muted">(AI 도우미는 공개 웹 데모에서만 동작하며, 질문과 집계 요약만 보냅니다)</span></span></div>
+      <div class="sec-divider"></div>
+      <h2 class="notice-h"><span class="tag-dark">유의사항</span>실제 데이터 사용 전 확인할 점</h2>
       <ul>
         <li><b>가상 데이터 · 초안</b>: 화면의 모든 수치는 가상 데이터와 생성 가정에서 나온 값으로, 실제 손해율이나 연체 효과의 근거로 쓸 수 없습니다.</li>
         <li><b>개인정보·신용정보</b>: 실제 고객 데이터는 신용정보법·개인정보보호법상 수집·이용 목적과 동의 범위를 확인한 뒤에만 쓸 수 있습니다.
@@ -845,6 +860,7 @@ if (location.protocol === 'file:') document.write('<meta http-equiv="Content-Sec
           권고는 참고용이며 최종 인수 판단은 심사역이 합니다.</li>
       </ul>
     </div>
+
   </section>
 
   <section id="tab-upload" class="tab">
@@ -916,6 +932,7 @@ if (location.protocol === 'file:') document.write('<meta http-equiv="Content-Sec
 
   <section id="tab-analysis" class="tab">
     <div class="sec-head"><span class="no">STEP 2</span><h2>상관분석</h2><p>신용 10분위·연체등급과 손해율의 관계</p></div>
+    <div class="card insight" id="insAnalysis" style="display:none"><div class="h-label">결론 먼저</div><ul></ul></div>
     <div class="card settings">
       <h2>분석 설정 <span class="sub">PRD 기준값은 원손해 · 단조 보정 미적용</span></h2>
       <div class="row">
@@ -966,6 +983,7 @@ if (location.protocol === 'file:') document.write('<meta http-equiv="Content-Sec
 
   <section id="tab-strat" class="tab">
     <div class="sec-head"><span class="no">STEP 3</span><h2>층화검증</h2><p>연체정보 미포함(A) vs 포함(B) 모델 비교 · 세그먼트별 일관성</p></div>
+    <div class="card insight" id="insStrat" style="display:none"><div class="h-label">결론 먼저</div><ul></ul></div>
     <div class="card" id="sepCard">
       <h2>모델 비교: 연체정보 미포함(A) vs 포함(B)</h2>
       <div class="cmp-banner">
@@ -1027,6 +1045,7 @@ if (location.protocol === 'file:') document.write('<meta http-equiv="Content-Sec
       <div class="ladder" id="uwLadder"></div>
       <div class="ladder ladder-rules" id="uwRules"></div>
       <p class="note">막대 구간을 누르면 아래 '청약별 확인' 목록이 그 권고로 걸러집니다. 권고는 참고용이며 최종 판단은 심사역이 합니다.</p>
+      <div class="uw-explain" id="uwExplain"></div>
     </div>
     <div class="card" id="abCard" style="display:none">
       <div class="step-head"><span class="st">2</span><h2>연체정보를 넣으면 무엇이 바뀌나</h2><span class="sub">모델 A(신용 분위만) → 모델 B(연체 이력 반영)</span></div>
@@ -2255,6 +2274,8 @@ function renderSummary() {
       where: '4 스코어 결과' });
   }
 
+  renderTabInsights(findings);
+
   // 한계점 (공통 + 데이터 기반)
   limits.unshift(isDemo ? '<b>가상 데이터</b>: 지금 수치는 생성 가정에서 나온 값이라 실제 손해율이나 연체 효과의 근거로 쓸 수 없습니다.'
     : '<b>과거 데이터</b>: 특정 기간의 결과이므로 앞으로도 같은 차이가 유지된다고 보장할 수 없습니다.');
@@ -2304,6 +2325,16 @@ function renderEffectSummary() {
   }
   items.push('<b>지속 업데이트 · 사내 자산화</b>: 분기마다 최신 CSV로 같은 기준을 다시 돌려 결과를 비교하고, 권고 구간·부담보 담보 등 기준값은 사내에서 조정합니다. 외부 재용역 없이 분석 노하우가 사내에 남습니다.');
   $('sumEffect').innerHTML = items.map(l => `<li>${l}</li>`).join('');
+}
+// 2 상관분석 · 3 층화검증 탭 맨 위 '결론 먼저': 종합 해석의 핵심 발견 중 그 탭에 해당하는 것만 쉬운 말로
+function renderTabInsights(findings) {
+  const fill = (id, key) => {
+    const fs = findings.filter(f => f.where.startsWith(key));
+    $(id).style.display = fs.length ? '' : 'none';
+    $(id).querySelector('ul').innerHTML = fs.map(f => `<li>${badgeOf(f.tag)}<div><div class="it">${f.title}</div><div class="ir">${f.result}</div></div></li>`).join('');
+  };
+  fill('insAnalysis', '2 상관분석');
+  fill('insStrat', '3 층화검증');
 }
 function badgeOf(t) { return `<span class="badge ${TAG[t][0]}">${TAG[t][1]}</span>`; }
 
@@ -2560,11 +2591,33 @@ function initApps(ds, dec, dq) {
   $('appSearch').value = '';
   $('appSearch').oninput = renderAppList;
   $('exportBtn').onclick = () => downloadCsv(exportCsv(assessed), `uw_result_${new Date().toISOString().slice(0, 10)}.csv`);
+  renderUwExplain(ds, dec);
   const rep = renderABCases(assessed);
   $('appStepNo').textContent = hasB ? '3' : '2';
   setAppFilter('');
   const first = rep || assessed.find(a => a.relA != null) || assessed[0];
   if (first) showApp(first.app_no, { quiet: true });
+}
+
+// 권고 기준 설명: 누구에게(종합상대도 구간), 어떤 담보를(부담보 대상), 어디서 바꾸나(CONFIG)
+function renderUwExplain(ds, dec) {
+  const ex = CONFIG.EXCLUSION_COVERAGES, rules = CONFIG.UW_RULES;
+  const lim = rules.find(r => r.limitPct != null && r.limitPct < 100 && !r.exclusion), exr = rules.find(r => r.exclusion);
+  let evidence = '';
+  if (ds.hasDelinq) {
+    const segs = segmentTable(ds, dec, { dim: 'coverage' }).filter(x => x.cells[1].multiple != null);
+    const pickM = x => `${esc(x.key)} ×${x.cells[1].multiple.toFixed(2)}`;
+    const inEx = segs.filter(x => ex.includes(x.key)), others = segs.filter(x => !ex.includes(x.key) && x.cells[1].credible);
+    const avg = others.length ? others.reduce((t, x) => t + x.cells[1].multiple, 0) / others.length : null;
+    evidence = `<br>현재 데이터의 정상 대비 연체 배수: ${inEx.map(pickM).join(' · ')}${avg != null ? ` (나머지 담보 평균 ×${avg.toFixed(2)})` : ''}`;
+  }
+  $('uwExplain').innerHTML = `
+    <div><b class="h">① 누구에게: 예상 손해 수준(종합상대도)</b>청약자의 신용 10분위 상대도 × 연체 보정 상대도로 <b>평균 대비 예상 보험금 수준</b>을 구합니다.
+      1.0을 넘을수록 손해율이 높을 것으로 예상되는 고객이라, 구간이 올라갈수록 조치가 강해집니다.</div>
+    <div><b class="h">② 어떻게: 한도축소 → 부담보 → 심사역</b>${uwRange(rules.indexOf(lim))}은 담보를 빼지 않고 <b>전 담보 ${lim.limitPct}%</b>,
+      ${uwRange(rules.indexOf(exr))}은 <b>${esc(ex.join('·'))}</b>${josa(ex.join('·'), '을', '를').slice(ex.join('·').length)} 부담보(보장 제외)하고 나머지 담보 ${exr.limitPct}%, 그 이상은 자동 권고 없이 심사역이 판단합니다.</div>
+    <div><b class="h">③ 왜 입원·수술 담보를 빼나</b>입원·수술은 사고가 잦은 담보라 연체 이력이 있을 때 손해 증가가 크게 쌓이는 담보군입니다.${evidence}
+      <br>기준값은 <code>CONFIG.UW_RULES</code>(구간·비율), <code>CONFIG.EXCLUSION_COVERAGES</code>(부담보 담보)에서 바꿉니다. 실제 부담보는 병력 고지 심사와 함께 판단합니다.</div>`;
 }
 
 function setAppFilter(f) {
@@ -2684,7 +2737,7 @@ function renderABCases(assessed) {
       <div class="ab-score">${a.scoreB}<small>점</small></div><div class="ab-rel">${fmtRel(a.relDecile)} × ${fmtRel(a.relDelinq)} = ${fmtRel(a.relB)}</div>${uwBadge(a.status)}</div>`; }).join('<div class="ab-arrow eq" aria-hidden="true"></div>')}</div>
     <p class="ab-why">연체 이력을 반영한 모델 B에서만 두 사람이 구분됩니다.</p></div>`;
   const looserHtml = !looser[0] ? '' : `<div class="ab-pair"><div class="ab-title">연체 이력이 없어 권고가 완화된 사례</div>${vsCard(looser[0])}</div>`;
-  const matrix = `<div class="tbl"><table class="ab-matrix"><thead><tr><th>A 권고 \\ B 권고</th>${labels.map(l => `<th class="num">${esc(uwShort(l))}</th>`).join('')}<th class="num">합계</th></tr></thead><tbody>
+  const matrix = `<div class="tbl"><table class="ab-matrix"><thead><tr><th>A 권고 ↓ · B 권고 →</th>${labels.map(l => `<th class="num">${esc(uwShort(l))}</th>`).join('')}<th class="num">합계</th></tr></thead><tbody>
     ${labels.map((a, i) => `<tr><td>${uwBadge(a)}</td>${m[i].map((n, j) => `<td class="num${i === j ? ' diag' : n ? (j > i ? ' up' : ' down') : ''}">${n ? fmtInt(n) : '·'}</td>`).join('')}<td class="num">${fmtInt(m[i].reduce((t, n) => t + n, 0))}</td></tr>`).join('')}
     </tbody></table></div><p class="note">회색 대각선 = 권고 그대로 · 붉은 칸 = 연체 이력으로 엄격해짐 · 초록 칸 = 완화됨</p>`;
   $('abCases').innerHTML = `<div class="ab-main"><div>${head}</div><div>${rep ? vsCard(rep) : ''}</div></div>
@@ -2838,6 +2891,15 @@ document.querySelectorAll('.gcard').forEach(c => c.addEventListener('click', () 
   showTab(c.dataset.go); window.scrollTo({ top: 0, behavior: 'smooth' });
 }));
 $('goUpload').addEventListener('click', () => { showTab('upload'); window.scrollTo({ top: 0 }); });
+// 각 탭 머리 오른쪽에 개요 '화면 구성' 카드와 같은 질문·설명을 표시 (문장은 한곳에서만 관리)
+document.querySelectorAll('.gcard').forEach(c => {
+  const head = document.querySelector(`#tab-${c.dataset.go} .sec-head`);
+  if (!head) return;
+  const q = document.createElement('div');
+  q.className = 'tab-q';
+  q.innerHTML = `<span class="q">${c.querySelector('.gq').textContent}</span><span class="d">${c.querySelector('.gd').textContent}</span>`;
+  head.appendChild(q);
+});
 renderTry(); renderGuide();
 
 // ─ 입력 가이드 · 샘플 CSV · 친절한 오류 안내 (모두 브라우저 안에서 처리, 통신 없음) ─
@@ -3015,7 +3077,7 @@ function enhanceTable(tbodyId, fileName) {
   const tools = document.createElement('div');
   tools.className = 'tbl-tools no-print';
   tools.innerHTML = `<span>머리글을 누르면 정렬됩니다</span><button type="button" class="linkbtn">이 표 CSV로 받기</button>`;
-  wrap.parentNode.insertBefore(tools, wrap);
+  wrap.insertBefore(tools, table); // 표 묶음(.tbl) 안에 넣어, 차트·표 좌우 배치(그리드)를 흐트러뜨리지 않음
   tools.querySelector('button').addEventListener('click', () => downloadCsv(tableToCsv(table), `${fileName}_${new Date().toISOString().slice(0, 10)}.csv`));
   let sorting = false;
   new MutationObserver(() => { if (!sorting) table.querySelectorAll('th').forEach(th => th.classList.remove('asc', 'desc')); }).observe(tbody, { childList: true });
