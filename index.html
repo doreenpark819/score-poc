@@ -371,14 +371,26 @@ if (location.protocol === 'file:') document.write('<meta http-equiv="Content-Sec
   .step-head .sub { color: var(--muted); font-size: 12px; }
   .ladder { display: grid; gap: 3px; }
   .lseg { border: 0; border-radius: 4px; padding: 10px 12px; color: #fff; text-align: left; font: inherit; cursor: pointer; min-width: 0; overflow: hidden; }
-  .lseg b { display: block; font-size: 22px; line-height: 1.15; font-variant-numeric: tabular-nums; }
-  .lseg span { font-size: 12px; white-space: nowrap; }
+  .lseg { padding: 12px 14px !important; transition: transform .15s ease, box-shadow .15s ease; position: relative; }
+  .lseg:hover { transform: translateY(-3px); box-shadow: 0 6px 14px rgba(0,0,0,.18); }
+  .lseg .lname { display: block; font-size: 16px; font-weight: 700; white-space: nowrap; }
+  .lseg b { display: block; font-size: 28px; line-height: 1.15; font-variant-numeric: tabular-nums; margin-top: 2px; }
+  .lseg .lpct { font-size: 13px; opacity: .9; }
+  .lseg .lgo { position: absolute; right: 10px; bottom: 8px; font-size: 11.5px; opacity: 0; transition: opacity .15s; white-space: nowrap; }
+  .lseg:hover .lgo, .lseg.on .lgo { opacity: .95; }
+  .tap-hint { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text-2);
+    background: #FFF7E0; border: 1px solid #E9C46A; border-radius: 16px; padding: 4px 12px 4px 8px; align-self: center; }
+  .tap-hint b { color: #8A5A00; }
+  .tap-dot { width: 10px; height: 10px; border-radius: 50%; background: #C9962B; animation: tapPulse 1.6s ease-out infinite; }
+  @keyframes tapPulse { 0% { box-shadow: 0 0 0 0 rgba(201,150,43,.6); } 80%, 100% { box-shadow: 0 0 0 8px rgba(201,150,43,0); } }
+  body.apps-touched .tap-dot { animation: none; }
+  .uw-ref { margin-top: 8px; }
   .lseg.u0 { background: var(--accent); } .lseg.u1 { background: #9AA3AB; } .lseg.u2 { background: #6E767E; } .lseg.u3 { background: var(--risk); }
   .lseg:hover { filter: brightness(1.06); }
   .lseg.on { outline: 3px solid var(--text); outline-offset: 2px; }
   .ladder-rules { margin-top: 8px; }
-  .ladder-rules div { font-size: 11.5px; color: var(--text-2); line-height: 1.5; padding: 0 2px; min-width: 0; }
-  .ladder-rules div b { display: block; color: var(--text); font-size: 12px; }
+  .ladder-rules div { font-size: 13px; color: var(--text-2); line-height: 1.5; padding: 0 2px; min-width: 0; }
+  .ladder-rules div b { display: block; color: var(--text); font-size: 15px; }
   .udot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: 0; }
   .udot.u0 { background: var(--accent); } .udot.u1 { background: #9AA3AB; } .udot.u2 { background: #6E767E; } .udot.u3 { background: var(--risk); }
   .ab-main { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 20px; align-items: center; }
@@ -439,7 +451,8 @@ if (location.protocol === 'file:') document.write('<meta http-equiv="Content-Sec
   .cov-total { display: flex; justify-content: space-between; font-size: 12.5px; padding: 8px 0 0; font-variant-numeric: tabular-nums; }
   .cov-total b { color: var(--accent-strong); }
   @media (max-width: 900px) { .ab-main { grid-template-columns: 1fr; } .detail-panel { position: static; } }
-  @media (max-width: 600px) { .cov-row { grid-template-columns: 76px minmax(0, 1fr) 132px; } .lseg { padding: 8px; } .lseg b { font-size: 17px; } .lseg span { font-size: 11px; } .ladder-rules div { font-size: 10.5px; } }
+  @media (max-width: 760px) { .ladder { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; } .tap-hint { margin-left: 0; } }
+  @media (max-width: 600px) { .cov-row { grid-template-columns: 76px minmax(0, 1fr) 132px; } .lseg b { font-size: 21px; } .lseg .lname { font-size: 14px; } .ladder-rules div { font-size: 12px; } }
   @media print { .detail-panel { position: static; } .lseg { cursor: default; } .ab-btns { display: none !important; } }
   /* 머리글 모드 배지 · 분석 완료 바 */
   .head-right { display: flex; align-items: center; gap: 14px; }
@@ -564,10 +577,11 @@ if (location.protocol === 'file:') document.write('<meta http-equiv="Content-Sec
   .sec-card ul { margin: 0; padding-left: 20px; line-height: 1.8; font-size: 13px; color: var(--text-2); }
   .sec-card ul b { color: var(--text); }
   /* 각 탭 머리 오른쪽: 이 화면이 답하는 질문 (개요 '화면 구성'과 같은 문장) */
-  .tab-q { margin-left: auto; text-align: right; max-width: 52%; align-self: flex-end; }
+  .tab-q { margin-left: auto; text-align: right; max-width: 60%; align-self: flex-end; }
   .tab-q .q { display: block; font-size: 13.5px; font-weight: 700; color: var(--accent-strong); }
   .tab-q .q::before { content: 'Q. '; color: var(--muted); }
-  .tab-q .d { display: block; font-size: 11.5px; color: var(--muted); line-height: 1.5; }
+  .tab-q .d { display: block; font-size: 12px; color: var(--muted); line-height: 1.5; white-space: nowrap; }
+  @media (max-width: 1000px) { .tab-q .d { white-space: normal; } }
   @media (max-width: 760px) { .tab-q { margin-left: 0; text-align: left; max-width: 100%; } }
   /* 2·3 탭 맨 위: 결론 먼저 (두괄식) */
   body.analyzed[data-tab="analysis"] .kpi-strip, body.analyzed[data-tab="strat"] .kpi-strip,
@@ -843,15 +857,15 @@ if (location.protocol === 'file:') document.write('<meta http-equiv="Content-Sec
     <div class="card">
       <h2>화면 구성 <span class="sub">카드를 누르면 해당 화면으로 이동합니다 · 2~5는 분석을 실행하면 열립니다</span></h2>
       <div class="guide">
-        <button type="button" class="gcard" data-go="upload"><span class="gnum">1</span><b>데이터</b><span class="gq">데이터가 제대로 들어왔나?</span>
+        <button type="button" class="gcard" data-go="upload" data-short="CSV 업로드 → 자동 점검·정리 → 파일 연결 확인"><span class="gnum">1</span><b>데이터</b><span class="gq">데이터가 제대로 들어왔나?</span>
           <span class="gd">CSV 파일을 넣으면 자동으로 점검·정리하고, 파일끼리 잘 연결됐는지 보여줘요.</span></button>
-        <button type="button" class="gcard" data-go="analysis"><span class="gnum">2</span><b>상관분석</b><span class="gq">신용이 나쁘면 정말 보험금이 더 나갈까?</span>
+        <button type="button" class="gcard" data-go="analysis" data-short="신용 분위·연체 이력별 보험금 수준을 그래프로 비교"><span class="gnum">2</span><b>상관분석</b><span class="gq">신용이 나쁘면 정말 보험금이 더 나갈까?</span>
           <span class="gd">신용 분위·연체 이력별로 보험금이 평균의 몇 배인지 그래프와 표로 보여줘요.</span></button>
-        <button type="button" class="gcard" data-go="strat"><span class="gnum">3</span><b>층화검증</b><span class="gq">연체 이력이 있으면 어느 담보에서든 손해가 커질까?</span>
+        <button type="button" class="gcard" data-go="strat" data-short="담보·금액·나이·성별로 나눠 연체 효과의 일관성 확인"><span class="gnum">3</span><b>층화검증</b><span class="gq">연체 이력이 있으면 어느 담보에서든 손해가 커질까?</span>
           <span class="gd">담보·가입금액대·나이·성별로 나눠 연체 효과가 일관된지 확인하고, 연체 정보를 넣은 모델이 더 잘 가려내는지도 검증해요.</span></button>
-        <button type="button" class="gcard" data-go="apps"><span class="gnum">4</span><b>스코어 결과</b><span class="gq">새 신청마다 어떤 조건을 추천할까?</span>
+        <button type="button" class="gcard" data-go="apps" data-short="추천 기준 → 결과 → 연체 효과 → 신청별 이유·금액"><span class="gnum">4</span><b>스코어 결과</b><span class="gq">새 신청마다 어떤 조건을 추천할까?</span>
           <span class="gd">추천 기준과 결과, 연체 정보로 바뀐 건, 신청마다 추천 이유와 담보별 금액을 차례로 보여줘요.</span></button>
-        <button type="button" class="gcard" data-go="summary"><span class="gnum">5</span><b>종합 해석</b><span class="gq">그래서 결론은? 믿을 만한가?</span>
+        <button type="button" class="gcard" data-go="summary" data-short="결과의 의미·한계·다음 할 일을 쉬운 말로 정리"><span class="gnum">5</span><b>종합 해석</b><span class="gq">그래서 결론은? 믿을 만한가?</span>
           <span class="gd">결과의 의미와 한계, 다음에 할 일을 쉬운 말로 정리해요.</span></button>
       </div>
       <p class="note">오른쪽 아래 <b>용어집</b>에서 어려운 말(분리도·리프트·95% 구간 등)의 뜻을 찾아볼 수 있습니다.
@@ -1021,7 +1035,7 @@ if (location.protocol === 'file:') document.write('<meta http-equiv="Content-Sec
   <section id="tab-strat" class="tab">
     <div class="sec-head"><span class="no">STEP 3</span><h2>층화검증</h2><p>담보·가입금액대·연령대·성별로 나눠 본 연체 효과 · 전문가용 모델 A/B 검증</p></div>
     <div class="card insight" id="insStrat" style="display:none"><div class="h-label">결론 먼저</div><ul></ul>
-      <p class="ins-foot"><b>리프트</b>란? 고객을 위험한 순서로 줄 세웠을 때 <b>가장 나쁜 10%의 손해율이 가장 좋은 10%의 몇 배인지</b>입니다. 클수록 좋은 고객과 나쁜 고객을 잘 가려내는 모델이며, 여기서는 처음 보는 데이터로 잰 값(교차 검증)을 씁니다.</p>
+      <p class="ins-foot"><b>리프트</b>란? 위험한 순서로 줄 세웠을 때 <b>가장 나쁜 10% 손해율 ÷ 가장 좋은 10% 손해율</b> — 클수록 잘 가려내는 모델 (처음 보는 데이터로 잰 값)</p>
       <p class="ins-foot data-dep"><b>※ 데이터에 따라 달라질 수 있습니다</b>: 연체정보의 효과가 얼마나 뚜렷한지는 넣는 데이터(관찰 기간·계약 규모·연체 정의)에 따라 달라집니다.
         채무불이행은 더 불량하지만 대상이 적어 결과가 흔들리기 쉽고, 상대적으로 덜 불량한 <b>연체 이력도 이번 결과처럼 유의미할 수 있으므로</b> 실데이터로 다시 확인하세요.</p></div>
     <div class="card seg-hl" id="segCard">
@@ -1083,10 +1097,11 @@ if (location.protocol === 'file:') document.write('<meta http-equiv="Content-Sec
   <section id="tab-apps" class="tab">
     <div class="sec-head"><span class="no">STEP 4</span><h2>스코어 결과</h2><p>기준 → 결과 → 연체정보 효과 → 청약별 확인</p></div>
     <div class="card">
-      <div class="step-head"><span class="st">1</span><h2>권고 기준과 결과</h2><span class="sub" id="uwBasis"></span></div>
+      <div class="step-head"><span class="st">1</span><h2>권고 기준과 결과</h2><span class="sub" id="uwBasis"></span>
+        <span class="tap-hint"><span class="tap-dot" aria-hidden="true"></span><b>막대를 눌러 보세요</b> 그 권고의 청약만 아래 목록에 표시됩니다</span></div>
       <div class="ladder" id="uwLadder"></div>
       <div class="ladder ladder-rules" id="uwRules"></div>
-      <p class="note">막대 구간을 누르면 아래 '청약별 확인' 목록이 그 권고로 걸러집니다. 권고는 참고용이며 최종 판단은 심사역이 합니다.</p>
+      <p class="note uw-ref">권고는 참고용이며 최종 판단은 심사역이 합니다.</p>
       <div class="uw-explain" id="uwExplain"></div>
     </div>
     <div class="card" id="abCard" style="display:none">
@@ -2666,12 +2681,14 @@ function initApps(ds, dec, dq) {
   const sum = uwSummary(assessed), total = assessed.length, rules = CONFIG.UW_RULES;
   $('uwBasis').textContent = `청약 ${fmtInt(total)}건 · ` + (hasB ? '종합상대도 B(10분위 × 연체 보정) 기준' : '연체정보가 없어 종합상대도 A(10분위) 기준');
   const counts = rules.map(r => sum.get(r.label) || 0);
-  const cols = counts.map(n => `minmax(84px, ${Math.max(n, 1)}fr)`).join(' ');
+  const cols = counts.map(n => `minmax(128px, ${Math.max(n, 1)}fr)`).join(' ');
   $('uwLadder').style.gridTemplateColumns = cols; $('uwRules').style.gridTemplateColumns = cols;
   $('uwLadder').innerHTML = rules.map((r, i) => `<button type="button" class="lseg u${i}" data-f="${esc(r.label)}" title="${esc(r.label)}만 목록에서 보기">
-    <b>${fmtInt(counts[i])}건</b><span>${esc(uwShort(r.label))} · ${fmtPct(total ? counts[i] / total : null)}</span></button>`).join('');
-  $('uwRules').innerHTML = rules.map((r, i) => `<div><b>${uwRange(i)}</b>${esc(uwAction(r))}</div>`).join('');
+    <span class="lname">${esc(uwShort(r.label) === '심사역' ? '심사역검토' : uwShort(r.label))}</span><b>${fmtInt(counts[i])}건</b><span class="lpct">${fmtPct(total ? counts[i] / total : null)}</span><span class="lgo">목록 보기 ›</span></button>`).join('');
+  const shortAct = r => r.limitPct == null ? '심사역이 직접 판단' : r.exclusion ? `입원·수술 담보 제외 + ${r.limitPct}%` : `전 담보 ${r.limitPct}%`;
+  $('uwRules').innerHTML = rules.map((r, i) => `<div><b>${uwRange(i).replace('종합상대도 ', '')}</b>${esc(shortAct(r))}</div>`).join('');
   $('uwLadder').querySelectorAll('.lseg').forEach(b => b.addEventListener('click', () => {
+    document.body.classList.add('apps-touched');
     setAppFilter(state.apps.filter === b.dataset.f ? '' : b.dataset.f);
     $('appCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }));
@@ -2984,7 +3001,7 @@ document.querySelectorAll('.gcard').forEach(c => {
   if (!head) return;
   const q = document.createElement('div');
   q.className = 'tab-q';
-  q.innerHTML = `<span class="q">${c.querySelector('.gq').textContent}</span><span class="d">${c.querySelector('.gd').textContent}</span>`;
+  q.innerHTML = `<span class="q">${c.querySelector('.gq').textContent}</span><span class="d">${c.dataset.short}</span>`;
   head.appendChild(q);
 });
 renderTry(); renderGuide();
